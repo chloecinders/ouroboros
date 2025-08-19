@@ -20,13 +20,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run: cargo build --verbose
+      run: cargo build --release --verbose
 
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
         name: ouroboros-${{ matrix.os }}
-        path: target/release/Ouroboros${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+        path: |
+          target/**/release/Ouroboros
+          target/**/release/Ouroboros.exe
 
     - name: Cache cargo
       uses: actions/cache@v4

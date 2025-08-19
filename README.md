@@ -14,13 +14,13 @@ install:
 Config format:
 ```toml
 [bot]
-env = "release" // either release or dev to set which environment it pulls from
+env = "release" # either release or dev to set which environment it pulls from
 
 [release]
-token = "" // bot token
-prefix = "!" // bot prefix
-database_url = "postgres://user:password@ip/database" // database url
-max_connections = 5 // database max connections
+token = "" # bot token
+prefix = "!" # bot prefix
+database_url = "postgres:#user:password@ip/database" # database url
+max_connections = 5 # database max connections
 
 [dev]
 token = ""
