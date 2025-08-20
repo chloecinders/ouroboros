@@ -2,9 +2,9 @@ use std::time::Instant;
 
 use serenity::{all::{Context, CreateEmbed, CreateMessage, Message}, async_trait};
 use sysinfo::System;
-use tracing::{error, warn};
+use tracing::warn;
 
-use crate::{commands::{Command, CommandArgument}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, START_TIME};
+use crate::{commands::Command, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, START_TIME};
 
 pub struct Stats;
 

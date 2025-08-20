@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
-use chrono::NaiveDateTime;
-use serenity::{all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, Permissions}, async_trait};
+use serenity::{all::{Context, CreateEmbed, CreateMessage, Message, Permissions}, async_trait};
 use sqlx::query;
-use tracing::{error, warn};
+use tracing::warn;
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::check_guild_permission, SQL};
+use crate::{commands::{Command, CommandArgument, CommandPermissions, TransformerFn}, constants::BRAND_BLUE, database::ActionType, event_handler::CommandError, lexer::Token, transformers::Transformers, SQL};
 use ouroboros_macros::command;
 
 pub struct Log;
@@ -43,7 +42,7 @@ impl Command for Log {
     ) -> Result<(), CommandError> {
         let res = query!(
             r#"
-                SELECT *, 'warn' AS type FROM warns UNION ALL SELECT *, 'kick' AS type FROM kicks WHERE user_id = $1 AND guild_id = $2;
+                SELECT id, type as "type!: ActionType", moderator_id, user_id, created_at, reason FROM actions WHERE user_id = $1 AND guild_id = $2;
             "#,
             member.id.get() as i64,
             msg.guild_id.map(|g| g.get()).unwrap_or(0) as i64
@@ -60,12 +59,12 @@ impl Command for Log {
             response.push_str(
                 format!(
                     "**{0}:** <@{1}> -> <@{2}>\n<t:{3}:d> <t:{3}:T>\n`{4}`\n```\n{5}\n```\n\n",
-                    data.r#type.unwrap_or(String::from("UNKOWN")).to_uppercase(),
-                    data.moderator_id.unwrap_or(0),
-                    data.user_id.unwrap_or(0),
-                    (data.created_at.unwrap_or(NaiveDateTime::default())).and_utc().timestamp(),
-                    data.id.unwrap_or(String::from("UNKNOWN")),
-                    data.reason.unwrap_or(String::from("UNKNOWN; CONTACT DEVELOPERS")),
+                    data.r#type.to_string().to_uppercase(),
+                    data.moderator_id,
+                    data.user_id,
+                    data.created_at.and_utc().timestamp(),
+                    data.id,
+                    data.reason,
                 ).as_str()
             );
         });

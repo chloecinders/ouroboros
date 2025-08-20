@@ -1,9 +1,9 @@
 use std::time::{Duration, Instant};
 
 use serenity::{all::{Context, CreateEmbed, CreateMessage, Message as DiscordMessage}, async_trait};
-use tracing::{error, warn};
+use tracing::warn;
 
-use crate::{commands::{Command, CommandArgument}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, ShardManagerContainer};
+use crate::{commands::Command, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, ShardManagerContainer};
 
 pub struct Ping;
 

@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use serenity::{all::{Context, CreateEmbed, CreateMessage, Http, Mentionable, Message, Permissions}, async_trait};
+use serenity::{all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, Permissions}, async_trait};
 use sqlx::query;
 use tracing::{error, warn};
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, SQL};
+use crate::{commands::{Command, CommandArgument, CommandPermissions, TransformerFn}, constants::BRAND_BLUE, database::ActionType, event_handler::CommandError, lexer::Token, transformers::Transformers, SQL};
 use ouroboros_macros::command;
 
 pub struct Kick;
@@ -50,11 +50,12 @@ impl Command for Kick {
 
         reason.truncate(65000);
 
-        let db_id = uuid::Uuid::new_v4().to_string();
+        let db_id = nanoid::nanoid!();
 
         let res = query!(
-            "INSERT INTO kicks (id, guild_id, user_id, moderator_id, reason) VALUES ($1, $2, $3, $4, $5)",
+            "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason) VALUES ($1, $2::action_type, $3, $4, $5, $6)",
             db_id,
+            ActionType::Kick as ActionType,
             msg.guild_id.map(|g| g.get() as i64).unwrap_or(0),
             member.user.id.get() as i64,
             msg.author.id.get() as i64,
@@ -70,8 +71,8 @@ impl Command for Kick {
             warn!("Got error while kicking; err = {err:?}");
 
             // cant do much here...
-            if let Err(_) = query!("DELETE FROM kicks WHERE id = $1", db_id).execute(SQL.get().unwrap()).await {
-                error!("CATASTROPHIC: Got an error while kicking and an error with the database! Stray kick entry in DB & manual action required; id = {db_id}; err = {err:?}");
+            if let Err(_) = query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await {
+                error!("Got an error while kicking and an error with the database! Stray kick entry in DB & manual action required; id = {db_id}; err = {err:?}");
             }
 
             return Err(CommandError { title: String::from("Could not kick member"), hint: Some(String::from("Check if the bot has the kick members permission or try again later")), arg: None });

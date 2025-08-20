@@ -25,7 +25,7 @@ jobs:
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
-        name: ouroboros-${{ matrix.os }}
+        name: ouroboros-${{ matrix.os }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}
         path: |
           target/**/release/Ouroboros
           target/**/release/Ouroboros.exe

@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use serenity::{all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, Permissions}, async_trait};
 use sqlx::query;
-use tracing::{error, warn};
+use tracing::warn;
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, SQL};
+use crate::{commands::{Command, CommandArgument, CommandPermissions, TransformerFn}, constants::BRAND_BLUE, database::ActionType, event_handler::CommandError, lexer::Token, transformers::Transformers, SQL};
 use ouroboros_macros::command;
 
 pub struct Warn;
@@ -51,8 +51,9 @@ impl Command for Warn {
         reason.truncate(65000);
 
         let res = query!(
-            "INSERT INTO warns (id, guild_id, user_id, moderator_id, reason) VALUES ($1, $2, $3, $4, $5)",
-            uuid::Uuid::new_v4().to_string(),
+            "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason) VALUES ($1, $2::action_type, $3, $4, $5, $6)",
+            nanoid::nanoid!(),
+            ActionType::Warn as ActionType,
             msg.guild_id.map(|g| g.get() as i64).unwrap_or(0),
             member.user.id.get() as i64,
             msg.author.id.get() as i64,

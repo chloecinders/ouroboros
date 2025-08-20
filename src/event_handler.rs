@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use serenity::{all::{Color, Context, CreateEmbed, CreateMessage, EventHandler, Message, Permissions}, async_trait};
-use tracing::{error, warn};
+use serenity::{all::{Context, CreateEmbed, CreateMessage, EventHandler, Message}, async_trait};
+use tracing::warn;
 
-use crate::{commands::{self, Command, CommandArgument, Kick, Log, Ping, Stats, Warn}, constants::{BRAND_BLUE, BRAND_RED}, lexer::{lex, Token}, transformers::{self, Transformers}, utils::check_guild_permission};
+use crate::{commands::{Command, CommandArgument, Kick, Log, Ping, Stats, Warn}, constants::{BRAND_BLUE, BRAND_RED}, lexer::{lex, Token}, utils::check_guild_permission};
 
 #[derive(Debug)]
 pub struct CommandError {

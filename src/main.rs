@@ -17,7 +17,7 @@ mod event_handler;
 mod commands;
 mod transformers;
 mod lexer;
-mod migrations;
+mod database;
 mod utils;
 mod constants;
 
@@ -55,6 +55,8 @@ async fn main() {
                 .expect("Failed to create database pool, make sure the database url in the config is valid.")
         }.await
     });
+
+    database::run_migrations();
 
     let intents = GatewayIntents::all();
 
