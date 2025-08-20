@@ -1,7 +1,7 @@
-use std::{sync::{Arc, OnceLock}, time::Instant};
+use std::{sync::{Arc, OnceLock}, time::{Duration, Instant}};
 
 use serenity::{all::{GatewayIntents, Settings, ShardManager}, prelude::TypeMapKey, Client};
-use tokio::{fs::File, io::AsyncReadExt};
+use tokio::{fs::File, io::AsyncReadExt, time::sleep};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 
 use crate::{config::Config, event_handler::Handler};
@@ -19,6 +19,7 @@ mod transformers;
 mod lexer;
 mod database;
 mod utils;
+mod tasks;
 mod constants;
 
 pub static START_TIME: OnceLock<Instant> = OnceLock::new();
@@ -72,6 +73,16 @@ async fn main() {
 
     let shard_manager = client.shard_manager.clone();
     client.data.write().await.insert::<ShardManagerContainer>(shard_manager);
+
+    let cache = client.cache.clone();
+    let http = client.http.clone();
+
+    tokio::spawn(async move {
+        loop {
+            sleep(Duration::from_secs(60 * 5)).await;
+            tasks::check_expiring_bans(&cache, &http);
+        }
+    });
 
     if let Err(e) = client.start().await {
         println!("Client error: {e:?}")

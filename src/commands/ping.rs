@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use serenity::{all::{Context, CreateEmbed, CreateMessage, Message as DiscordMessage}, async_trait};
 use tracing::warn;
 
-use crate::{commands::Command, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, ShardManagerContainer};
+use crate::{commands::{Command, CommandSyntax}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, ShardManagerContainer};
 
 pub struct Ping;
 
@@ -27,8 +27,8 @@ impl Command for Ping {
         String::from("Gets the bots HTTP and gateway latency. Useful for checking if the bot is lagging.")
     }
 
-    fn get_syntax(&self) -> String {
-        String::from("ping")
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
+        vec![]
     }
 
     async fn run(&self, ctx: Context, msg: DiscordMessage, _args: Vec<Token>) -> Result<(), CommandError> {

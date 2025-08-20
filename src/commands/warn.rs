@@ -4,7 +4,7 @@ use serenity::{all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, 
 use sqlx::query;
 use tracing::warn;
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, TransformerFn}, constants::BRAND_BLUE, database::ActionType, event_handler::CommandError, lexer::Token, transformers::Transformers, SQL};
+use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, database::ActionType, event_handler::CommandError, lexer::Token, transformers::Transformers, SQL};
 use ouroboros_macros::command;
 
 pub struct Warn;
@@ -29,8 +29,11 @@ impl Command for Warn {
         String::from("Warns a member, storing a note in the users log.")
     }
 
-    fn get_syntax(&self) -> String {
-        String::from("warn <user: Discord Member> ...[reason]")
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
+        vec![
+            CommandSyntax::Member("user", true),
+            CommandSyntax::Consume("reason")
+        ]
     }
 
     #[command]
@@ -48,7 +51,10 @@ impl Command for Warn {
             }
         };
 
-        reason.truncate(65000);
+        if reason.len() > 500 {
+            reason.truncate(500);
+            reason.push_str("...");
+        }
 
         let res = query!(
             "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason) VALUES ($1, $2::action_type, $3, $4, $5, $6)",

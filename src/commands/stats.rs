@@ -4,7 +4,7 @@ use serenity::{all::{Context, CreateEmbed, CreateMessage, Message}, async_trait}
 use sysinfo::System;
 use tracing::warn;
 
-use crate::{commands::Command, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, START_TIME};
+use crate::{commands::{Command, CommandSyntax}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, START_TIME};
 
 pub struct Stats;
 
@@ -28,8 +28,8 @@ impl Command for Stats {
         String::from("Shows various statistics of the bot. Useful for nerds!")
     }
 
-    fn get_syntax(&self) -> String {
-        String::from("stats")
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
+        vec![]
     }
 
     async fn run(&self, ctx: Context, msg: Message, _args: Vec<Token>) -> Result<(), CommandError> {

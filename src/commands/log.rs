@@ -4,7 +4,7 @@ use serenity::{all::{Context, CreateEmbed, CreateMessage, Message, Permissions},
 use sqlx::query;
 use tracing::warn;
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, TransformerFn}, constants::BRAND_BLUE, database::ActionType, event_handler::CommandError, lexer::Token, transformers::Transformers, SQL};
+use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, database::ActionType, event_handler::CommandError, lexer::Token, transformers::Transformers, SQL};
 use ouroboros_macros::command;
 
 pub struct Log;
@@ -29,8 +29,10 @@ impl Command for Log {
         String::from("Shows the moderation actions taken on a member. This includes warns, bans, kicks, etc.")
     }
 
-    fn get_syntax(&self) -> String {
-        String::from("log <user: Discord User>")
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
+        vec![
+            CommandSyntax::User("user", true)
+        ]
     }
 
     #[command]
@@ -55,7 +57,12 @@ impl Command for Log {
 
         let mut response = String::new();
 
-        data.into_iter().for_each(|data| {
+        data.into_iter().for_each(|mut data| {
+            if data.reason.len() > 100 {
+                data.reason.truncate(100);
+                data.reason.push_str("...");
+            }
+
             response.push_str(
                 format!(
                     "**{0}:** <@{1}> -> <@{2}>\n<t:{3}:d> <t:{3}:T>\n`{4}`\n```\n{5}\n```\n\n",

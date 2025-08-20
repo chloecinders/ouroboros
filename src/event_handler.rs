@@ -3,7 +3,7 @@ use std::sync::Arc;
 use serenity::{all::{Context, CreateEmbed, CreateMessage, EventHandler, Message}, async_trait};
 use tracing::warn;
 
-use crate::{commands::{Command, CommandArgument, Kick, Log, Ping, Stats, Warn}, constants::{BRAND_BLUE, BRAND_RED}, lexer::{lex, Token}, utils::check_guild_permission};
+use crate::{commands::{Ban, Command, CommandArgument, Kick, Log, Ping, Softban, Stats, Warn}, constants::{BRAND_BLUE, BRAND_RED}, lexer::{lex, Token}, utils::check_guild_permission};
 
 #[derive(Debug)]
 pub struct CommandError {
@@ -33,6 +33,8 @@ impl Handler {
             Arc::new(Warn::new()),
             Arc::new(Log::new()),
             Arc::new(Kick::new()),
+            Arc::new(Softban::new()),
+            Arc::new(Ban::new()),
         ];
 
         Self {
@@ -89,15 +91,35 @@ impl Handler {
                 hint_text.push_str("\n-# && = AND, || = OR");
             }
 
+            let syntax = {
+                let command_syntax = cmd.get_syntax();
+
+                let mut def = vec![];
+                let mut example = vec![];
+
+                for syn in command_syntax {
+                    def.push(syn.get_def());
+                    example.push(syn.get_example());
+                }
+
+                format!(
+                    "Syntax:\n```\n{0}{1} {2}\n```\nExample:\n```{0}{1} {3}```",
+                    self.prefix,
+                    cmd.get_name(),
+                    def.join(" "),
+                    example.join(" ")
+                )
+            };
+
             let reply = CreateMessage::new()
                 .add_embed(
                     CreateEmbed::new()
                         .description(
                             format!(
-                                "**{}**\n{}\n\nSyntax:\n```\n{}\n```{}\n\n{}",
+                                "**{}**\n{}\n\n{}{}\n\n{}",
                                 cmd.get_name().to_uppercase(),
                                 cmd.get_full(),
-                                cmd.get_syntax(),
+                                syntax,
                                 perms,
                                 hint_text
                             )
