@@ -1,3 +1,7 @@
+use sqlx::{error, query};
+
+use crate::SQL;
+
 #[derive(Debug, sqlx::Type)]
 #[sqlx(type_name = "action_type", rename_all="lowercase")]
 pub enum ActionType {
@@ -19,10 +23,29 @@ impl std::fmt::Display for ActionType {
 }
 
 
-pub fn run_migrations() {
-    init_223320250818();
+pub async fn run_migrations() {
+    create_actions_223320250818().await;
 }
 
-pub fn init_223320250818() {
-    
+pub async fn create_actions_223320250818() {
+    if let Err(err) = query!(
+        r#"
+        CREATE TABLE IF NOT EXISTS public.actions
+        (
+            guild_id bigint NOT NULL,
+            user_id bigint NOT NULL,
+            reason text COLLATE pg_catalog."default" NOT NULL,
+            moderator_id bigint NOT NULL,
+            created_at timestamp without time zone NOT NULL DEFAULT now(),
+            updated_at timestamp without time zone,
+            id character varying(128) COLLATE pg_catalog."default" NOT NULL,
+            type action_type NOT NULL DEFAULT 'warn'::action_type,
+            active boolean NOT NULL DEFAULT true,
+            expires_at timestamp without time zone,
+            CONSTRAINT warns_pkey PRIMARY KEY (id)
+        )
+        "#
+    ).execute(SQL.get().unwrap()).await {
+        panic!("Couldnt run database migration create_actions_223320250818; Err = {err:?}");
+    }
 }

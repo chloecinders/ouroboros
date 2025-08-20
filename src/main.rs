@@ -57,7 +57,7 @@ async fn main() {
         }.await
     });
 
-    database::run_migrations();
+    database::run_migrations().await;
 
     let intents = GatewayIntents::all();
 
@@ -74,17 +74,16 @@ async fn main() {
     let shard_manager = client.shard_manager.clone();
     client.data.write().await.insert::<ShardManagerContainer>(shard_manager);
 
-    let cache = client.cache.clone();
     let http = client.http.clone();
 
     tokio::spawn(async move {
         loop {
             sleep(Duration::from_secs(60 * 5)).await;
-            tasks::check_expiring_bans(&cache, &http);
+            tasks::check_expiring_bans(&http).await;
         }
     });
 
     if let Err(e) = client.start().await {
-        println!("Client error: {e:?}")
+        eprintln!("Client error: {e:?}")
     }
 }

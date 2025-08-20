@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use chrono::Utc;
 use serenity::{all::{Context, CreateEmbed, CreateMessage, Message, Permissions}, async_trait};
 use sqlx::query;
 use tracing::warn;
@@ -44,7 +45,7 @@ impl Command for Log {
     ) -> Result<(), CommandError> {
         let res = query!(
             r#"
-                SELECT id, type as "type!: ActionType", moderator_id, user_id, created_at, reason FROM actions WHERE user_id = $1 AND guild_id = $2;
+                SELECT id, type as "type!: ActionType", moderator_id, user_id, created_at, active, expires_at, reason FROM actions WHERE user_id = $1 AND guild_id = $2;
             "#,
             member.id.get() as i64,
             msg.guild_id.map(|g| g.get()).unwrap_or(0) as i64
@@ -63,17 +64,36 @@ impl Command for Log {
                 data.reason.push_str("...");
             }
 
-            response.push_str(
-                format!(
-                    "**{0}:** <@{1}> -> <@{2}>\n<t:{3}:d> <t:{3}:T>\n`{4}`\n```\n{5}\n```\n\n",
-                    data.r#type.to_string().to_uppercase(),
-                    data.moderator_id,
-                    data.user_id,
-                    data.created_at.and_utc().timestamp(),
-                    data.id,
-                    data.reason,
-                ).as_str()
-            );
+            if let Some(expiry) = data.expires_at {
+                let now = Utc::now().naive_utc();
+                let expire_tag = if expiry < now { "Expired" } else { "Expires" };
+
+                response.push_str(
+                    format!(
+                        "**{0}:** <@{1}> -> <@{2}>\n<t:{3}:d> <t:{3}:T>\n{4}: <t:{5}:d> <t:{5}:T>\n`{6}`\n```\n{7}\n```\n\n",
+                        data.r#type.to_string().to_uppercase(),
+                        data.moderator_id,
+                        data.user_id,
+                        data.created_at.and_utc().timestamp(),
+                        expire_tag,
+                        expiry.and_utc().timestamp(),
+                        data.id,
+                        data.reason,
+                    ).as_str()
+                );
+            } else {
+                response.push_str(
+                    format!(
+                        "**{0}:** <@{1}> -> <@{2}>\n<t:{3}:d> <t:{3}:T>\n`{4}`\n```\n{5}\n```\n\n",
+                        data.r#type.to_string().to_uppercase(),
+                        data.moderator_id,
+                        data.user_id,
+                        data.created_at.and_utc().timestamp(),
+                        data.id,
+                        data.reason,
+                    ).as_str()
+                );
+            }
         });
 
         let reply = CreateMessage::new()

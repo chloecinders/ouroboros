@@ -81,10 +81,10 @@ impl Command for Softban {
 
             // cant do much here...
             if let Err(_) = query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await {
-                error!("Got an error while softban and an error with the database! Stray softban entry in DB & manual action required; id = {db_id}; err = {err:?}");
+                error!("Got an error while softbanning and an error with the database! Stray softban entry in DB & manual action required; id = {db_id}; err = {err:?}");
             }
 
-            return Err(CommandError { title: String::from("Could not softban member"), hint: Some(String::from("Check if the bot has the softban members permission or try again later")), arg: None });
+            return Err(CommandError { title: String::from("Could not softban member"), hint: Some(String::from("Check if the bot has the ban members permission or try again later")), arg: None });
         }
 
         if let Err(err) = member.unban(&ctx.http).await {

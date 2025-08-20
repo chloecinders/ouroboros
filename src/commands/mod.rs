@@ -1,5 +1,6 @@
-use std::{option, pin::Pin, sync::Arc};
+use std::{pin::Pin, sync::Arc};
 
+use chrono::Duration;
 use serenity::{all::{Context, Member, Message, Permissions, User}, async_trait};
 use crate::{event_handler::CommandError, lexer::Token};
 
@@ -10,11 +11,12 @@ type TransformerFn = Arc<
     + Send + Sync
 >;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CommandArgument {
     String(String),
     User(User),
     Member(Member),
+    Duration(Duration),
 }
 
 pub enum CommandSyntax<'a> {

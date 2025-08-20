@@ -1,5 +1,6 @@
-use std::sync::Arc;
+use std::{sync::Arc};
 
+use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 use serenity::{all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, Permissions}, async_trait};
 use sqlx::query;
 use tracing::{error, warn};
@@ -18,7 +19,7 @@ impl Ban {
 #[async_trait]
 impl Command for Ban {
     fn get_name(&self) -> String {
-        String::from("Ban")
+        String::from("ban")
     }
 
     fn get_short(&self) -> String {
@@ -46,6 +47,7 @@ impl Command for Ban {
         ctx: Context,
         msg: Message,
         #[transformers::member] member: Member,
+        #[transformers::duration] duration: Duration
     ) -> Result<(), CommandError> {
         let mut reason: String = {
             if let Some(t) = args_iter.next() {
@@ -62,45 +64,61 @@ impl Command for Ban {
 
         let db_id = nanoid::nanoid!();
 
+        let time_string = if !duration.is_zero() {
+            let (time, mut unit) = match () {
+                _ if (duration.num_days() as f64 / 365.0).fract() == 0.0 && duration.num_days() >= 365 => (duration.num_days() / 365, String::from("year")),
+                _ if (duration.num_days() as f64 / 30.0).fract() == 0.0 && duration.num_days() >= 30 => (duration.num_days() / 30, String::from("month")),
+                _ if duration.num_days() != 0 => (duration.num_days(), String::from("day")),
+                _ if duration.num_hours() != 0 => (duration.num_hours(), String::from("hour")),
+                _ if duration.num_minutes() != 0 => (duration.num_minutes(), String::from("minute")),
+                _ if duration.num_seconds() != 0 => (duration.num_seconds(), String::from("second")),
+                _ => (0, String::new()),
+            };
+
+            if time > 1 {
+                unit += "s";
+            }
+
+            format!("for {time} {unit}")
+        } else {
+            String::from("permanently")
+        };
+
+        let duration = if duration.is_zero() {
+            None
+        } else {
+            Some((Utc::now() + duration).naive_utc())
+        };
+
         let res = query!(
-            "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason) VALUES ($1, $2::action_type, $3, $4, $5, $6)",
+            "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason, expires_at) VALUES ($1, $2::action_type, $3, $4, $5, $6, $7)",
             db_id,
             ActionType::Ban as ActionType,
             msg.guild_id.map(|g| g.get() as i64).unwrap_or(0),
             member.user.id.get() as i64,
             msg.author.id.get() as i64,
-            reason.as_str()
+            reason.as_str(),
+            duration
         ).execute(SQL.get().unwrap()).await;
 
         if let Err(err) = res {
-            warn!("Got error while softbanning; err = {err:?}");
-            return Err(CommandError { title: String::from("Could not softban member"), hint: Some(String::from("please try again later")), arg: None });
+            warn!("Got error while banning; err = {err:?}");
+            return Err(CommandError { title: String::from("Could not ban member"), hint: Some(String::from("please try again later")), arg: None });
         }
 
         if let Err(err) = member.ban_with_reason(&ctx.http, 1, &reason).await {
-            warn!("Got error while softbanning; err = {err:?}");
+            warn!("Got error while banning; err = {err:?}");
 
             // cant do much here...
             if let Err(_) = query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await {
-                error!("Got an error while softban and an error with the database! Stray softban entry in DB & manual action required; id = {db_id}; err = {err:?}");
+                error!("Got an error while banning and an error with the database! Stray ban entry in DB & manual action required; id = {db_id}; err = {err:?}");
             }
 
-            return Err(CommandError { title: String::from("Could not softban member"), hint: Some(String::from("Check if the bot has the softban members permission or try again later")), arg: None });
-        }
-
-        if let Err(err) = member.unban(&ctx.http).await {
-            warn!("Got error while softunbanning; err = {err:?}");
-
-            // leave the entry in the db since they have still faced the consequences
-            return Err(CommandError {
-                title: String::from("Member banned, but bot ran into an error trying to unban"),
-                hint: Some(String::from("manually unban the member and check if the bot has the ban members permission")),
-                arg: None
-            });
+            return Err(CommandError { title: String::from("Could not ban member"), hint: Some(String::from("Check if the bot has the ban members permission or try again later")), arg: None });
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Softbanned {}\n```\n{}\n```", member.mention(), reason)).color(BRAND_BLUE.clone()))
+            .add_embed(CreateEmbed::new().description(format!("Banned {} {}\n```\n{}\n```", member.mention(), time_string, reason)).color(BRAND_BLUE.clone()))
             .reference_message(&msg);
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
@@ -111,6 +129,6 @@ impl Command for Ban {
     }
 
     fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions { required: vec![Permissions::KICK_MEMBERS], one_of: vec![] }
+        CommandPermissions { required: vec![Permissions::BAN_MEMBERS], one_of: vec![] }
     }
 }
