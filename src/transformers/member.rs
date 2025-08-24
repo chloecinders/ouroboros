@@ -1,10 +1,16 @@
+use std::{iter::Peekable, vec::IntoIter};
+
 use serenity::all::{Context, Message};
 
-use crate::{commands::{CommandArgument, TransformerReturn}, event_handler::CommandError, lexer::Token, transformers::Transformers};
+use crate::{commands::{CommandArgument, TransformerError, TransformerReturn}, event_handler::{CommandError, MissingArgumentError}, lexer::Token, transformers::Transformers};
 
 impl Transformers {
-    pub fn member<'a>(ctx: &'a Context, msg: &'a Message, mut input: Token) -> TransformerReturn<'a> {
+    pub fn member<'a>(ctx: &'a Context, msg: &'a Message, args: &'a mut Peekable<IntoIter<Token>>) -> TransformerReturn<'a> {
         Box::pin(async move {
+            let Some(mut input) = args.next() else {
+                return Err(TransformerError::MissingArgumentError(MissingArgumentError(String::from("Member"))))
+            };
+
             let id = if let Ok(id) = input.raw.parse::<u64>() {
                 id
             } else if input.raw.starts_with("<@") && input.raw.ends_with(">") {
@@ -13,19 +19,19 @@ impl Transformers {
                 if let Ok(id) = new_input.parse::<u64>() {
                     id
                 } else {
-                    return Err(CommandError {
+                    return Err(TransformerError::CommandError(CommandError {
                         arg: Some(input),
                         title: String::from("Could not turn input to a <Discord Member>"),
-                        hint: Some(String::from("Provide a valid ID or mention")),
-                    });
+                        hint: Some(String::from("provide a valid ID or mention")),
+                    }));
                 }
             } else {
                 let Ok(users) = msg.guild_id.unwrap_or_else(|| unreachable!()).members(&ctx.http, None, None).await else {
-                    return Err(CommandError {
+                    return Err(TransformerError::CommandError(CommandError {
                         arg: Some(input),
                         title: String::from("Could not turn input to a <Discord User>"),
-                        hint: Some(String::from("Provide a valid ID or mention")),
-                    });
+                        hint: Some(String::from("provide a valid ID or mention")),
+                    }));
                 };
 
                 let opt_user = users.iter().find(|u| u.user.name == input.raw);
@@ -35,22 +41,22 @@ impl Transformers {
                     return Ok(input);
                 }
 
-                return Err(CommandError {
+                return Err(TransformerError::CommandError(CommandError {
                     arg: Some(input),
                     title: String::from("Could not turn input to a <Discord User>"),
-                    hint: Some(String::from("Provide a valid ID or mention")),
-                });
+                    hint: Some(String::from("provide a valid ID or mention")),
+                }));
             };
 
             let member = {
                 if let Ok(member) = msg.guild_id.unwrap_or_else(|| unreachable!()).member(&ctx.http, id).await {
                     member.clone()
                 } else {
-                    return Err(CommandError {
+                    return Err(TransformerError::CommandError(CommandError {
                         arg: Some(input),
                         title: String::from("Could not find the <Discord Member>"),
-                        hint: Some(String::from("Make sure the ID or mention you provided is valid and that the member is in this server!")),
-                    });
+                        hint: Some(String::from("make sure the ID or mention you provided is valid and that the member is in this server!")),
+                    }));
                 }
             };
 

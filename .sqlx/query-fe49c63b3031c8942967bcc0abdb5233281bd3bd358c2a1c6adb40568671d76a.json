@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason) VALUES ($1, 'unban', $2, $3, $4, $5)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fe49c63b3031c8942967bcc0abdb5233281bd3bd358c2a1c6adb40568671d76a"
+}

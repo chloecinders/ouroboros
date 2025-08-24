@@ -1,42 +1,41 @@
-use std::sync::Arc;
+use std::{sync::Arc};
 
 use chrono::{Duration, Utc};
-use serenity::{all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, Permissions}, async_trait};
+use serenity::{all::{Context, CreateEmbed, CreateMessage, EditMember, Mentionable, Message, Permissions}, async_trait};
 use sqlx::query;
 use tracing::{error, warn};
 
 use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, SQL};
 use ouroboros_macros::command;
 
-pub struct Ban;
+pub struct Mute;
 
-impl Ban {
+impl Mute {
     pub fn new() -> Self {
         Self {}
     }
 }
 
 #[async_trait]
-impl Command for Ban {
+impl Command for Mute {
     fn get_name(&self) -> String {
-        String::from("ban")
+        String::from("mute")
     }
 
     fn get_short(&self) -> String {
-        String::from("Bans a member from the server")
+        String::from("Uses the Discord timeout feature on a member.")
     }
 
     fn get_full(&self) -> String {
-        String::from("Bans from the server and leaves a note in the users log. \
-            Defaults to permanent if no duration is provided. \
-            Use 0 for the duration to make the ban permanent. \
-            Ban expiry is checked every 5 minutes.")
+        String::from("
+            Uses the Discord timeout feature on a member and leaves a note in the users log. \
+            Has a max duration of 28 days. Duration (including the removal of the timeout) is managed by Discord")
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![
             CommandSyntax::Member("member", true),
-            CommandSyntax::Duration("duration", false),
+            CommandSyntax::Duration("duration", true),
             CommandSyntax::Reason("reason")
         ]
     }
@@ -46,11 +45,10 @@ impl Command for Ban {
         &self,
         ctx: Context,
         msg: Message,
-        #[transformers::reply_user] user: User,
-        #[transformers::duration] duration: Option<Duration>,
+        #[transformers::reply_member] member: Member,
+        #[transformers::duration] duration: Duration,
         #[transformers::reply_consume] reason: Option<String>
     ) -> Result<(), CommandError> {
-        let duration = duration.unwrap_or(Duration::zero());
         let mut reason = reason.unwrap_or(String::from("No reason provided"));
 
         if reason.len() > 500 {
@@ -60,7 +58,11 @@ impl Command for Ban {
 
         let db_id = nanoid::nanoid!();
 
-        let time_string = if !duration.is_zero() {
+        if duration > Duration::days(28) {
+            return Err(CommandError { title: String::from("Timeouts have a max duration of 28 days."), hint: None, arg: Some(args.get(1).unwrap().clone()) });
+        }
+
+        let time_string = {
             let (time, mut unit) = match () {
                 _ if (duration.num_days() as f64 / 365.0).fract() == 0.0 && duration.num_days() >= 365 => (duration.num_days() / 365, String::from("year")),
                 _ if (duration.num_days() as f64 / 30.0).fract() == 0.0 && duration.num_days() >= 30 => (duration.num_days() / 30, String::from("month")),
@@ -76,55 +78,42 @@ impl Command for Ban {
             }
 
             format!("for {time} {unit}")
-        } else {
-            String::from("permanently")
         };
 
-        let duration = if duration.is_zero() {
-            None
-        } else {
-            Some((Utc::now() + duration).naive_utc())
-        };
+        let duration = Utc::now() + duration;
 
         let res = query!(
-            "UPDATE actions SET active = false WHERE guild_id = $1 AND user_id = $2 AND type = 'ban'",
-            msg.guild_id.map(|g| g.get() as i64).unwrap_or(0),
-            user.id.get() as i64,
-        ).execute(SQL.get().unwrap()).await;
-
-        if let Err(err) = res {
-            warn!("Got error while banning; err = {err:?}");
-            return Err(CommandError { title: String::from("Could not ban member"), hint: Some(String::from("please try again later")), arg: None });
-        }
-
-        let res = query!(
-            "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason, expires_at) VALUES ($1, 'ban', $2, $3, $4, $5, $6)",
+            "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason, expires_at) VALUES ($1, 'mute', $2, $3, $4, $5, $6)",
             db_id,
             msg.guild_id.map(|g| g.get() as i64).unwrap_or(0),
-            user.id.get() as i64,
+            member.user.id.get() as i64,
             msg.author.id.get() as i64,
             reason.as_str(),
-            duration
+            duration.naive_utc()
         ).execute(SQL.get().unwrap()).await;
 
         if let Err(err) = res {
-            warn!("Got error while banning; err = {err:?}");
-            return Err(CommandError { title: String::from("Could not ban member"), hint: Some(String::from("please try again later")), arg: None });
+            warn!("Got error while timing out; err = {err:?}");
+            return Err(CommandError { title: String::from("Could not time member out"), hint: Some(String::from("please try again later")), arg: None });
         }
 
-        if let Err(err) = msg.guild_id.unwrap().ban_with_reason(&ctx.http, &user, 1, &reason).await {
-            warn!("Got error while banning; err = {err:?}");
+        let edit = EditMember::new()
+            .audit_log_reason(&reason)
+            .disable_communication_until_datetime(duration.into());
+
+        if let Err(err) = member.guild_id.edit_member(&ctx.http, &member, edit).await {
+            warn!("Got error while timinng out; err = {err:?}");
 
             // cant do much here...
             if let Err(_) = query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await {
-                error!("Got an error while banning and an error with the database! Stray ban entry in DB & manual action required; id = {db_id}; err = {err:?}");
+                error!("Got an error while timing out and an error with the database! Stray timeout entry in DB & manual action required; id = {db_id}; err = {err:?}");
             }
 
-            return Err(CommandError { title: String::from("Could not ban member"), hint: Some(String::from("check if the bot has the ban members permission or try again later")), arg: None });
+            return Err(CommandError { title: String::from("Could not time member out"), hint: Some(String::from("check if the bot has the timeout members permission or try again later")), arg: None });
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Banned {} {}\n```\n{}\n```", user.mention(), time_string, reason)).color(BRAND_BLUE.clone()))
+            .add_embed(CreateEmbed::new().description(format!("Timed {} out {}\n```\n{}\n```", member.mention(), time_string, reason)).color(BRAND_BLUE.clone()))
             .reference_message(&msg);
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
@@ -135,6 +124,6 @@ impl Command for Ban {
     }
 
     fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions { required: vec![Permissions::BAN_MEMBERS], one_of: vec![] }
+        CommandPermissions { required: vec![Permissions::MODERATE_MEMBERS], one_of: vec![] }
     }
 }

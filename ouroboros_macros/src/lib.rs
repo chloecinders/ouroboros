@@ -25,13 +25,29 @@ pub fn command(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
                 transformers.push(a.clone());
 
-                let mut chars = a.chars();
-                let capitalized = match chars.next() {
-                    Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
-                    None => String::new(),
+                let variant_ident = match &**ty {
+                    syn::Type::Path(type_path) => {
+                        let last_segment = type_path.path.segments.last().unwrap();
+
+                        if last_segment.ident == "Option" {
+                            if let syn::PathArguments::AngleBracketed(args) = &last_segment.arguments {
+                                if let Some(syn::GenericArgument::Type(syn::Type::Path(inner_type_path))) =
+                                    args.args.first()
+                                {
+                                    format_ident!("{}", inner_type_path.path.segments.last().unwrap().ident)
+                                } else {
+                                    panic!("Unsupported Option inner type")
+                                }
+                            } else {
+                                panic!("Unsupported Option generic")
+                            }
+                        } else {
+                            format_ident!("{}", last_segment.ident)
+                        }
+                    }
+                    _ => panic!("Unsupported argument type"),
                 };
 
-                let variant_ident = format_ident!("{}", capitalized);
                 let variant_str = variant_ident.to_string();
                 let binding_str = binding.to_string();
                 let binding_exp = if let syn::Type::Path(type_path) = &**ty {
@@ -56,11 +72,7 @@ pub fn command(_attr: TokenStream, item: TokenStream) -> TokenStream {
                             let #binding = {
                                 let Some(Token { contents: Some(CommandArgument::#variant_ident(b)), .. }) = args_iter.next() else {
                                     return Box::pin(async move {
-                                        Err(CommandError {
-                                            arg: None,
-                                            title: format!("Missing argument, expected {}: {}", #binding_str, #variant_str),
-                                            hint: Some(String::from("for more information run !help (command)")),
-                                        })
+                                        Err(CommandError::arg_not_found(#binding_str, Some(#variant_str)))
                                     })
                                 };
                                 b
@@ -72,11 +84,7 @@ pub fn command(_attr: TokenStream, item: TokenStream) -> TokenStream {
                         let #binding = {
                             let Some(Token { contents: Some(CommandArgument::#variant_ident(b)), .. }) = args_iter.next() else {
                                 return Box::pin(async move {
-                                    Err(CommandError {
-                                        arg: None,
-                                        title: format!("Missing argument, expected {}: {}", #binding_str, #variant_str),
-                                        hint: Some(String::from("for more information run !help (command)")),
-                                    })
+                                    Err(CommandError::arg_not_found(#binding_str, Some(#variant_str)))
                                 })
                             };
                             b
@@ -126,7 +134,7 @@ pub fn command(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         #vis #fn_async fn #fn_name #fn_generics (&'life0 self, ctx: Context, msg: Message, args: Vec<Token>) #fn_output #fn_where {
-            let mut args_iter = args.into_iter();
+            let mut args_iter = args.clone().into_iter();
             #(#arg_bindings)*
 
             #(#stmts)*

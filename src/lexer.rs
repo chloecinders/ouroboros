@@ -1,6 +1,6 @@
 use crate::commands::CommandArgument;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub contents: Option<CommandArgument>,
     pub raw: String,

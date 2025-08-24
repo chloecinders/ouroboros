@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use chrono::Utc;
-use serenity::{all::{Context, CreateEmbed, CreateMessage, Message, Permissions}, async_trait};
+use serenity::{all::{Context, CreateEmbed, CreateMessage, Message, Permissions, User}, async_trait};
 use sqlx::query;
 use tracing::warn;
 
@@ -13,6 +13,61 @@ pub struct Log;
 impl Log {
     pub fn new() -> Self {
         Self {}
+    }
+
+    async fn run_one(&self, ctx: Context, msg: Message, user: User, log: String) -> Result<(), CommandError> {
+        let res = query!(
+            r#"
+                SELECT id, type as "type!: ActionType", moderator_id, user_id, created_at, active, expires_at, reason FROM actions WHERE user_id = $1 AND guild_id = $2 AND id = $3;
+            "#,
+            user.id.get() as i64,
+            msg.guild_id.map(|g| g.get()).unwrap_or(0) as i64,
+            log
+        )
+        .fetch_one(SQL.get().unwrap()).await;
+
+        let data = match res {
+            Ok(d) => d,
+            Err(err) => {
+                warn!("Couldn't fetch log data; err = {err:?}");
+                return Err(CommandError { title: String::from("Unable to query the database"), hint: Some(String::from("try again later")), arg: None })
+            }
+        };
+
+        let response = if let Some(expiry) = data.expires_at {
+            let now = Utc::now().naive_utc();
+            let expire_tag = if expiry < now { "Expired" } else { "Expires" };
+
+            format!(
+                "**{0}** | Mod: <@{1}> | At: <t:{2}:d> <t:{2}:T> | {3}: <t:{4}:d> <t:{4}:T>\n`{5}`\n```\n{6}\n```\n\n",
+                data.r#type.to_string().to_uppercase(),
+                data.moderator_id,
+                data.created_at.and_utc().timestamp(),
+                expire_tag,
+                expiry.and_utc().timestamp(),
+                data.id,
+                data.reason,
+            )
+        } else {
+            format!(
+                "**{0}** | Mod: <@{1}> | At <t:{2}:d> <t:{2}:T>\n`{3}`\n```\n{4}\n```\n\n",
+                data.r#type.to_string().to_uppercase(),
+                data.moderator_id,
+                data.created_at.and_utc().timestamp(),
+                data.id,
+                data.reason,
+            )
+        };
+
+        let reply = CreateMessage::new()
+            .add_embed(CreateEmbed::new().description(response).color(BRAND_BLUE.clone()))
+            .reference_message(&msg);
+
+        if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
+            warn!("Could not send message; err = {err:?}");
+        }
+
+        Ok(())
     }
 }
 
@@ -32,7 +87,8 @@ impl Command for Log {
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![
-            CommandSyntax::User("user", true)
+            CommandSyntax::User("user", true),
+            CommandSyntax::String("id", false)
         ]
     }
 
@@ -41,19 +97,28 @@ impl Command for Log {
         &self,
         ctx: Context,
         msg: Message,
-        #[transformers::user] member: User,
+        #[transformers::user] user: User,
+        #[transformers::string] log: Option<String>
     ) -> Result<(), CommandError> {
+        if let Some(id) = log {
+            return self.run_one(ctx, msg, user, id).await;
+        }
+
         let res = query!(
             r#"
                 SELECT id, type as "type!: ActionType", moderator_id, user_id, created_at, active, expires_at, reason FROM actions WHERE user_id = $1 AND guild_id = $2;
             "#,
-            member.id.get() as i64,
+            user.id.get() as i64,
             msg.guild_id.map(|g| g.get()).unwrap_or(0) as i64
         )
         .fetch_all(SQL.get().unwrap()).await;
 
-        let Ok(data) = res else {
-            return Err(CommandError { title: String::from("Unable to query the database"), hint: Some(String::from("try again later")), arg: None });
+        let data = match res {
+            Ok(d) => d,
+            Err(err) => {
+                warn!("Couldn't fetch log data; err = {err:?}");
+                return Err(CommandError { title: String::from("Unable to query the database"), hint: Some(String::from("try again later")), arg: None })
+            }
         };
 
         let mut response = String::new();
@@ -70,10 +135,9 @@ impl Command for Log {
 
                 response.push_str(
                     format!(
-                        "**{0}:** <@{1}> -> <@{2}>\n<t:{3}:d> <t:{3}:T>\n{4}: <t:{5}:d> <t:{5}:T>\n`{6}`\n```\n{7}\n```\n\n",
+                        "**{0}** | Mod: <@{1}> | At: <t:{2}:d> <t:{2}:T> | {3}: <t:{4}:d> <t:{4}:T>\n`{5}`\n```\n{6}\n```\n\n",
                         data.r#type.to_string().to_uppercase(),
                         data.moderator_id,
-                        data.user_id,
                         data.created_at.and_utc().timestamp(),
                         expire_tag,
                         expiry.and_utc().timestamp(),
@@ -84,10 +148,9 @@ impl Command for Log {
             } else {
                 response.push_str(
                     format!(
-                        "**{0}:** <@{1}> -> <@{2}>\n<t:{3}:d> <t:{3}:T>\n`{4}`\n```\n{5}\n```\n\n",
+                        "**{0}** | Mod: <@{1}> | At <t:{2}:d> <t:{2}:T>\n`{3}`\n```\n{4}\n```\n\n",
                         data.r#type.to_string().to_uppercase(),
                         data.moderator_id,
-                        data.user_id,
                         data.created_at.and_utc().timestamp(),
                         data.id,
                         data.reason,
@@ -108,6 +171,11 @@ impl Command for Log {
     }
 
     fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions { required: vec![], one_of: vec![Permissions::MANAGE_NICKNAMES, Permissions::KICK_MEMBERS] }
+        CommandPermissions { required: vec![], one_of: vec![
+            Permissions::MANAGE_NICKNAMES,
+            Permissions::KICK_MEMBERS,
+            Permissions::MODERATE_MEMBERS,
+            Permissions::BAN_MEMBERS
+        ] }
     }
 }

@@ -1,12 +1,17 @@
-use std::{pin::Pin, sync::Arc};
+use std::{iter::Peekable, pin::Pin, sync::Arc, vec::IntoIter};
 
 use chrono::Duration;
 use serenity::{all::{Context, Member, Message, Permissions, User}, async_trait};
-use crate::{event_handler::CommandError, lexer::Token};
+use crate::{event_handler::{CommandError, MissingArgumentError}, lexer::Token};
 
-pub type TransformerReturn<'a> = Pin<Box<dyn Future<Output = Result<Token, CommandError>> + Send + 'a>>;
+pub enum TransformerError {
+    CommandError(CommandError),
+    MissingArgumentError(MissingArgumentError),
+}
+
+pub type TransformerReturn<'a> = Pin<Box<dyn Future<Output = Result<Token, TransformerError>> + Send + 'a>>;
 type TransformerFn = Arc<
-    dyn for<'a> Fn(&'a Context, &'a Message, Token)
+    dyn for<'a> Fn(&'a Context, &'a Message, &'a mut Peekable<IntoIter<Token>>)
         -> TransformerReturn<'a>
     + Send + Sync
 >;
@@ -17,6 +22,7 @@ pub enum CommandArgument {
     User(User),
     Member(Member),
     Duration(Duration),
+    None
 }
 
 pub enum CommandSyntax<'a> {
@@ -25,12 +31,13 @@ pub enum CommandSyntax<'a> {
     Member(&'a str, bool),
     String(&'a str, bool),
     Duration(&'a str, bool),
+    Reason(&'a str),
 }
 
 impl<'a> CommandSyntax<'a> {
     pub fn get_def(&'a self) -> String {
         let (inner, required) = match self {
-            Self::Consume(name) => (format!("...[{name}]"), None),
+            Self::Consume(name) | Self::Reason(name) => (format!("...[{name}]"), None),
             Self::User(name, opt) => (format!("{name}: Discord User"), Some(opt)),
             Self::Member(name, opt) => (format!("{name}: Discord Member"), Some(opt)),
             Self::String(name, opt) => (format!("{name}: String"), Some(opt)),
@@ -55,6 +62,7 @@ impl<'a> CommandSyntax<'a> {
             CommandSyntax::Member(_, _) => "123456789",
             CommandSyntax::String(_, _) => "\"String\"",
             CommandSyntax::Duration(_, _) => "15m",
+            CommandSyntax::Reason(_) => "user broke a rule"
         }.to_string()
     }
 }
@@ -101,3 +109,12 @@ pub use softban::Softban;
 
 mod ban;
 pub use ban::Ban;
+
+mod mute;
+pub use mute::Mute;
+
+mod unban;
+pub use unban::Unban;
+
+mod unmute;
+pub use unmute::Unmute;

@@ -19,7 +19,10 @@
                 "warn",
                 "ban",
                 "kick",
-                "softban"
+                "softban",
+                "timeout",
+                "unban",
+                "mute"
               ]
             }
           }

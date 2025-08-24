@@ -1,12 +1,18 @@
 
+use std::{iter::Peekable, vec::IntoIter};
+
 use chrono::Duration;
 use serenity::all::{Context, Message};
 
-use crate::{commands::{CommandArgument, TransformerReturn}, event_handler::CommandError, lexer::Token, transformers::Transformers};
+use crate::{commands::{CommandArgument, TransformerError, TransformerReturn}, event_handler::{CommandError, MissingArgumentError}, lexer::Token, transformers::Transformers};
 
 impl Transformers {
-    pub fn duration<'a>(_ctx: &'a Context, _msg: &'a Message, mut input: Token) -> TransformerReturn<'a> {
+    pub fn duration<'a>(_ctx: &'a Context, _msg: &'a Message, args: &'a mut Peekable<IntoIter<Token>>) -> TransformerReturn<'a> {
         Box::pin(async move {
+            let Some(mut input) = args.next() else {
+                return Err(TransformerError::MissingArgumentError(MissingArgumentError(String::from("Duration"))))
+            };
+
             let s = input.raw.clone();
 
             if s == "0" {
@@ -17,19 +23,19 @@ impl Transformers {
             let (digits, last) = s.split_at(s.len() - 1);
 
             if !"smhdMy".contains(last) {
-                return Err(CommandError {
+                return Err(TransformerError::CommandError(CommandError {
                     arg: Some(input),
                     title: String::from("Could not turn input to a <Duration>"),
                     hint: Some(String::from("provide a valid number and a unit (s, m, h, d, M, y), i.e. 1h (1 hour) or 25d (25 days)")),
-                });
+                }));
             }
 
             let Ok(numbers) = digits.parse::<u32>() else {
-                return Err(CommandError {
+                return Err(TransformerError::CommandError(CommandError {
                     arg: Some(input),
                     title: String::from("Could not turn input to a <Duration>"),
                     hint: Some(String::from("provide a valid number and a unit (s, h, d, m, y), i.e. 1h (1 hour) or 25d (25 days)")),
-                });
+                }));
             };
 
             let numbers = numbers as i64;
@@ -41,11 +47,11 @@ impl Transformers {
                 "d" => { input.contents = Some(CommandArgument::Duration(Duration::days(numbers))) },
                 "M" => { input.contents = Some(CommandArgument::Duration(Duration::days(numbers * 30))) },
                 "y" => { input.contents = Some(CommandArgument::Duration(Duration::days(numbers * 365))) },
-                _ => return Err(CommandError {
+                _ => return Err(TransformerError::CommandError(CommandError {
                     arg: Some(input),
                     title: String::from("Could not turn input to a <Duration>"),
                     hint: Some(String::from("provide a valid number and a unit (s, h, d, m, y), i.e. 1h (1 hour) or 25d (25 days)")),
-                })
+                }))
             };
 
             Ok(input)

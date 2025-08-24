@@ -2,9 +2,9 @@ use std::{sync::{Arc, OnceLock}, time::{Duration, Instant}};
 
 use serenity::{all::{GatewayIntents, Settings, ShardManager}, prelude::TypeMapKey, Client};
 use tokio::{fs::File, io::AsyncReadExt, time::sleep};
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::{postgres::PgPoolOptions, query, PgPool};
 
-use crate::{config::Config, event_handler::Handler};
+use crate::{config::Config, database::{GuildSettings, GuildSettingsLog}, event_handler::Handler};
 
 pub struct ShardManagerContainer;
 
@@ -24,6 +24,7 @@ mod constants;
 
 pub static START_TIME: OnceLock<Instant> = OnceLock::new();
 pub static SQL: OnceLock<PgPool> = OnceLock::new();
+pub static GUILD_SETTINGS: OnceLock<Vec<GuildSettings>> = OnceLock::new();
 
 #[tokio::main]
 async fn main() {
@@ -58,6 +59,19 @@ async fn main() {
     });
 
     database::run_migrations().await;
+
+    if let Ok(data) = query!("SELECT * FROM guild_settings").fetch_all(SQL.get().unwrap()).await {
+        GUILD_SETTINGS.set(data.into_iter().map(|record| {
+            GuildSettings {
+                guild_id: record.guild_id as u64,
+                log: GuildSettingsLog {
+                    channel: record.log_channel.map(|n| n as u64)
+                }
+            }
+        }).collect()).expect("Couldnt set guild_settings global");
+    } else {
+        panic!("Couldn't fetch guild_settings");
+    }
 
     let intents = GatewayIntents::all();
 

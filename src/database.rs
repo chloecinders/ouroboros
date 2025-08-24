@@ -1,4 +1,4 @@
-use sqlx::{error, query};
+use sqlx::query;
 
 use crate::SQL;
 
@@ -8,7 +8,10 @@ pub enum ActionType {
     Warn,
     Kick,
     Ban,
-    Softban
+    Softban,
+    Mute,
+    Unban,
+    Unmute
 }
 
 impl std::fmt::Display for ActionType {
@@ -18,10 +21,23 @@ impl std::fmt::Display for ActionType {
             ActionType::Kick => write!(f, "kick"),
             ActionType::Ban => write!(f, "ban"),
             ActionType::Softban => write!(f, "softban"),
+            ActionType::Mute => write!(f, "mute"),
+            ActionType::Unban => write!(f, "unban"),
+            ActionType::Unmute => write!(f, "unmute"),
         }
     }
 }
 
+#[derive(Debug)]
+pub struct GuildSettings {
+    pub guild_id: u64,
+    pub log: GuildSettingsLog
+}
+
+#[derive(Debug)]
+pub struct GuildSettingsLog {
+    pub channel: Option<u64>
+}
 
 pub async fn run_migrations() {
     create_actions_223320250818().await;
