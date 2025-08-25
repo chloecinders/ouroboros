@@ -5,7 +5,7 @@ use serenity::{all::{Context, CreateEmbed, CreateMessage, EditMember, Mentionabl
 use sqlx::query;
 use tracing::{error, warn};
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, SQL};
+use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::tinyid, SQL};
 use ouroboros_macros::command;
 
 pub struct Mute;
@@ -49,14 +49,16 @@ impl Command for Mute {
         #[transformers::duration] duration: Duration,
         #[transformers::reply_consume] reason: Option<String>
     ) -> Result<(), CommandError> {
-        let mut reason = reason.unwrap_or(String::from("No reason provided"));
+        let mut reason = reason.map(|s| {
+            if s.is_empty() || s.chars().all(char::is_whitespace) { String::from("No reason provided") } else { s }
+        }).unwrap_or(String::from("No reason provided"));
 
         if reason.len() > 500 {
             reason.truncate(500);
             reason.push_str("...");
         }
 
-        let db_id = nanoid::nanoid!();
+        let db_id = tinyid().await;
 
         if duration > Duration::days(28) {
             return Err(CommandError { title: String::from("Timeouts have a max duration of 28 days."), hint: None, arg: Some(args.get(1).unwrap().clone()) });

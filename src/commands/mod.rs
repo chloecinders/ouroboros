@@ -17,12 +17,14 @@ type TransformerFn = Arc<
 >;
 
 #[derive(Debug, Clone)]
+#[allow(non_camel_case_types)]
 pub enum CommandArgument {
     String(String),
     User(User),
     Member(Member),
     Duration(Duration),
-    None
+    None,
+    i32(i32)
 }
 
 pub enum CommandSyntax<'a> {
@@ -32,16 +34,20 @@ pub enum CommandSyntax<'a> {
     String(&'a str, bool),
     Duration(&'a str, bool),
     Reason(&'a str),
+    Number(&'a str, bool),
+    Or(Box<CommandSyntax<'a>>, Box<CommandSyntax<'a>>),
 }
 
 impl<'a> CommandSyntax<'a> {
     pub fn get_def(&'a self) -> String {
         let (inner, required) = match self {
             Self::Consume(name) | Self::Reason(name) => (format!("...[{name}]"), None),
+            Self::Or(a, b) => (format!("({} || {})", a.get_def(), b.get_def()), None),
             Self::User(name, opt) => (format!("{name}: Discord User"), Some(opt)),
             Self::Member(name, opt) => (format!("{name}: Discord Member"), Some(opt)),
             Self::String(name, opt) => (format!("{name}: String"), Some(opt)),
             Self::Duration(name, opt) => (format!("{name}: Duration"), Some(opt)),
+            Self::Number(name, opt) => (format!("{name}: Number"), Some(opt)),
         };
 
         if let Some(is_required) = required {
@@ -57,13 +63,15 @@ impl<'a> CommandSyntax<'a> {
 
     pub fn get_example(&'a self) -> String {
         match self {
-            CommandSyntax::Consume(_) => "Some Text",
-            CommandSyntax::User(_, _) => "123456789",
-            CommandSyntax::Member(_, _) => "123456789",
-            CommandSyntax::String(_, _) => "\"String\"",
-            CommandSyntax::Duration(_, _) => "15m",
-            CommandSyntax::Reason(_) => "user broke a rule"
-        }.to_string()
+            CommandSyntax::Consume(_) => String::from("Some Text"),
+            CommandSyntax::User(_, _) => String::from("123456789"),
+            CommandSyntax::Member(_, _) => String::from("123456789"),
+            CommandSyntax::String(_, _) => String::from("\"something\""),
+            CommandSyntax::Duration(_, _) => String::from("15m"),
+            CommandSyntax::Reason(_) => String::from("user broke a rule"),
+            CommandSyntax::Number(_, _) => String::from("5"),
+            CommandSyntax::Or(a, b) => format!("({} || {})", a.get_example(), b.get_example()),
+        }
     }
 }
 
@@ -118,3 +126,21 @@ pub use unban::Unban;
 
 mod unmute;
 pub use unmute::Unmute;
+
+mod cban;
+pub use cban::CBan;
+
+mod purge;
+pub use purge::Purge;
+
+mod msgdbg;
+pub use msgdbg::MsgDbg;
+
+mod colon_three;
+pub use colon_three::ColonThree;
+
+mod reason;
+pub use reason::Reason;
+
+mod update;
+pub use update::Update;

@@ -1,4 +1,6 @@
-use serenity::all::{Context, Member, Permissions};
+use serenity::all::{Context, Member, Permissions, User};
+
+use crate::BOT_CONFIG;
 
 pub async fn check_guild_permission(ctx: &Context, member: &Member, permission: Permissions) -> bool {
     if let Some(g) = member.guild_id.to_guild_cached(&ctx.cache) && g.owner_id.get() == member.user.id.get() {
@@ -16,4 +18,10 @@ pub async fn check_guild_permission(ctx: &Context, member: &Member, permission: 
     }
 
     false
+}
+
+pub fn is_developer(user: &User) -> bool {
+    let cfg = BOT_CONFIG.get().unwrap();
+
+    return cfg.dev_ids.clone().map_or(false, |i| i.contains(&user.id.get()))
 }

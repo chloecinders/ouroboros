@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use serenity::{all::{ChannelId, Context, CreateEmbed, CreateMessage, EventHandler, GuildId, Message, MessageId, MessageUpdateEvent}, async_trait};
+use serenity::{all::{ChannelId, Context, CreateEmbed, CreateMessage, EventHandler, Guild, GuildId, Message, MessageId, MessageUpdateEvent}, async_trait};
 use tracing::warn;
 
-use crate::{commands::{Ban, Command, Kick, Log, Mute, Ping, Softban, Stats, Unban, Unmute, Warn}, constants::BRAND_RED, lexer::Token};
+use crate::{commands::{Ban, CBan, ColonThree, Command, Kick, Log, MsgDbg, Mute, Ping, Purge, Reason, Softban, Stats, Unban, Unmute, Update, Warn}, constants::BRAND_RED, lexer::Token};
 
 #[derive(Debug)]
 pub struct CommandError {
@@ -49,6 +49,8 @@ mod help_cmd;
 mod message;
 mod message_update;
 mod message_delete;
+mod guild_create;
+mod shards_ready;
 
 pub struct Handler {
     prefix: String,
@@ -68,6 +70,12 @@ impl Handler {
             Arc::new(Mute::new()),
             Arc::new(Unban::new()),
             Arc::new(Unmute::new()),
+            Arc::new(CBan::new()),
+            Arc::new(Purge::new()),
+            Arc::new(MsgDbg::new()),
+            Arc::new(ColonThree::new()),
+            Arc::new(Reason::new()),
+            Arc::new(Update::new()),
         ];
 
         Self {
@@ -127,5 +135,11 @@ impl EventHandler for Handler {
     }
     async fn message_delete(&self, ctx: Context, channel_id: ChannelId, deleted_message_id: MessageId, guild_id: Option<GuildId>) {
         message_delete::message_delete(self, ctx, channel_id, deleted_message_id, guild_id).await
+    }
+    async fn guild_create(&self, ctx: Context, guild: Guild, is_new: Option<bool>) {
+        guild_create::guild_create(self, ctx, guild, is_new).await
+    }
+    async fn shards_ready(&self, ctx: Context, total_shards: u32) {
+        shards_ready::shards_ready(&self, ctx, total_shards).await
     }
 }

@@ -8,3 +8,5 @@ mod consume;
 mod reply_member;
 mod reply_user;
 mod reply_consume;
+mod i32;
+mod some_string;

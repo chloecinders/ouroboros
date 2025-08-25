@@ -5,7 +5,12 @@ use crate::{constants::{BRAND_BLUE, SOFT_YELLOW}, event_handler::Handler, utils:
 pub async fn message_update(_handler: &Handler, ctx: Context, old_if_available: Option<Message>, new: Option<Message>, event: MessageUpdateEvent) {
     let new_msg = {
         match new {
-            Some(m) => m,
+            Some(m) => {
+                if m.author.id.get() == ctx.cache.current_user().id.get() {
+                    return;
+                }
+                m
+            },
             None => {
                 let Ok(m) = event.channel_id.message(&ctx.http, event.id).await else {
                     return;

@@ -8,35 +8,37 @@ use tracing::{error, warn};
 use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::tinyid, SQL};
 use ouroboros_macros::command;
 
-pub struct Ban;
+pub struct CBan;
 
-impl Ban {
+impl CBan {
     pub fn new() -> Self {
         Self {}
     }
 }
 
 #[async_trait]
-impl Command for Ban {
+impl Command for CBan {
     fn get_name(&self) -> String {
-        String::from("ban")
+        String::from("cban")
     }
 
     fn get_short(&self) -> String {
-        String::from("Bans a member from the server")
+        String::from("Bans a member from the server and deletes their messages")
     }
 
     fn get_full(&self) -> String {
         String::from("Bans from the server and leaves a note in the users log. \
             Defaults to permanent if no duration is provided. \
             Use 0 for the duration to make the ban permanent. \
-            Ban expiry is checked every 5 minutes.")
+            Ban expiry is checked every 5 minutes. \
+            Additionally deletes up to 7 days of the target members messages.")
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![
             CommandSyntax::Member("member", true),
             CommandSyntax::Duration("duration", false),
+            CommandSyntax::Number("days", false),
             CommandSyntax::Reason("reason")
         ]
     }
@@ -48,12 +50,14 @@ impl Command for Ban {
         msg: Message,
         #[transformers::reply_user] user: User,
         #[transformers::duration] duration: Option<Duration>,
-        #[transformers::reply_consume] reason: Option<String>
+        #[transformers::i32] days: Option<i32>,
+        #[transformers::consume] reason: Option<String>
     ) -> Result<(), CommandError> {
         let duration = duration.unwrap_or(Duration::zero());
         let mut reason = reason.map(|s| {
             if s.is_empty() || s.chars().all(char::is_whitespace) { String::from("No reason provided") } else { s }
         }).unwrap_or(String::from("No reason provided"));
+        let days = days.unwrap_or(1).clamp(0, 7) as u8;
 
         if reason.len() > 500 {
             reason.truncate(500);
@@ -114,7 +118,7 @@ impl Command for Ban {
             return Err(CommandError { title: String::from("Could not ban member"), hint: Some(String::from("please try again later")), arg: None });
         }
 
-        if let Err(err) = msg.guild_id.unwrap().ban_with_reason(&ctx.http, &user, 0, &reason).await {
+        if let Err(err) = msg.guild_id.unwrap().ban_with_reason(&ctx.http, &user, days, &reason).await {
             warn!("Got error while banning; err = {err:?}");
 
             // cant do much here...

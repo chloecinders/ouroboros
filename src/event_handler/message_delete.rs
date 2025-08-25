@@ -3,9 +3,13 @@ use serenity::all::{audit_log::Action, Channel, ChannelId, Context, CreateEmbed,
 
 use crate::{constants::BRAND_RED, event_handler::Handler, utils::{guild_log, snowflake_to_timestamp}};
 
-pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: ChannelId, deleted_message_id: MessageId, _guild_id: Option<GuildId>) {
+pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: ChannelId, deleted_message_id: MessageId, _guild_id: Option<GuildId>) { 
     let some_msg = {
         if let Some(msg) = ctx.cache.message(channel_id, deleted_message_id) {
+            if msg.author.id.get() == ctx.cache.current_user().id.get() {
+                return;
+            }
+
             Some(msg.clone())
         } else {
             None

@@ -97,7 +97,9 @@ impl Handler {
         let mut full_msg = String::new();
 
         self.commands.iter().for_each(|c| {
-            full_msg.push_str(format!("`{}` - {}\n", c.get_name(), c.get_short()).as_str());
+            if !c.get_short().is_empty() {
+                full_msg.push_str(format!("`{}` - {}\n", c.get_name(), c.get_short()).as_str());
+            }
         });
 
         let reply = CreateMessage::new()

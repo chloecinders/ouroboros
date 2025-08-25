@@ -4,7 +4,7 @@ use serenity::{all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, 
 use sqlx::query;
 use tracing::warn;
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, SQL};
+use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::tinyid, SQL};
 use ouroboros_macros::command;
 
 pub struct Warn;
@@ -44,7 +44,9 @@ impl Command for Warn {
         #[transformers::reply_member] member: Member,
         #[transformers::reply_consume] reason: Option<String>
     ) -> Result<(), CommandError> {
-        let mut reason = reason.unwrap_or(String::from("No reason provided"));
+        let mut reason = reason.map(|s| {
+            if s.is_empty() || s.chars().all(char::is_whitespace) { String::from("No reason provided") } else { s }
+        }).unwrap_or(String::from("No reason provided"));
 
         if reason.len() > 500 {
             reason.truncate(500);
@@ -53,7 +55,7 @@ impl Command for Warn {
 
         let res = query!(
             "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason) VALUES ($1, 'warn', $2, $3, $4, $5)",
-            nanoid::nanoid!(),
+            tinyid().await,
             msg.guild_id.map(|g| g.get() as i64).unwrap_or(0),
             member.user.id.get() as i64,
             msg.author.id.get() as i64,

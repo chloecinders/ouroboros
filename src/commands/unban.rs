@@ -5,7 +5,7 @@ use serenity::{all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, 
 use sqlx::query;
 use tracing::{error, warn};
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, SQL};
+use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::tinyid, SQL};
 
 pub struct Unban;
 
@@ -44,7 +44,9 @@ impl Command for Unban {
         #[transformers::reply_user] user: User,
         #[transformers::reply_consume] reason: Option<String>
     ) -> Result<(), CommandError> {
-        let mut reason = reason.unwrap_or(String::from("No reason provided"));
+        let mut reason = reason.map(|s| {
+            if s.is_empty() || s.chars().all(char::is_whitespace) { String::from("No reason provided") } else { s }
+        }).unwrap_or(String::from("No reason provided"));
 
         if reason.len() > 500 {
             reason.truncate(500);
@@ -62,7 +64,7 @@ impl Command for Unban {
             return Err(CommandError { title: String::from("Could not unban member"), hint: Some(String::from("please try again later")), arg: None });
         }
 
-        let db_id = nanoid::nanoid!();
+        let db_id = tinyid().await;
 
         let res = query!(
             "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason) VALUES ($1, 'unban', $2, $3, $4, $5)",

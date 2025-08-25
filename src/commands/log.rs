@@ -1,12 +1,9 @@
-use std::sync::Arc;
-
 use chrono::Utc;
-use serenity::{all::{Context, CreateEmbed, CreateMessage, Message, Permissions, User}, async_trait};
+use serenity::{all::{Context, CreateEmbed, CreateMessage, Message, Permissions}, async_trait};
 use sqlx::query;
 use tracing::warn;
 
 use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, database::ActionType, event_handler::CommandError, lexer::Token, transformers::Transformers, SQL};
-use ouroboros_macros::command;
 
 pub struct Log;
 
@@ -15,16 +12,15 @@ impl Log {
         Self {}
     }
 
-    async fn run_one(&self, ctx: Context, msg: Message, user: User, log: String) -> Result<(), CommandError> {
+    async fn run_one(&self, ctx: Context, msg: Message, log: String) -> Result<(), CommandError> {
         let res = query!(
             r#"
-                SELECT id, type as "type!: ActionType", moderator_id, user_id, created_at, active, expires_at, reason FROM actions WHERE user_id = $1 AND guild_id = $2 AND id = $3;
+                SELECT id, type as "type!: ActionType", moderator_id, user_id, created_at, updated_at, active, expires_at, reason FROM actions WHERE guild_id = $1 AND id = $2;
             "#,
-            user.id.get() as i64,
             msg.guild_id.map(|g| g.get()).unwrap_or(0) as i64,
             log
         )
-        .fetch_one(SQL.get().unwrap()).await;
+        .fetch_optional(SQL.get().unwrap()).await;
 
         let data = match res {
             Ok(d) => d,
@@ -34,28 +30,38 @@ impl Log {
             }
         };
 
+        let Some(data) = data else {
+            return Err(CommandError { title: String::from("Log not found"), hint: Some(String::from("check if you have copied the ID correctly!")), arg: None })
+        };
+
+        let update_string = if let Some(t) = data.updated_at {
+            format!(" | Updated <t:{0}:d> <t:{0}:T>", t.and_utc().timestamp())
+        } else { String::new() };
+
         let response = if let Some(expiry) = data.expires_at {
             let now = Utc::now().naive_utc();
             let expire_tag = if expiry < now { "Expired" } else { "Expires" };
 
             format!(
-                "**{0}** | Mod: <@{1}> | At: <t:{2}:d> <t:{2}:T> | {3}: <t:{4}:d> <t:{4}:T>\n`{5}`\n```\n{6}\n```\n\n",
+                "**{0}** | Mod: <@{1}> | At: <t:{2}:d> <t:{2}:T>{7} | {3} <t:{4}:d> <t:{4}:T>\n`{5}`\n```\n{6}\n```\n\n",
                 data.r#type.to_string().to_uppercase(),
                 data.moderator_id,
                 data.created_at.and_utc().timestamp(),
                 expire_tag,
                 expiry.and_utc().timestamp(),
                 data.id,
-                data.reason,
+                data.reason.replace("```", "\\`\\`\\`"),
+                update_string
             )
         } else {
             format!(
-                "**{0}** | Mod: <@{1}> | At <t:{2}:d> <t:{2}:T>\n`{3}`\n```\n{4}\n```\n\n",
+                "**{0}** | Mod: <@{1}> | At <t:{2}:d> <t:{2}:T>{5}\n`{3}`\n```\n{4}\n```\n\n",
                 data.r#type.to_string().to_uppercase(),
                 data.moderator_id,
                 data.created_at.and_utc().timestamp(),
                 data.id,
                 data.reason,
+                update_string
             )
         };
 
@@ -87,26 +93,37 @@ impl Command for Log {
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![
-            CommandSyntax::User("user", true),
-            CommandSyntax::String("id", false)
+            CommandSyntax::Or(
+                Box::new(CommandSyntax::User("user", true)),
+                Box::new(CommandSyntax::String("id", false))
+            )
         ]
     }
 
-    #[command]
     async fn run(
         &self,
         ctx: Context,
         msg: Message,
-        #[transformers::user] user: User,
-        #[transformers::string] log: Option<String>
+        args: Vec<Token>
     ) -> Result<(), CommandError> {
-        if let Some(id) = log {
-            return self.run_one(ctx, msg, user, id).await;
-        }
+        let mut args_iter = args.clone().into_iter().peekable();
+        let Ok(token) = Transformers::user(&ctx, &msg, &mut args_iter).await else {
+            match Transformers::string(&ctx, &msg, &mut args.into_iter().peekable()).await {
+                Ok(log) => {
+                    let Some(CommandArgument::String(id)) = log.contents else { unreachable!() };
+                    return self.run_one(ctx, msg, id).await
+                },
+                Err(_) => return Err(CommandError::arg_not_found("user or id", Some("User || String")))
+            }
+        };
+
+        let Token { contents: Some(CommandArgument::User(user)), .. } = token else {
+            return Err(CommandError::arg_not_found("user or id", Some("User || String")))
+        };
 
         let res = query!(
             r#"
-                SELECT id, type as "type!: ActionType", moderator_id, user_id, created_at, active, expires_at, reason FROM actions WHERE user_id = $1 AND guild_id = $2;
+                SELECT id, type as "type!: ActionType", moderator_id, user_id, created_at, updated_at, active, expires_at, reason FROM actions WHERE user_id = $1 AND guild_id = $2;
             "#,
             user.id.get() as i64,
             msg.guild_id.map(|g| g.get()).unwrap_or(0) as i64
@@ -129,31 +146,43 @@ impl Command for Log {
                 data.reason.push_str("...");
             }
 
+            let reason = if data.reason.chars().all(char::is_whitespace) || data.reason.is_empty() {
+                String::new()
+            } else {
+                format!("```\n{}\n```\n", data.reason)
+            };
+
+            let update_string = if let Some(t) = data.updated_at {
+                format!(" | Updated <t:{0}:d> <t:{0}:T>", t.and_utc().timestamp())
+            } else {
+                format!(" | At <t:{0}:d> <t:{0}:T>", data.created_at.and_utc().timestamp())
+            };
+
             if let Some(expiry) = data.expires_at {
                 let now = Utc::now().naive_utc();
                 let expire_tag = if expiry < now { "Expired" } else { "Expires" };
 
                 response.push_str(
                     format!(
-                        "**{0}** | Mod: <@{1}> | At: <t:{2}:d> <t:{2}:T> | {3}: <t:{4}:d> <t:{4}:T>\n`{5}`\n```\n{6}\n```\n\n",
+                        "**{0}** | Mod: <@{1}>{6} | {2}: <t:{3}:d> <t:{3}:T>\n`{4}`\n{5}\n",
                         data.r#type.to_string().to_uppercase(),
                         data.moderator_id,
-                        data.created_at.and_utc().timestamp(),
                         expire_tag,
                         expiry.and_utc().timestamp(),
                         data.id,
-                        data.reason,
+                        reason,
+                        update_string
                     ).as_str()
                 );
             } else {
                 response.push_str(
                     format!(
-                        "**{0}** | Mod: <@{1}> | At <t:{2}:d> <t:{2}:T>\n`{3}`\n```\n{4}\n```\n\n",
+                        "**{0}** | Mod: <@{1}>{4}\n`{2}`\n```\n{3}\n```\n\n",
                         data.r#type.to_string().to_uppercase(),
                         data.moderator_id,
-                        data.created_at.and_utc().timestamp(),
                         data.id,
                         data.reason,
+                        update_string
                     ).as_str()
                 );
             }
@@ -168,6 +197,10 @@ impl Command for Log {
         }
 
         Ok(())
+    }
+
+    fn get_transformers(&self) -> Vec<TransformerFn> {
+        vec![]
     }
 
     fn get_permissions(&self) -> CommandPermissions {
