@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason, expires_at) VALUES ($1, 'timeout', $2, $3, $4, $5, $6)",
+  "query": "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason, expires_at) VALUES ($1, 'mute', $2, $3, $4, $5, $6)",
   "describe": {
     "columns": [],
     "parameters": {
@@ -15,5 +15,5 @@
     },
     "nullable": []
   },
-  "hash": "2583cf0cf1b742a0c708ee4d7b1978a177a00feebf44e9dc08b1d460a34cba01"
+  "hash": "b7870be22ac5c568c1d4e5d1d5e7fa49a80134b710b2c43820da8f06a496ada8"
 }
