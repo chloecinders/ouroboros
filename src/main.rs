@@ -3,7 +3,7 @@ use std::{env, fs, process::exit, sync::{Arc, OnceLock}, time::{Duration, Instan
 use serenity::{all::{GatewayIntents, Settings, ShardManager}, prelude::TypeMapKey, Client};
 use tokio::{fs::File, io::AsyncReadExt, time::sleep};
 use sqlx::{postgres::PgPoolOptions, query, PgPool};
-use tracing::{error, warn};
+use tracing::{error, info, warn};
 
 use crate::{config::{Config, Environment}, database::{GuildSettings, GuildSettingsLog}, event_handler::Handler};
 use std::process::{Command as SystemCommand};
@@ -35,6 +35,7 @@ async fn main() {
         .init();
 
     if let Some(arg) = std::env::args().collect::<Vec<String>>().iter().find(|a| a.starts_with("--update")) {
+        info!("Starting update process");
         if let Err(err) = update(arg) {
             warn!("Got error while updating; err = {err:?}");
         }
@@ -156,7 +157,7 @@ fn cleanup() -> std::io::Result<()> {
             if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
                 if filename.starts_with("new_") && filename.contains("ouroboros") {
                     fs::remove_file(&path)?;
-                    println!("Deleted file: {}", filename);
+                    warn!("Deleted file; {}", filename);
                 }
             }
         }

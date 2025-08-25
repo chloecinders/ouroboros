@@ -233,7 +233,7 @@ impl Command for Update {
                 return Ok(());
             }
 
-            let child = match SystemCommand::new(format!(".{}{filename}", std::path::MAIN_SEPARATOR)).arg(format!("--update={}:{}", msg.id.get(), msg.channel_id.get())).spawn() {
+            let child = match SystemCommand::new(format!(".{}{filename}", std::path::MAIN_SEPARATOR)).arg(format!("--update={}:{}", msg.channel_id.get(), msg.id.get())).spawn() {
                 Ok(c) => c,
                 Err(e) => {
                     let err = format!("Could not run downloaded version; err = {e:?}");
