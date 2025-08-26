@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        CREATE TYPE public.action_type AS ENUM\n            ('warn', 'ban', 'kick', 'softban', 'timeout', 'unban', 'mute', 'unmute');\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "2ec80e5736df9006bfbf7c506fdbf44e4c1a64a5253c677d97e088a35c36aca2"
+}

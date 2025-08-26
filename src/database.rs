@@ -31,8 +31,10 @@ impl std::fmt::Display for ActionType {
 
 pub async fn run_migrations() {
     info!("Running database migrations");
+
     create_actions_223320250818().await;
     create_guild_settings_195120250826().await;
+    create_action_type_201420250826().await;
 }
 
 pub async fn create_actions_223320250818() {
@@ -66,6 +68,17 @@ pub async fn create_guild_settings_195120250826() {
             guild_id bigint NOT NULL,
             log_channel bigint
         )
+        "#
+    ).execute(SQL.get().unwrap()).await {
+        panic!("Couldnt run database migration create_guild_settings_195120250826; Err = {err:?}");
+    }
+}
+
+pub async fn create_action_type_201420250826() {
+    if let Err(err) = query!(
+        r#"
+        CREATE TYPE public.action_type AS ENUM
+            ('warn', 'ban', 'kick', 'softban', 'timeout', 'unban', 'mute', 'unmute');
         "#
     ).execute(SQL.get().unwrap()).await {
         panic!("Couldnt run database migration create_guild_settings_195120250826; Err = {err:?}");
