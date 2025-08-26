@@ -233,6 +233,25 @@ impl Command for Update {
                 return Ok(());
             }
 
+            #[cfg(not(target_os = "windows"))]
+            {
+                use std::fs;
+                use std::os::unix::fs::PermissionsExt;
+                use std::path::Path;
+
+                let exe_name = format!("./{}", filename.clone());
+                let path = Path::new(exe_name.as_str());
+                let mut perms = fs::metadata(path).unwrap().permissions();
+                perms.set_mode(0o755);
+
+                if let Err(err) = fs::set_permissions(path, perms) {
+                    let err = format!("Error setting execution permissions on downloaded exe; err = {err:?}");
+                    warn!(err);
+                    let _ = msg.reply(&ctx.http(), err).await;
+                    return Ok(());
+                };
+            }
+
             let child = match SystemCommand::new(format!(".{}{filename}", std::path::MAIN_SEPARATOR)).arg(format!("--update={}:{}", msg.channel_id.get(), msg.id.get())).spawn() {
                 Ok(c) => c,
                 Err(e) => {

@@ -127,6 +127,18 @@ fn update(arg: &String) -> std::io::Result<()> {
 
     let id = arg.split("=").last().unwrap_or("");
 
+    #[cfg(not(target_os = "windows"))]
+    {
+        use std::fs;
+        use std::os::unix::fs::PermissionsExt;
+        use std::path::Path;
+
+        let path = Path::new("./Ouroboros");
+        let mut perms = fs::metadata(path).unwrap().permissions();
+        perms.set_mode(0o755);
+        fs::set_permissions(path, perms).expect("Couldnt update new executable permissions");
+    }
+
     match SystemCommand::new(format!(".{}{}", std::path::MAIN_SEPARATOR, name)).arg(format!("--id={id}")).spawn() {
         Ok(c) => drop(c),
         Err(e) => error!("Could not spawn new process; err = {e:?}"),
@@ -137,7 +149,7 @@ fn update(arg: &String) -> std::io::Result<()> {
 
 fn cleanup() -> std::io::Result<()> {
     let current_dir = std::env::current_dir()?;
-    
+
     for entry in fs::read_dir(&current_dir)? {
         let entry = entry?;
         let path = entry.path();
