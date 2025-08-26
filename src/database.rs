@@ -77,8 +77,19 @@ pub async fn create_guild_settings_195120250826() {
 pub async fn create_action_type_201420250826() {
     if let Err(err) = query!(
         r#"
-        CREATE TYPE public.action_type AS ENUM
-            ('warn', 'ban', 'kick', 'softban', 'timeout', 'unban', 'mute', 'unmute');
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM pg_type t
+                JOIN pg_namespace n ON n.oid = t.typnamespace
+                WHERE t.typname = 'action_type'
+                AND n.nspname = 'public'
+            ) THEN
+                CREATE TYPE public.action_type AS ENUM
+                    ('warn', 'ban', 'kick', 'softban', 'timeout', 'unban', 'mute', 'unmute');
+            END IF;
+        END$$;
         "#
     ).execute(SQL.get().unwrap()).await {
         panic!("Couldnt run database migration create_guild_settings_195120250826; Err = {err:?}");
