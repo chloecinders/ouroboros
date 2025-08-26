@@ -1,5 +1,5 @@
 use chrono::Utc;
-use serenity::all::{audit_log::Action, Channel, ChannelId, Context, CreateEmbed, CreateEmbedAuthor, CreateMessage, GuildId, MessageAction, MessageId};
+use serenity::all::{audit_log::Action, Channel, ChannelId, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage, GuildId, MessageAction, MessageId};
 
 use crate::{constants::BRAND_RED, event_handler::Handler, utils::{guild_log, snowflake_to_timestamp}};
 
@@ -63,6 +63,7 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
         "**MESSAGE DELETED**\n-# {0} ",
         deleted_message_id.get()
     );
+    let mut files = vec![];
     let mut embed = CreateEmbed::new()
             .color(BRAND_RED.clone());
 
@@ -71,7 +72,14 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
         embed = embed.author(
             CreateEmbedAuthor::new(format!("{}: {}", msg.author.name, msg.author.id.get()))
                 .icon_url(msg.author.avatar_url().unwrap_or(msg.author.default_avatar_url()))
-        )
+        );
+
+        for attachment in msg.attachments.iter() {
+            let name = attachment.filename.clone();
+            if let Ok(bytes) = attachment.download().await {
+                files.push(CreateAttachment::bytes(bytes, name));
+            };
+        }
     }
 
     description.push_str(&format!("| <#{0}> ({0}) ", channel_id.get()));
@@ -82,8 +90,8 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
 
     if let Some(msg) = some_msg {
         description.push_str(&format!(
-            "\n```\n{}\n```",
-            msg.content
+            "\n{}",
+            if msg.content.is_empty() { String::new() } else { format!("```\n{}\n```", msg.content) }
         ));
     } else {
         description.push_str(
@@ -96,6 +104,6 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
         guild_id,
         CreateMessage::new().add_embed(
             embed.description(description)
-        )
+        ).add_files(files)
     ).await;
 }

@@ -1,5 +1,4 @@
 use serenity::all::Context;
-use sqlx::query;
 use tracing::{error, info};
 
 use crate::{event_handler::Handler, BOT_CONFIG, GUILD_SETTINGS, SQL};
