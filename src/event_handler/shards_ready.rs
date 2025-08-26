@@ -1,12 +1,30 @@
 use serenity::all::Context;
+use sqlx::query;
 use tracing::{error, info};
 
-use crate::{event_handler::Handler, BOT_CONFIG};
+use crate::{event_handler::Handler, BOT_CONFIG, GUILD_SETTINGS, SQL};
 
 pub async fn shards_ready(_handler: &Handler, ctx: Context, _total_shards: u32) {
     let cfg = BOT_CONFIG.get().unwrap();
 
     finish_update(&ctx).await;
+
+    info!("Adding missing guilds to guild_settings");
+    let guild_ids: Vec<String> = ctx.cache.guilds().iter().map(|g| format!("({})", g.get())).collect();
+
+    let query = format!(
+        r#"INSERT INTO guild_settings (guild_id) VALUES {} ON CONFLICT (guild_id) DO NOTHING;"#,
+        guild_ids.join(", ")
+    );
+
+    if let Err(err) = sqlx::query(&query).execute(SQL.get().unwrap()).await {
+        error!("Couldnt add missing guilds to guild_settings; err = {err:?}")
+    }
+
+    {
+        let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
+        settings.invalidate();
+    }
 
     if cfg.whitelist_enabled.map_or(true, |b| !b) {
         return;
