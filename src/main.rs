@@ -34,6 +34,7 @@ async fn main() {
     tracing_subscriber::fmt::fmt()
         .init();
 
+    #[cfg(not(target_os = "windows"))]
     if let Some(arg) = std::env::args().collect::<Vec<String>>().iter().find(|a| a.starts_with("--update")) {
         info!("Starting update process");
         if let Err(err) = update(arg) {
@@ -111,10 +112,7 @@ async fn main() {
 fn update(arg: &String) -> std::io::Result<()> {
     let exe = env::current_exe()?;
 
-    #[cfg(target_os = "windows")]
     let name = "Ouroboros.exe";
-    #[cfg(not(target_os = "windows"))]
-    let name = "Ouroboros";
 
     let mut target = exe.parent().unwrap().to_path_buf();
     target.push(name);
@@ -126,18 +124,6 @@ fn update(arg: &String) -> std::io::Result<()> {
     fs::copy(&exe, &target)?;
 
     let id = arg.split("=").last().unwrap_or("");
-
-    #[cfg(not(target_os = "windows"))]
-    {
-        use std::fs;
-        use std::os::unix::fs::PermissionsExt;
-        use std::path::Path;
-
-        let path = Path::new("./Ouroboros");
-        let mut perms = fs::metadata(path).unwrap().permissions();
-        perms.set_mode(0o755);
-        fs::set_permissions(path, perms).expect("Couldnt update new executable permissions");
-    }
 
     match SystemCommand::new(format!(".{}{}", std::path::MAIN_SEPARATOR, name)).arg(format!("--id={id}")).spawn() {
         Ok(c) => drop(c),

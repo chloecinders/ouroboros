@@ -237,19 +237,22 @@ impl Command for Update {
             {
                 use std::fs;
                 use std::os::unix::fs::PermissionsExt;
-                use std::path::Path;
 
-                let exe_name = format!("./{}", filename.clone());
-                let path = Path::new(exe_name.as_str());
-                let mut perms = fs::metadata(path).unwrap().permissions();
-                perms.set_mode(0o755);
+                let target = "./Ouroboros";
 
-                if let Err(err) = fs::set_permissions(path, perms) {
-                    let err = format!("Error setting execution permissions on downloaded exe; err = {err:?}");
-                    warn!(err);
-                    let _ = msg.reply(&ctx.http(), err).await;
+                let _ = fs::remove_file(target);
+
+                if let Err(err) = fs::copy(&filename, target) {
+                    warn!("Failed to copy file; err = {:?}", err);
                     return Ok(());
-                };
+                }
+
+                if let Err(err) = fs::set_permissions(target, fs::Permissions::from_mode(0o755)) {
+                    warn!("Failed to set permissions; err = {:?}", err);
+                    return Ok(());
+                }
+
+                exit(0);
             }
 
             let child = match SystemCommand::new(format!(".{}{filename}", std::path::MAIN_SEPARATOR)).arg(format!("--update={}:{}", msg.channel_id.get(), msg.id.get())).spawn() {
