@@ -1,4 +1,5 @@
 use sqlx::query;
+use tracing::info;
 
 use crate::SQL;
 
@@ -29,7 +30,9 @@ impl std::fmt::Display for ActionType {
 }
 
 pub async fn run_migrations() {
+    info!("Running database migrations");
     create_actions_223320250818().await;
+    create_guild_settings_195120250826().await;
 }
 
 pub async fn create_actions_223320250818() {
@@ -52,5 +55,19 @@ pub async fn create_actions_223320250818() {
         "#
     ).execute(SQL.get().unwrap()).await {
         panic!("Couldnt run database migration create_actions_223320250818; Err = {err:?}");
+    }
+}
+
+pub async fn create_guild_settings_195120250826() {
+    if let Err(err) = query!(
+        r#"
+        CREATE TABLE IF NOT EXISTS public.guild_settings
+        (
+            guild_id bigint NOT NULL,
+            log_channel bigint
+        )
+        "#
+    ).execute(SQL.get().unwrap()).await {
+        panic!("Couldnt run database migration create_guild_settings_195120250826; Err = {err:?}");
     }
 }

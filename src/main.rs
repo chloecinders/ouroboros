@@ -72,7 +72,7 @@ async fn main() {
                 .expect("Failed to create database pool, make sure the database url in the config is valid.")
         }.await
     });
-
+    
     database::run_migrations().await;
 
     GUILD_SETTINGS.set(Mutex::new(GuildSettings::new())).unwrap();
