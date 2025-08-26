@@ -28,17 +28,6 @@ impl std::fmt::Display for ActionType {
     }
 }
 
-#[derive(Debug)]
-pub struct GuildSettings {
-    pub guild_id: u64,
-    pub log: GuildSettingsLog
-}
-
-#[derive(Debug)]
-pub struct GuildSettingsLog {
-    pub channel: Option<u64>
-}
-
 pub async fn run_migrations() {
     create_actions_223320250818().await;
 }

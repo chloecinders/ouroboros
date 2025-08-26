@@ -3,7 +3,7 @@ use std::sync::Arc;
 use serenity::{all::{ChannelId, Context, CreateEmbed, CreateMessage, EventHandler, Guild, GuildId, Message, MessageId, MessageUpdateEvent}, async_trait};
 use tracing::warn;
 
-use crate::{commands::{Ban, CBan, ColonThree, Command, Kick, Log, MsgDbg, Mute, Ping, Purge, Reason, Softban, Stats, Unban, Unmute, Update, Warn}, constants::BRAND_RED, lexer::Token};
+use crate::{commands::{Ban, CBan, ColonThree, Command, Kick, Log, MsgDbg, Mute, Ping, Purge, Reason, Softban, Stats, Unban, Unmute, Update, Warn, Config}, constants::BRAND_RED, lexer::Token};
 
 #[derive(Debug)]
 pub struct CommandError {
@@ -76,6 +76,7 @@ impl Handler {
             Arc::new(ColonThree::new()),
             Arc::new(Reason::new()),
             Arc::new(Update::new()),
+            Arc::new(Config::new()),
         ];
 
         Self {

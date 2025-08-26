@@ -5,7 +5,8 @@ use tracing::warn;
 use crate::GUILD_SETTINGS;
 
 pub async fn guild_log(http: &Http, guild: GuildId, msg: CreateMessage) {
-    let Some(guild_settings) = GUILD_SETTINGS.get().unwrap().iter().find(|g| g.guild_id == guild.get()) else {
+    let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
+    let Ok(guild_settings) = settings.get(guild.get()).await else {
         warn!("Found guild with no cached settings; Id = {}", guild.get());
         return;
     };

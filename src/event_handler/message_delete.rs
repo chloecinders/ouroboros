@@ -60,7 +60,7 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
     }
 
     let mut description = format!(
-        "**MESSAGE DELETED** {0} ",
+        "**MESSAGE DELETED**\n-# {0} ",
         deleted_message_id.get()
     );
     let mut embed = CreateEmbed::new()

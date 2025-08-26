@@ -1,7 +1,7 @@
 use std::{iter::Peekable, pin::Pin, sync::Arc, vec::IntoIter};
 
 use chrono::Duration;
-use serenity::{all::{Context, Member, Message, Permissions, User}, async_trait};
+use serenity::{all::{Context, GuildChannel, Member, Message, Permissions, User}, async_trait};
 use crate::{event_handler::{CommandError, MissingArgumentError}, lexer::Token};
 
 pub enum TransformerError {
@@ -24,7 +24,8 @@ pub enum CommandArgument {
     Member(Member),
     Duration(Duration),
     None,
-    i32(i32)
+    i32(i32),
+    GuildChannel(GuildChannel),
 }
 
 pub enum CommandSyntax<'a> {
@@ -144,3 +145,6 @@ pub use reason::Reason;
 
 mod update;
 pub use update::Update;
+
+mod config;
+pub use config::Config;

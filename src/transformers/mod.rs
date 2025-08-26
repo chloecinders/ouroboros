@@ -10,3 +10,4 @@ mod reply_user;
 mod reply_consume;
 mod i32;
 mod some_string;
+mod guild_channel;

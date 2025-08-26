@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO actions (guild_id) values ($1);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d9f6af40914092a6a579dda2386d3e2bb14aa8147899f902d48893f93bc71020"
+}
