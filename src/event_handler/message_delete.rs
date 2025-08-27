@@ -91,7 +91,7 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
     if let Some(msg) = some_msg {
         description.push_str(&format!(
             "\n{}",
-            if msg.content.is_empty() { String::new() } else { format!("```\n{}\n```", msg.content) }
+            if msg.content.is_empty() { String::new() } else { format!("```\n{} \n```", msg.content) }
         ));
     } else {
         description.push_str(

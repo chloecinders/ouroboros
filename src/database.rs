@@ -3,7 +3,7 @@ use tracing::info;
 
 use crate::SQL;
 
-#[derive(Debug, sqlx::Type)]
+#[derive(Debug, sqlx::Type, Clone)]
 #[sqlx(type_name = "action_type", rename_all="lowercase")]
 pub enum ActionType {
     Warn,

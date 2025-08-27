@@ -9,7 +9,11 @@ pub async fn message_update(
     new: Option<Message>,
     event: MessageUpdateEvent,
 ) {
-    let new_msg = match new {
+    if event.edited_timestamp.is_none() {
+        return;
+    }
+
+    let mut new_msg = match new {
         Some(m) if m.author.id != ctx.cache.current_user().id => m,
         Some(_) => return,
         None => match event.channel_id.message(&ctx.http, event.id).await {
@@ -17,6 +21,10 @@ pub async fn message_update(
             _ => return,
         },
     };
+
+    if new_msg.content.is_empty() {
+        new_msg.content = String::from("(no content)");
+    }
 
     let base = format!(
         "**MESSAGE EDITED**\n-# {0} | Target: {1} | <#{2}> ({2})",
@@ -26,7 +34,11 @@ pub async fn message_update(
     );
 
     let (desc, files, color) = match old_if_available {
-        Some(old) => {
+        Some(mut old) => {
+            if old.content.is_empty() {
+                old.content = String::from("(no content)");
+            }
+
             if old.content.len() > 500 || new_msg.content.len() > 500 {
                 (
                     base.clone(),

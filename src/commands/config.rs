@@ -29,7 +29,8 @@ impl Command for Config {
             Available subcommands: list set get;\n \
             `list [group]` lists all groups/keys in a group\n \
             `set <group>.<key> <value>` sets a setting to value\n \
-            `get <group>.<key>` gets the value of a setting")
+            `get <group>.<key>` gets the value of a setting \
+            To clear a setting set its value to `none`.")
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
@@ -148,18 +149,27 @@ impl Command for Config {
 
             let query = match setting.as_str() {
                 "log.channel" => {
-                    match Transformers::guild_channel(&ctx, &msg, &mut iter).await {
-                        Ok(Token {contents: Some(CommandArgument::GuildChannel(channel)), .. }) => query!(
+                    if iter.peek().map(|t| t.raw.clone()).unwrap_or(String::new()).to_lowercase() == "none" {
+                        query!(
                             "UPDATE guild_settings SET log_channel = $2 WHERE guild_id = $1;",
                             msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64,
-                            channel.id.get() as i64
-                        ),
-                        Err(TransformerError::CommandError(mut err)) => {
-                            err.arg = Some(arg2_token.unwrap());
-                            return Err(err);
+                            None as Option<i64>
+                        )
+                    } else {
+                        match Transformers::guild_channel(&ctx, &msg, &mut iter).await {
+                            Ok(Token {contents: Some(CommandArgument::GuildChannel(channel)), .. }) => query!(
+                                "UPDATE guild_settings SET log_channel = $2 WHERE guild_id = $1;",
+                                msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64,
+                                channel.id.get() as i64
+                            ),
+                            Err(TransformerError::CommandError(mut err)) => {
+                                err.arg = Some(arg2_token.unwrap());
+                                return Err(err);
+                            }
+                            _ => unreachable!()
                         }
-                        _ => unreachable!()
                     }
+
                 },
                 _ => {
                     return Err(CommandError { title: String::from("Could not find setting"), hint: Some(String::from("run `config list` for a list of valid settings")), arg: Some(arg1_token.unwrap()) })

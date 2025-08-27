@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 serde = "1.0.219"
-serenity = { version = "0.12.4", features = ["chrono"] }
+serenity = { version = "0.12.4", features = ["chrono", "collector"] }
 sysinfo = "0.37.0"
 tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread"] }
 toml = "0.9.5"

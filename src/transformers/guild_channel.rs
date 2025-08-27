@@ -27,10 +27,26 @@ impl Transformers {
                 }))
             };
 
-            let id = input.raw.parse::<u64>().map(|u| Some(u)).unwrap_or(None);
+            let id = if let Ok(id) = input.raw.parse::<u64>() {
+                id
+            } else if input.raw.starts_with("<#") && input.raw.ends_with(">") {
+                let new_input = input.raw.strip_prefix("<#").unwrap().strip_suffix(">").unwrap();
+
+                if let Ok(id) = new_input.parse::<u64>() {
+                    id
+                } else {
+                    return Err(TransformerError::CommandError(CommandError {
+                        arg: Some(input),
+                        title: String::from("Could not turn input to a <Guild Channel>"),
+                        hint: Some(String::from("provide a valid ID or mention")),
+                    }));
+                }
+            } else {
+                0
+            };
 
             for (channel_id, channel) in channels.into_iter() {
-                if let Some(id) = id && id == channel_id.get() {
+                if id == channel_id.get() {
                     input.contents = Some(CommandArgument::GuildChannel(channel));
                     return Ok(input);
                 } else if channel.name == input.raw {
@@ -40,7 +56,7 @@ impl Transformers {
             }
 
             return Err(TransformerError::CommandError(CommandError {
-                title: String::from("Couldn't find channel in guild"),
+                title: String::from("Could not find channel in guild"),
                 hint: Some(String::from("make sure to input the channel id or the exact name.")),
                 arg: None
             }))
