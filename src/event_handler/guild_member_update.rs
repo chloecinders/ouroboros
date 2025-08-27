@@ -30,6 +30,10 @@ pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_availa
     }
 
     let name = if let Some(old) = old_nick {
+        if old == event.nick {
+            return;
+        }
+
         format!("\nName:\n`{}` -> `{}`", old.unwrap_or(String::from("(none)")), event.nick.unwrap_or(String::from("(none)")))
     } else {
         format!("\nName:\n`{}`", event.nick.unwrap_or(String::from("(none)")))
