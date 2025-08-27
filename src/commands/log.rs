@@ -164,7 +164,7 @@ impl Command for Log {
 
                 response.push_str(
                     format!(
-                        "**{0}** | Mod: <@{1}>{6} | {2}: <t:{3}:d> <t:{3}:T>\n`{4}`\n{5}\n",
+                        "**{0}**\n-# Mod: <@{1}>{6} | {2}: <t:{3}:d> <t:{3}:T>\n`{4}`\n{5}\n",
                         data.r#type.to_string().to_uppercase(),
                         data.moderator_id,
                         expire_tag,
@@ -177,7 +177,7 @@ impl Command for Log {
             } else {
                 response.push_str(
                     format!(
-                        "**{0}** | Mod: <@{1}>{4}\n`{2}`\n```\n{3}\n```\n\n",
+                        "**{0}**\n-# Mod: <@{1}>{4}\n`{2}`\n```\n{3}\n```\n",
                         data.r#type.to_string().to_uppercase(),
                         data.moderator_id,
                         data.id,

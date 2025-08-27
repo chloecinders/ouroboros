@@ -2,13 +2,15 @@ use std::{iter::Peekable, vec::IntoIter};
 
 use serenity::all::{Context, Message};
 
-use crate::{commands::{CommandArgument, TransformerReturn}, lexer::Token, transformers::Transformers};
+use crate::{commands::{CommandArgument, TransformerError, TransformerReturn}, event_handler::MissingArgumentError, lexer::Token, transformers::Transformers};
 
 impl Transformers {
     pub fn reply_consume<'a>(ctx: &'a Context, msg: &'a Message, args: &'a mut Peekable<IntoIter<Token>>) -> TransformerReturn<'a> {
         Box::pin(async move {
-            let content = if let Some(reply) = msg.referenced_message.clone() {
-                if
+            if let Some(_) = args.peek() {
+                return Transformers::consume(ctx, msg, args).await;
+            } else if let Some(reply) = msg.referenced_message.clone() {
+                let content = if
                     let Some(embed) = reply.embeds.first()
                     && embed.clone().kind.unwrap_or(String::new()) == "auto_moderation_message"
                 {
@@ -29,18 +31,18 @@ impl Transformers {
                     format!("{}{}", reason_type, content)
                 } else {
                     format!("Message: {}", reply.content)
-                }
-            } else {
-                return Transformers::consume(ctx, msg, args).await;
-            };
+                };
 
-            Ok(Token {
-                contents: Some(CommandArgument::String(content)),
-                raw: String::new(),
-                position: 0,
-                length: 0,
-                iteration: 0
-            })
+                return Ok(Token {
+                    contents: Some(CommandArgument::String(content)),
+                    raw: String::new(),
+                    position: 0,
+                    length: 0,
+                    iteration: 0
+                })
+            } else {
+                return Err(TransformerError::MissingArgumentError(MissingArgumentError(String::from("String"))))
+            }
         })
     }
 }
