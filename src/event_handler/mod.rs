@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use serenity::{all::{ChannelId, Context, CreateEmbed, CreateMessage, EventHandler, Guild, GuildId, Message, MessageId, MessageUpdateEvent}, async_trait};
+use serenity::{all::{ChannelId, Context, CreateEmbed, CreateMessage, EventHandler, Guild, GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent}, async_trait};
 use tracing::warn;
 
 use crate::{commands::{Ban, CBan, ColonThree, Command, Kick, Log, MsgDbg, Mute, Ping, Purge, Reason, Softban, Stats, Unban, Unmute, Update, Warn, Config}, constants::BRAND_RED, lexer::Token};
@@ -51,6 +51,7 @@ mod message_update;
 mod message_delete;
 mod guild_create;
 mod shards_ready;
+mod guild_member_update;
 
 pub struct Handler {
     prefix: String,
@@ -142,5 +143,8 @@ impl EventHandler for Handler {
     }
     async fn shards_ready(&self, ctx: Context, total_shards: u32) {
         shards_ready::shards_ready(&self, ctx, total_shards).await
+    }
+    async fn guild_member_update(&self, ctx: Context, old_if_available: Option<Member>, new: Option<Member>, event: GuildMemberUpdateEvent) {
+        guild_member_update::guild_member_update(self, ctx, old_if_available, new, event).await
     }
 }

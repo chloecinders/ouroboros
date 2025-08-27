@@ -1,6 +1,6 @@
 use serenity::all::{Channel, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage, Message, MessageUpdateEvent};
 
-use crate::{constants::{BRAND_BLUE, SOFT_YELLOW}, event_handler::Handler, utils::guild_log};
+use crate::{constants::SOFT_YELLOW, event_handler::Handler, utils::guild_log};
 
 pub async fn message_update(
     _handler: &Handler,
@@ -27,13 +27,14 @@ pub async fn message_update(
     }
 
     let base = format!(
-        "**MESSAGE EDITED**\n-# {0} | Target: {1} | <#{2}> ({2})",
+        "**MESSAGE EDITED**\n-# Message {0} [jump](https://discord.com/channels/{3}/{0}/{2}) | Target: <@{1}> | Channel: <#{2}> ({2})",
         new_msg.id.get(),
         new_msg.author.id.get(),
-        new_msg.channel_id.get()
+        new_msg.channel_id.get(),
+        new_msg.guild_id.map(|g| g.get()).unwrap_or(0)
     );
 
-    let (desc, files, color) = match old_if_available {
+    let (desc, files) = match old_if_available {
         Some(mut old) => {
             if old.content.is_empty() {
                 old.content = String::from("(no content)");
@@ -45,8 +46,7 @@ pub async fn message_update(
                     vec![
                         CreateAttachment::bytes(new_msg.content.as_bytes(), "new.txt"),
                         CreateAttachment::bytes(old.content.as_bytes(), "old.txt"),
-                    ],
-                    BRAND_BLUE.clone(),
+                    ]
                 )
             } else {
                 (
@@ -55,8 +55,7 @@ pub async fn message_update(
                         old.content.replace("```", "\\`\\`\\`"),
                         new_msg.content.replace("```", "\\`\\`\\`"),
                     ),
-                    vec![],
-                    SOFT_YELLOW.clone(),
+                    vec![]
                 )
             }
         }
@@ -64,8 +63,7 @@ pub async fn message_update(
             if new_msg.content.len() > 500 {
                 (
                     format!("{base}\nMessage content not found in cache"),
-                    vec![CreateAttachment::bytes(new_msg.content.as_bytes(), "new.txt")],
-                    SOFT_YELLOW.clone(),
+                    vec![CreateAttachment::bytes(new_msg.content.as_bytes(), "new.txt")]
                 )
             } else {
                 (
@@ -73,8 +71,7 @@ pub async fn message_update(
                         "{base}\nBefore:```\nMessage content not found in cache\n```\nAfter:\n```\n{}\n```",
                         new_msg.content.replace("```", "\\`\\`\\`"),
                     ),
-                    vec![],
-                    SOFT_YELLOW.clone(),
+                    vec![]
                 )
             }
         }
@@ -82,7 +79,7 @@ pub async fn message_update(
 
     let mut message = CreateMessage::new().add_embed(
         CreateEmbed::new()
-            .color(color)
+            .color(SOFT_YELLOW.clone())
             .description(desc)
             .author(
                 CreateEmbedAuthor::new(format!("{}: {}", new_msg.author.name, new_msg.author.id.get()))

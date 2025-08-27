@@ -56,7 +56,6 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
                 }
             }
         }
-
     }
 
     let mut description = format!(
@@ -82,10 +81,10 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
         }
     }
 
-    description.push_str(&format!("| <#{0}> ({0}) ", channel_id.get()));
+    description.push_str(&format!("| Channel: <#{0}> ({0}) ", channel_id.get()));
 
     if let Some(moderator) = moderator_id {
-        description.push_str(&format!("| User: <@{0}> ({0}) ", moderator));
+        description.push_str(&format!("| Actor: <@{0}> ({0}) ", moderator));
     }
 
     if let Some(msg) = some_msg {
