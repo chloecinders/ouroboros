@@ -1,3 +1,5 @@
+use std::fs;
+
 use serenity::all::Context;
 use tracing::{error, info};
 
@@ -39,30 +41,40 @@ pub async fn shards_ready(_handler: &Handler, ctx: Context, _total_shards: u32) 
 }
 
 pub async fn finish_update(ctx: &Context) {
-    if let Some(arg) = std::env::args().collect::<Vec<String>>().iter().find(|a| a.starts_with("--id")) {
-        let Some(ids) = arg.split("=").last() else {
-            return;
-        };
 
-        let mut parts = ids.split(':');
-
-        let (channel_id, msg_id) = match (parts.next(), parts.next()) {
-            (Some(a), Some(b)) => (a, b),
-            _ => {
+    let ids = {
+        if let Some(arg) = std::env::args().collect::<Vec<String>>().iter().find(|a| a.starts_with("--id")) {
+            let Some(ids) = arg.split("=").last() else {
                 return;
-            }
-        };
+            };
 
-        let Ok(channel) = ctx.http.get_channel(channel_id.parse::<u64>().unwrap().into()).await else {
+            ids.to_string()
+        } else if let Ok(ids) = fs::read_to_string("./update.txt") {
+            let _ = fs::remove_file("./update.txt");
+            ids
+        } else {
             return;
-        };
+        }
+    };
 
-        let Ok(message) = channel.id().message(ctx, msg_id.parse::<u64>().unwrap()).await else {
+    let mut parts = ids.split(':');
+
+    let (channel_id, msg_id) = match (parts.next(), parts.next()) {
+        (Some(a), Some(b)) => (a, b),
+        _ => {
             return;
-        };
+        }
+    };
 
-        info!("Replying to update command; channel = {channel:?} message = {message:?}");
+    let Ok(channel) = ctx.http.get_channel(channel_id.parse::<u64>().unwrap().into()).await else {
+        return;
+    };
 
-        let _ = message.reply(ctx, "Update finished!").await;
-    }
+    let Ok(message) = channel.id().message(ctx, msg_id.parse::<u64>().unwrap()).await else {
+        return;
+    };
+
+    info!("Replying to update command; channel = {channel:?} message = {message:?}");
+
+    let _ = message.reply(ctx, "Update finished!").await;
 }

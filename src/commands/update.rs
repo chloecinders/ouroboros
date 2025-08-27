@@ -238,6 +238,8 @@ impl Command for Update {
                 use std::fs;
                 use std::os::unix::fs::PermissionsExt;
 
+                let _ = fs::write("./update.txt", format!("{}:{}", msg.channel_id.get(), msg.id.get()));
+
                 let target = "./Ouroboros";
 
                 let _ = fs::remove_file(target);
