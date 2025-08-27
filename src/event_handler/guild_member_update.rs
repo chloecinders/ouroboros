@@ -18,7 +18,7 @@ pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_availa
         'o: for entry in logs.entries {
             for change in entry.changes.unwrap_or(Vec::new()) {
                 if let Change::Nick { old, new } = change {
-                    if new == event.nick {
+                    if event.user.id.get() == entry.user_id.get() && new == event.nick {
                         moderator_id = Some(entry.user_id.get());
                         reason = entry.reason.clone();
                         old_nick = Some(old);
