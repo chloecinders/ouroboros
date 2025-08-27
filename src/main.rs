@@ -1,9 +1,9 @@
-use std::{env, fs, process::exit, sync::{Arc, OnceLock}, time::{Duration, Instant}};
+use std::{env, fs, sync::{Arc, OnceLock}, time::{Duration, Instant}};
 
 use serenity::{all::{GatewayIntents, Settings, ShardManager}, prelude::TypeMapKey, Client};
 use tokio::{fs::File, io::AsyncReadExt, sync::Mutex, time::sleep};
 use sqlx::{postgres::PgPoolOptions, PgPool};
-use tracing::{error, info, warn};
+use tracing::{error, warn};
 
 use crate::{config::{Config, Environment}, event_handler::Handler, utils::GuildSettings};
 use std::process::{Command as SystemCommand};
@@ -34,8 +34,11 @@ async fn main() {
     tracing_subscriber::fmt::fmt()
         .init();
 
-    #[cfg(not(target_os = "windows"))]
+    #[cfg(target_os = "windows")]
     if let Some(arg) = std::env::args().collect::<Vec<String>>().iter().find(|a| a.starts_with("--update")) {
+        use std::process::exit;
+        use tracing::info;
+
         info!("Starting update process");
         if let Err(err) = update(arg) {
             warn!("Got error while updating; err = {err:?}");
@@ -73,7 +76,7 @@ async fn main() {
                 .expect("Failed to create database pool, make sure the database url in the config is valid.")
         }.await
     });
-    
+
     database::run_migrations().await;
 
     GUILD_SETTINGS.set(Mutex::new(GuildSettings::new())).unwrap();
