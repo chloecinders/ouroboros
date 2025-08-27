@@ -51,7 +51,7 @@ impl Command for Stats {
             sys.refresh_all();
 
             sys.process((std::process::id() as usize).into())
-                .map(|p| p.virtual_memory() as f64 / 1024.0 / 1024.0)
+                .map(|p| p.memory() as f64 / 1024.0 / 1024.0)
                 .unwrap_or(0.0)
         };
 
