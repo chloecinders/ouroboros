@@ -4,7 +4,6 @@ use crate::{
     event_handler::{CommandError, MissingArgumentError},
     lexer::Token,
 };
-use chrono::Duration;
 use serenity::{
     all::{Context, GuildChannel, Member, Message, Permissions, User},
     async_trait,
@@ -34,7 +33,7 @@ pub enum CommandArgument {
     String(String),
     User(User),
     Member(Member),
-    Duration(Duration),
+    Duration(chrono::Duration),
     None,
     i32(i32),
     GuildChannel(GuildChannel),
@@ -170,3 +169,6 @@ pub use say::Say;
 
 mod about;
 pub use about::About;
+
+mod duration;
+pub use duration::Duration;

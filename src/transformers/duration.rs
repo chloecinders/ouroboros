@@ -32,12 +32,12 @@ impl Transformers {
 
             let (digits, last) = s.split_at(s.len() - 1);
 
-            if !"smhdMy".contains(last) {
+            if !"smhdwMy".contains(last) {
                 return Err(TransformerError::CommandError(CommandError {
                     arg: Some(input),
                     title: String::from("Could not turn input to a <Duration>"),
                     hint: Some(String::from(
-                        "provide a valid number and a unit (s, m, h, d, M, y), i.e. 1h (1 hour) or 25d (25 days)",
+                        "provide a valid number and a unit (s, m, h, d, w, M, y), i.e. 1h (1 hour) or 25d (25 days)",
                     )),
                 }));
             }
@@ -47,7 +47,7 @@ impl Transformers {
                     arg: Some(input),
                     title: String::from("Could not turn input to a <Duration>"),
                     hint: Some(String::from(
-                        "provide a valid number and a unit (s, h, d, m, y), i.e. 1h (1 hour) or 25d (25 days)",
+                        "provide a valid number and a unit (s, m, h, d, w, M, y), i.e. 1h (1 hour) or 25d (25 days)",
                     )),
                 }));
             };
@@ -59,6 +59,7 @@ impl Transformers {
                 "m" => input.contents = Some(CommandArgument::Duration(Duration::minutes(numbers))),
                 "h" => input.contents = Some(CommandArgument::Duration(Duration::hours(numbers))),
                 "d" => input.contents = Some(CommandArgument::Duration(Duration::days(numbers))),
+                "w" => input.contents = Some(CommandArgument::Duration(Duration::weeks(numbers))),
                 "M" => {
                     input.contents = Some(CommandArgument::Duration(Duration::days(numbers * 30)))
                 }
@@ -70,7 +71,7 @@ impl Transformers {
                         arg: Some(input),
                         title: String::from("Could not turn input to a <Duration>"),
                         hint: Some(String::from(
-                            "provide a valid number and a unit (s, h, d, m, y), i.e. 1h (1 hour) or 25d (25 days)",
+                            "provide a valid number and a unit (s, m, h, d, w, M, y), i.e. 1h (1 hour) or 25d (25 days)",
                         )),
                     }));
                 }

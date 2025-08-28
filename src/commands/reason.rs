@@ -40,7 +40,10 @@ impl Command for Reason {
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
-        vec![CommandSyntax::String("id", false)]
+        vec![
+            CommandSyntax::String("id", false),
+            CommandSyntax::Consume("reason"),
+        ]
     }
 
     #[command]
