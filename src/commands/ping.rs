@@ -1,5 +1,6 @@
 use std::time::{Duration, Instant};
 
+use reqwest::{Client, redirect::Policy};
 use serenity::{
     all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Message as DiscordMessage},
     async_trait,
@@ -48,27 +49,39 @@ impl Command for Ping {
         msg: DiscordMessage,
         _args: Vec<Token>,
     ) -> Result<(), CommandError> {
-        let http_ping = {
+        let http = {
             let start = Instant::now();
             let _ = ctx.http.get_current_user().await;
-            start.elapsed()
+            start.elapsed().as_millis()
         };
 
-        let gateway_ping = {
+        let gateway = {
             let data_read = ctx.data.read().await;
             let shard_manager = data_read.get::<ShardManagerContainer>().unwrap().clone();
             let runners = shard_manager.runners.lock().await;
             let shard_info = runners.get(&ctx.shard_id).unwrap();
-            shard_info.latency.unwrap_or(Duration::default())
+            shard_info
+                .latency
+                .unwrap_or(Duration::default())
+                .as_millis()
+        };
+
+        let ping = {
+            let client = Client::builder().redirect(Policy::none()).build().unwrap();
+
+            let start = Instant::now();
+            let _ = client
+                .get("https://discord.com/api/v10/gateway")
+                .send()
+                .await;
+            start.elapsed().as_millis()
         };
 
         let message = CreateMessage::new()
             .embed(
                 CreateEmbed::new()
                     .description(format!(
-                        "HTTP: {}ms\nGateway: {}ms",
-                        http_ping.as_millis(),
-                        gateway_ping.as_millis()
+                        "HTTP: {http}ms\nGateway: {gateway}ms\nPing: {ping}ms",
                     ))
                     .color(BRAND_BLUE),
             )
