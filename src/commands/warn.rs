@@ -1,10 +1,24 @@
 use std::sync::Arc;
 
-use serenity::{all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, Permissions}, async_trait};
+use serenity::{
+    all::{
+        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
+        Permissions,
+    },
+    async_trait,
+};
 use sqlx::query;
 use tracing::warn;
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::tinyid, SQL};
+use crate::{
+    SQL,
+    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    constants::BRAND_BLUE,
+    event_handler::CommandError,
+    lexer::Token,
+    transformers::Transformers,
+    utils::tinyid,
+};
 use ouroboros_macros::command;
 
 pub struct Warn;
@@ -29,10 +43,10 @@ impl Command for Warn {
         String::from("Warns a member, storing a note in the users log.")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![
             CommandSyntax::Member("user", true),
-            CommandSyntax::Consume("reason")
+            CommandSyntax::Consume("reason"),
         ]
     }
 
@@ -42,11 +56,17 @@ impl Command for Warn {
         ctx: Context,
         msg: Message,
         #[transformers::reply_member] member: Member,
-        #[transformers::reply_consume] reason: Option<String>
+        #[transformers::reply_consume] reason: Option<String>,
     ) -> Result<(), CommandError> {
-        let mut reason = reason.map(|s| {
-            if s.is_empty() || s.chars().all(char::is_whitespace) { String::from("No reason provided") } else { s }
-        }).unwrap_or(String::from("No reason provided"));
+        let mut reason = reason
+            .map(|s| {
+                if s.is_empty() || s.chars().all(char::is_whitespace) {
+                    String::from("No reason provided")
+                } else {
+                    s
+                }
+            })
+            .unwrap_or(String::from("No reason provided"));
 
         if reason.len() > 500 {
             reason.truncate(500);
@@ -64,12 +84,22 @@ impl Command for Warn {
 
         if let Err(err) = res {
             warn!("Got error while warning; err = {err:?}");
-            return Err(CommandError { title: String::from("Could not warn member"), hint: Some(String::from("please try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not warn member"),
+                hint: Some(String::from("please try again later")),
+                arg: None,
+            });
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Warned {}\n```\n{}\n```", member.mention(), reason)).color(BRAND_BLUE).clone())
-            .reference_message(&msg);
+            .add_embed(
+                CreateEmbed::new()
+                    .description(format!("Warned {}\n```\n{}\n```", member.mention(), reason))
+                    .color(BRAND_BLUE)
+                    .clone(),
+            )
+            .reference_message(&msg)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
             warn!("Could not send message; err = {err:?}");
@@ -79,6 +109,9 @@ impl Command for Warn {
     }
 
     fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions { required: vec![Permissions::MANAGE_NICKNAMES], one_of: vec![] }
+        CommandPermissions {
+            required: vec![Permissions::MANAGE_NICKNAMES],
+            one_of: vec![],
+        }
     }
 }

@@ -36,7 +36,13 @@ pub fn lex(input: String) -> Vec<Token> {
 
         if char.is_whitespace() {
             if !current_token.is_empty() {
-                tokens.push(Token { contents: None, raw: current_token.clone(), position: token_start, length: current_token.len(), iteration: token_count });
+                tokens.push(Token {
+                    contents: None,
+                    raw: current_token.clone(),
+                    position: token_start,
+                    length: current_token.len(),
+                    iteration: token_count,
+                });
                 token_count += 1;
                 current_token = String::new();
             }
@@ -58,7 +64,13 @@ pub fn lex(input: String) -> Vec<Token> {
     }
 
     if !current_token.is_empty() {
-        tokens.push(Token { contents: None, raw: current_token.clone(), position: token_start, length: current_token.len(), iteration: token_count });
+        tokens.push(Token {
+            contents: None,
+            raw: current_token.clone(),
+            position: token_start,
+            length: current_token.len(),
+            iteration: token_count,
+        });
     }
 
     tokens

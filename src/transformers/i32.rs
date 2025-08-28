@@ -2,13 +2,24 @@ use std::{iter::Peekable, vec::IntoIter};
 
 use serenity::all::{Context, Message};
 
-use crate::{commands::{CommandArgument, TransformerError, TransformerReturn}, event_handler::{CommandError, MissingArgumentError}, lexer::Token, transformers::Transformers};
+use crate::{
+    commands::{CommandArgument, TransformerError, TransformerReturn},
+    event_handler::{CommandError, MissingArgumentError},
+    lexer::Token,
+    transformers::Transformers,
+};
 
 impl Transformers {
-    pub fn i32<'a>(_ctx: &'a Context, _msg: &'a Message, args: &'a mut Peekable<IntoIter<Token>>) -> TransformerReturn<'a> {
+    pub fn i32<'a>(
+        _ctx: &'a Context,
+        _msg: &'a Message,
+        args: &'a mut Peekable<IntoIter<Token>>,
+    ) -> TransformerReturn<'a> {
         Box::pin(async move {
             let Some(mut input) = args.next() else {
-                return Err(TransformerError::MissingArgumentError(MissingArgumentError(String::from("String"))))
+                return Err(TransformerError::MissingArgumentError(
+                    MissingArgumentError(String::from("String")),
+                ));
             };
 
             if let Ok(n) = input.raw.clone().parse::<i32>() {
@@ -21,7 +32,6 @@ impl Transformers {
                     hint: Some(String::from("provide a valid number")),
                 }))
             }
-
         })
     }
 }

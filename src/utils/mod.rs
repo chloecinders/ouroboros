@@ -1,6 +1,6 @@
 mod permissions;
-pub use permissions::is_developer;
 pub use permissions::check_guild_permission;
+pub use permissions::is_developer;
 
 mod logging;
 pub use logging::guild_log;

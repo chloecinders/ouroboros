@@ -1,10 +1,19 @@
-use reqwest::{header::HeaderValue, Client, Method, Request, Url};
-use serenity::{all::{CacheHttp, Context, Message}, async_trait};
+use reqwest::{Client, Method, Request, Url, header::HeaderValue};
+use serenity::{
+    all::{CacheHttp, Context, Message},
+    async_trait,
+};
 use tracing::warn;
 
-use crate::{commands::{Command, CommandPermissions, CommandSyntax, TransformerFn}, event_handler::CommandError, lexer::Token, utils::is_developer, BOT_CONFIG};
+use crate::{
+    BOT_CONFIG,
+    commands::{Command, CommandPermissions, CommandSyntax, TransformerFn},
+    event_handler::CommandError,
+    lexer::Token,
+    utils::is_developer,
+};
 use ouroboros_macros::command;
-use std::process::{exit, Command as SystemCommand};
+use std::process::exit;
 
 pub struct Update;
 
@@ -25,44 +34,62 @@ impl Command for Update {
     }
 
     fn get_full(&self) -> String {
-        String::from("Updates the Bot using the Github repository in the config. \
-            Warning: This might print debug information in chat! Only run this in a channel you can see!")
+        String::from(
+            "Updates the Bot using the Github repository in the config. \
+            Warning: This might print debug information in chat! Only run this in a channel you can see!",
+        )
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![]
     }
 
     #[command]
-    async fn run(
-        &self,
-        ctx: Context,
-        msg: Message,
-    ) -> Result<(), CommandError> {
+    async fn run(&self, ctx: Context, msg: Message) -> Result<(), CommandError> {
         if !is_developer(&msg.author) {
-            return Ok(())
+            return Ok(());
         }
 
         let cfg = BOT_CONFIG.get().unwrap();
         let Some(repo) = cfg.repository.clone() else {
             warn!("Update command disabled! Please set a repository in the config!");
-            let _ = msg.reply(&ctx.http(), "Update command disabled! Please set a repository in the config").await;
+            let _ = msg
+                .reply(
+                    &ctx.http(),
+                    "Update command disabled! Please set a repository in the config",
+                )
+                .await;
             return Ok(());
         };
 
         let client = Client::new();
-        let mut request = Request::new(Method::GET, Url::parse(format!("https://api.github.com/repos/{repo}/actions/runs?per_page=1").as_str()).unwrap());
+        let mut request = Request::new(
+            Method::GET,
+            Url::parse(
+                format!("https://api.github.com/repos/{repo}/actions/runs?per_page=1").as_str(),
+            )
+            .unwrap(),
+        );
         let headers = request.headers_mut();
-        headers.append("User-Agent", HeaderValue::from_str(format!("Ouroboros Bot v{}", env!("CARGO_PKG_VERSION")).as_str()).unwrap());
+        headers.append(
+            "User-Agent",
+            HeaderValue::from_str(format!("Ouroboros Bot v{}", env!("CARGO_PKG_VERSION")).as_str())
+                .unwrap(),
+        );
 
         if let Some(token) = cfg.github_token.clone() {
-            headers.append("Authorization", HeaderValue::from_str(format!("Bearer {token}").as_str()).unwrap());
+            headers.append(
+                "Authorization",
+                HeaderValue::from_str(format!("Bearer {token}").as_str()).unwrap(),
+            );
         }
 
         let res = match client.execute(request).await {
             Ok(o) => o,
             Err(e) => {
-                let err = format!("Error getting actions, make sure to set a Github token with enough permissions if your repository is private; err = {e:?}");
+                let err = format!(
+                    "Error getting actions, make sure to set a Github token with enough permissions if your repository is private; err = {e:?}"
+                );
                 warn!(err);
                 let _ = msg.reply(&ctx.http(), err).await;
                 return Ok(());
@@ -70,7 +97,9 @@ impl Command for Update {
         };
 
         if res.status() != 200 {
-            let err = format!("Error getting actions, make sure to set a Github token with enough permissions if your repository is private; res = {res:?}");
+            let err = format!(
+                "Error getting actions, make sure to set a Github token with enough permissions if your repository is private; res = {res:?}"
+            );
             warn!(err);
             let _ = msg.reply(&ctx.http(), err).await;
             return Ok(());
@@ -88,18 +117,31 @@ impl Command for Update {
 
         if let Some(run) = json.workflow_runs.first() {
             if run.status != "completed" || run.conclusion.clone().is_none_or(|c| c != "success") {
-                let err = format!("Latest run with id {} is not successful! Fix your code idiot!", run.id);
+                let err = format!(
+                    "Latest run with id {} is not successful! Fix your code idiot!",
+                    run.id
+                );
                 warn!(err);
                 let _ = msg.reply(&ctx.http(), err).await;
                 return Ok(());
             }
 
-            let mut artifacts_req = Request::new(Method::GET, Url::parse(&run.artifacts_url).unwrap());
+            let mut artifacts_req =
+                Request::new(Method::GET, Url::parse(&run.artifacts_url).unwrap());
             let headers = artifacts_req.headers_mut();
-            headers.append("User-Agent", HeaderValue::from_str(format!("Ouroboros Bot v{}", env!("CARGO_PKG_VERSION")).as_str()).unwrap());
+            headers.append(
+                "User-Agent",
+                HeaderValue::from_str(
+                    format!("Ouroboros Bot v{}", env!("CARGO_PKG_VERSION")).as_str(),
+                )
+                .unwrap(),
+            );
 
             if let Some(token) = cfg.github_token.clone() {
-                headers.append("Authorization", HeaderValue::from_str(format!("Bearer {token}").as_str()).unwrap());
+                headers.append(
+                    "Authorization",
+                    HeaderValue::from_str(format!("Bearer {token}").as_str()).unwrap(),
+                );
             }
 
             let res = match client.execute(artifacts_req).await {
@@ -139,17 +181,30 @@ impl Command for Update {
                 !name.ends_with(".exe")
             }
 
-            let Some(artifact) = json.artifacts.into_iter().find(|a| artifact_matches(&a.name)) else {
-                let err = "No artifact found. Check if the latest action produced the correct artifacts";
+            let Some(artifact) = json
+                .artifacts
+                .into_iter()
+                .find(|a| artifact_matches(&a.name))
+            else {
+                let err =
+                    "No artifact found. Check if the latest action produced the correct artifacts";
                 warn!(err);
                 let _ = msg.reply(&ctx.http(), err).await;
                 return Ok(());
             };
 
-            let mut download_req =
-                Request::new(Method::GET, Url::parse(&artifact.archive_download_url).unwrap());
+            let mut download_req = Request::new(
+                Method::GET,
+                Url::parse(&artifact.archive_download_url).unwrap(),
+            );
             let headers = download_req.headers_mut();
-            headers.append("User-Agent", HeaderValue::from_str(format!("Ouroboros Bot v{}", env!("CARGO_PKG_VERSION")).as_str()).unwrap());
+            headers.append(
+                "User-Agent",
+                HeaderValue::from_str(
+                    format!("Ouroboros Bot v{}", env!("CARGO_PKG_VERSION")).as_str(),
+                )
+                .unwrap(),
+            );
 
             if let Some(token) = cfg.github_token.clone() {
                 headers.append(
@@ -206,7 +261,8 @@ impl Command for Update {
                 }
 
                 Ok(buffer)
-            }).await;
+            })
+            .await;
 
             let extracted_bytes = match unzip_result {
                 Ok(r) => match r {
@@ -238,7 +294,10 @@ impl Command for Update {
                 use std::fs;
                 use std::os::unix::fs::PermissionsExt;
 
-                let _ = fs::write("./update.txt", format!("{}:{}", msg.channel_id.get(), msg.id.get()));
+                let _ = fs::write(
+                    "./update.txt",
+                    format!("{}:{}", msg.channel_id.get(), msg.id.get()),
+                );
 
                 let target = "./Ouroboros";
 
@@ -259,15 +318,25 @@ impl Command for Update {
 
             #[cfg(target_os = "windows")]
             {
-                let child = match SystemCommand::new(format!(".{}{filename}", std::path::MAIN_SEPARATOR)).arg(format!("--update={}:{}", msg.channel_id.get(), msg.id.get())).spawn() {
-                    Ok(c) => c,
-                    Err(e) => {
-                        let err = format!("Could not run downloaded version; err = {e:?}");
-                        warn!(err);
-                        let _ = msg.reply(&ctx.http(), err).await;
-                        return Ok(());
-                    }
-                };
+                use std::process::Command as SystemCommand;
+
+                let child =
+                    match SystemCommand::new(format!(".{}{filename}", std::path::MAIN_SEPARATOR))
+                        .arg(format!(
+                            "--update={}:{}",
+                            msg.channel_id.get(),
+                            msg.id.get()
+                        ))
+                        .spawn()
+                    {
+                        Ok(c) => c,
+                        Err(e) => {
+                            let err = format!("Could not run downloaded version; err = {e:?}");
+                            warn!(err);
+                            let _ = msg.reply(&ctx.http(), err).await;
+                            return Ok(());
+                        }
+                    };
 
                 drop(child);
                 exit(0);
@@ -278,7 +347,10 @@ impl Command for Update {
     }
 
     fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions { required: vec![], one_of: vec![] }
+        CommandPermissions {
+            required: vec![],
+            one_of: vec![],
+        }
     }
 }
 

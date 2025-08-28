@@ -1,9 +1,18 @@
 use std::time::{Duration, Instant};
 
-use serenity::{all::{Context, CreateEmbed, CreateMessage, Message as DiscordMessage}, async_trait};
+use serenity::{
+    all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Message as DiscordMessage},
+    async_trait,
+};
 use tracing::warn;
 
-use crate::{commands::{Command, CommandSyntax}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, ShardManagerContainer};
+use crate::{
+    ShardManagerContainer,
+    commands::{Command, CommandSyntax},
+    constants::BRAND_BLUE,
+    event_handler::CommandError,
+    lexer::Token,
+};
 
 pub struct Ping;
 
@@ -24,14 +33,21 @@ impl Command for Ping {
     }
 
     fn get_full(&self) -> String {
-        String::from("Gets the bots HTTP and gateway latency. Useful for checking if the bot is lagging.")
+        String::from(
+            "Gets the bots HTTP and gateway latency. Useful for checking if the bot is lagging.",
+        )
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![]
     }
 
-    async fn run(&self, ctx: Context, msg: DiscordMessage, _args: Vec<Token>) -> Result<(), CommandError> {
+    async fn run(
+        &self,
+        ctx: Context,
+        msg: DiscordMessage,
+        _args: Vec<Token>,
+    ) -> Result<(), CommandError> {
         let http_ping = {
             let start = Instant::now();
             let _ = ctx.http.get_current_user().await;
@@ -47,12 +63,17 @@ impl Command for Ping {
         };
 
         let message = CreateMessage::new()
-        .embed(
-            CreateEmbed::new()
-                .description(format!("HTTP: {}ms\nGateway: {}ms", http_ping.as_millis(), gateway_ping.as_millis()))
-                .color(BRAND_BLUE)
-        )
-        .reference_message(&msg);
+            .embed(
+                CreateEmbed::new()
+                    .description(format!(
+                        "HTTP: {}ms\nGateway: {}ms",
+                        http_ping.as_millis(),
+                        gateway_ping.as_millis()
+                    ))
+                    .color(BRAND_BLUE),
+            )
+            .reference_message(&msg)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
         if let Err(e) = msg.channel_id.send_message(&ctx.http, message).await {
             warn!("Could not send message; err = {e:?}");

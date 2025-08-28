@@ -1,11 +1,25 @@
 use std::sync::Arc;
 
 use ouroboros_macros::command;
-use serenity::{all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, Permissions}, async_trait};
+use serenity::{
+    all::{
+        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
+        Permissions,
+    },
+    async_trait,
+};
 use sqlx::query;
 use tracing::{error, warn};
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::tinyid, SQL};
+use crate::{
+    SQL,
+    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    constants::BRAND_BLUE,
+    event_handler::CommandError,
+    lexer::Token,
+    transformers::Transformers,
+    utils::tinyid,
+};
 
 pub struct Unban;
 
@@ -29,10 +43,10 @@ impl Command for Unban {
         String::from("Unbans a member from the server.")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax>  {
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![
             CommandSyntax::User("user", true),
-            CommandSyntax::String("reason", false)
+            CommandSyntax::String("reason", false),
         ]
     }
 
@@ -42,11 +56,17 @@ impl Command for Unban {
         ctx: Context,
         msg: Message,
         #[transformers::reply_user] user: User,
-        #[transformers::reply_consume] reason: Option<String>
+        #[transformers::reply_consume] reason: Option<String>,
     ) -> Result<(), CommandError> {
-        let mut reason = reason.map(|s| {
-            if s.is_empty() || s.chars().all(char::is_whitespace) { String::from("No reason provided") } else { s }
-        }).unwrap_or(String::from("No reason provided"));
+        let mut reason = reason
+            .map(|s| {
+                if s.is_empty() || s.chars().all(char::is_whitespace) {
+                    String::from("No reason provided")
+                } else {
+                    s
+                }
+            })
+            .unwrap_or(String::from("No reason provided"));
 
         if reason.len() > 500 {
             reason.truncate(500);
@@ -61,7 +81,11 @@ impl Command for Unban {
 
         if let Err(err) = res {
             warn!("Got error while unbanning; err = {err:?}");
-            return Err(CommandError { title: String::from("Could not unban member"), hint: Some(String::from("please try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not unban member"),
+                hint: Some(String::from("please try again later")),
+                arg: None,
+            });
         }
 
         let db_id = tinyid().await;
@@ -77,23 +101,49 @@ impl Command for Unban {
 
         if let Err(err) = res {
             warn!("Got error while unbanning; err = {err:?}");
-            return Err(CommandError { title: String::from("Could not unban member"), hint: Some(String::from("please try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not unban member"),
+                hint: Some(String::from("please try again later")),
+                arg: None,
+            });
         }
 
-        if let Err(err) = ctx.http.as_ref().remove_ban(msg.guild_id.unwrap(), user.id, Some(&reason)).await {
+        if let Err(err) = ctx
+            .http
+            .as_ref()
+            .remove_ban(msg.guild_id.unwrap(), user.id, Some(&reason))
+            .await
+        {
             warn!("Got error while unbanning; err = {err:?}");
 
             // cant do much here...
-            if query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await.is_err() {
-                error!("Got an error while unbanning and an error with the database! Stray unban entry in DB & manual action required; id = {db_id}; err = {err:?}");
+            if query!("DELETE FROM actions WHERE id = $1", db_id)
+                .execute(SQL.get().unwrap())
+                .await
+                .is_err()
+            {
+                error!(
+                    "Got an error while unbanning and an error with the database! Stray unban entry in DB & manual action required; id = {db_id}; err = {err:?}"
+                );
             }
 
-            return Err(CommandError { title: String::from("Could not unban member"), hint: Some(String::from("check if the bot has the ban members permission or try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not unban member"),
+                hint: Some(String::from(
+                    "check if the bot has the ban members permission or try again later",
+                )),
+                arg: None,
+            });
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Unbanned {}\n```\n{}\n```", user.mention(), reason)).color(BRAND_BLUE))
-            .reference_message(&msg);
+            .add_embed(
+                CreateEmbed::new()
+                    .description(format!("Unbanned {}\n```\n{}\n```", user.mention(), reason))
+                    .color(BRAND_BLUE),
+            )
+            .reference_message(&msg)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
             warn!("Could not send message; err = {err:?}");
@@ -103,8 +153,9 @@ impl Command for Unban {
     }
 
     fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions { required: vec![
-            Permissions::BAN_MEMBERS
-        ], one_of: vec![] }
+        CommandPermissions {
+            required: vec![Permissions::BAN_MEMBERS],
+            one_of: vec![],
+        }
     }
 }

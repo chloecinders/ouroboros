@@ -1,9 +1,22 @@
 use chrono::Utc;
-use serenity::all::{audit_log::Action, Channel, ChannelId, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage, GuildId, MessageAction, MessageId};
+use serenity::all::{
+    Channel, ChannelId, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
+    GuildId, MessageAction, MessageId, audit_log::Action,
+};
 
-use crate::{constants::BRAND_RED, event_handler::Handler, utils::{guild_log, snowflake_to_timestamp}};
+use crate::{
+    constants::BRAND_RED,
+    event_handler::Handler,
+    utils::{guild_log, snowflake_to_timestamp},
+};
 
-pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: ChannelId, deleted_message_id: MessageId, _guild_id: Option<GuildId>) { 
+pub async fn message_delete(
+    _handler: &Handler,
+    ctx: Context,
+    channel_id: ChannelId,
+    deleted_message_id: MessageId,
+    _guild_id: Option<GuildId>,
+) {
     let some_msg = {
         if let Some(msg) = ctx.cache.message(channel_id, deleted_message_id) {
             if msg.author.id.get() == ctx.cache.current_user().id.get() {
@@ -18,10 +31,19 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
 
     let guild_id = match channel_id.to_channel(&ctx.http).await {
         Ok(Channel::Guild(guild_channel)) => guild_channel.guild_id,
-        _ => {return}
+        _ => return,
     };
 
-    let audit_log = guild_id.audit_logs(&ctx.http, Some(Action::Message(MessageAction::Delete)), None, None, Some(10)).await.ok();
+    let audit_log = guild_id
+        .audit_logs(
+            &ctx.http,
+            Some(Action::Message(MessageAction::Delete)),
+            None,
+            None,
+            Some(10),
+        )
+        .await
+        .ok();
 
     let mut moderator_id: Option<u64> = None;
 
@@ -39,12 +61,11 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
             for entry in logs.entries {
                 let entry_time = snowflake_to_timestamp(entry.id.get());
 
-                if
-                    (Utc::now() - entry_time).num_seconds().abs() <= 5
+                if (Utc::now() - entry_time).num_seconds().abs() <= 5
                     && let Some(target) = entry.target_id
                     && let Some(Some(channel)) = entry.options.clone().map(|o| o.channel_id)
                     && let Some(msg) = some_msg.clone()
-                    &&target.get() == msg.author.id.get()
+                    && target.get() == msg.author.id.get()
                     && channel.get() == msg.channel_id.get()
                 {
                     moderator_id = Some(entry.user_id.get());
@@ -53,19 +74,19 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
         }
     }
 
-    let mut description = format!(
-        "**MESSAGE DELETED**\n-# {0} ",
-        deleted_message_id.get()
-    );
+    let mut description = format!("**MESSAGE DELETED**\n-# {0} ", deleted_message_id.get());
     let mut files = vec![];
-    let mut embed = CreateEmbed::new()
-            .color(BRAND_RED);
+    let mut embed = CreateEmbed::new().color(BRAND_RED);
 
     if let Some(msg) = some_msg.clone() {
         description.push_str(&format!("| Target: <@{}> ", msg.author.id.get()));
         embed = embed.author(
             CreateEmbedAuthor::new(format!("{}: {}", msg.author.name, msg.author.id.get()))
-                .icon_url(msg.author.avatar_url().unwrap_or(msg.author.default_avatar_url()))
+                .icon_url(
+                    msg.author
+                        .avatar_url()
+                        .unwrap_or(msg.author.default_avatar_url()),
+                ),
         );
 
         for attachment in msg.attachments.iter() {
@@ -85,19 +106,22 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
     if let Some(msg) = some_msg {
         description.push_str(&format!(
             "\n{}",
-            if msg.content.is_empty() { String::new() } else { format!("```\n{} \n```", msg.content) }
+            if msg.content.is_empty() {
+                String::new()
+            } else {
+                format!("```\n{} \n```", msg.content)
+            }
         ));
     } else {
-        description.push_str(
-            "\nContent not found in cache",
-        );
+        description.push_str("\nContent not found in cache");
     }
 
     guild_log(
         &ctx.http,
         guild_id,
-        CreateMessage::new().add_embed(
-            embed.description(description)
-        ).add_files(files)
-    ).await;
+        CreateMessage::new()
+            .add_embed(embed.description(description))
+            .add_files(files),
+    )
+    .await;
 }

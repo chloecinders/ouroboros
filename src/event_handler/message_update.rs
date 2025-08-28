@@ -1,4 +1,7 @@
-use serenity::all::{Channel, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage, Message, MessageUpdateEvent};
+use serenity::all::{
+    Channel, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage, Message,
+    MessageUpdateEvent,
+};
 
 use crate::{constants::SOFT_YELLOW, event_handler::Handler, utils::guild_log};
 
@@ -46,7 +49,7 @@ pub async fn message_update(
                     vec![
                         CreateAttachment::bytes(new_msg.content.as_bytes(), "new.txt"),
                         CreateAttachment::bytes(old.content.as_bytes(), "old.txt"),
-                    ]
+                    ],
                 )
             } else {
                 (
@@ -55,7 +58,7 @@ pub async fn message_update(
                         old.content.replace("```", "\\`\\`\\`"),
                         new_msg.content.replace("```", "\\`\\`\\`"),
                     ),
-                    vec![]
+                    vec![],
                 )
             }
         }
@@ -63,7 +66,10 @@ pub async fn message_update(
             if new_msg.content.len() > 500 {
                 (
                     format!("{base}\nMessage content not found in cache"),
-                    vec![CreateAttachment::bytes(new_msg.content.as_bytes(), "new.txt")]
+                    vec![CreateAttachment::bytes(
+                        new_msg.content.as_bytes(),
+                        "new.txt",
+                    )],
                 )
             } else {
                 (
@@ -71,7 +77,7 @@ pub async fn message_update(
                         "{base}\nBefore:```\nMessage content not found in cache\n```\nAfter:\n```\n{}\n```",
                         new_msg.content.replace("```", "\\`\\`\\`"),
                     ),
-                    vec![]
+                    vec![],
                 )
             }
         }
@@ -82,9 +88,18 @@ pub async fn message_update(
             .color(SOFT_YELLOW)
             .description(desc)
             .author(
-                CreateEmbedAuthor::new(format!("{}: {}", new_msg.author.name, new_msg.author.id.get()))
-                    .icon_url(new_msg.author.avatar_url().unwrap_or(new_msg.author.default_avatar_url()))
-            )
+                CreateEmbedAuthor::new(format!(
+                    "{}: {}",
+                    new_msg.author.name,
+                    new_msg.author.id.get()
+                ))
+                .icon_url(
+                    new_msg
+                        .author
+                        .avatar_url()
+                        .unwrap_or(new_msg.author.default_avatar_url()),
+                ),
+            ),
     );
 
     for f in files {

@@ -1,11 +1,21 @@
 use std::sync::Arc;
 
 use ouroboros_macros::command;
-use serenity::{all::{Context, CreateEmbed, CreateMessage, Message, Permissions}, async_trait};
+use serenity::{
+    all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Message, Permissions},
+    async_trait,
+};
 use sqlx::query;
 use tracing::warn;
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, SQL};
+use crate::{
+    SQL,
+    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    constants::BRAND_BLUE,
+    event_handler::CommandError,
+    lexer::Token,
+    transformers::Transformers,
+};
 
 pub struct Reason;
 
@@ -29,10 +39,8 @@ impl Command for Reason {
         String::from("Modifies the reason of a moderation action. Run the log command for the id.")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
-        vec![
-            CommandSyntax::String("id", false)
-        ]
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
+        vec![CommandSyntax::String("id", false)]
     }
 
     #[command]
@@ -41,11 +49,17 @@ impl Command for Reason {
         ctx: Context,
         msg: Message,
         #[transformers::some_string] id: String,
-        #[transformers::consume] reason: Option<String>
+        #[transformers::consume] reason: Option<String>,
     ) -> Result<(), CommandError> {
-        let mut reason = reason.map(|s| {
-            if s.is_empty() || s.chars().all(char::is_whitespace) { String::from("No reason provided") } else { s }
-        }).unwrap_or(String::from("No reason provided"));
+        let mut reason = reason
+            .map(|s| {
+                if s.is_empty() || s.chars().all(char::is_whitespace) {
+                    String::from("No reason provided")
+                } else {
+                    s
+                }
+            })
+            .unwrap_or(String::from("No reason provided"));
 
         if reason.len() > 500 {
             reason.truncate(500);
@@ -65,17 +79,30 @@ impl Command for Reason {
             Ok(d) => d,
             Err(err) => {
                 warn!("Couldn't fetch log data; err = {err:?}");
-                return Err(CommandError { title: String::from("Unable to query the database"), hint: Some(String::from("try again later")), arg: None })
+                return Err(CommandError {
+                    title: String::from("Unable to query the database"),
+                    hint: Some(String::from("try again later")),
+                    arg: None,
+                });
             }
         };
 
         let Some(data) = data else {
-            return Err(CommandError { title: String::from("Log not found"), hint: Some(String::from("check if you have copied the ID correctly!")), arg: None })
+            return Err(CommandError {
+                title: String::from("Log not found"),
+                hint: Some(String::from("check if you have copied the ID correctly!")),
+                arg: None,
+            });
         };
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Modified {}\n```\n{}\n```", data.id, data.reason)).color(BRAND_BLUE))
-            .reference_message(&msg);
+            .add_embed(
+                CreateEmbed::new()
+                    .description(format!("Modified {}\n```\n{}\n```", data.id, data.reason))
+                    .color(BRAND_BLUE),
+            )
+            .reference_message(&msg)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
             warn!("Could not send message; err = {err:?}");
@@ -85,11 +112,14 @@ impl Command for Reason {
     }
 
     fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions { required: vec![], one_of: vec![
-            Permissions::MANAGE_NICKNAMES,
-            Permissions::KICK_MEMBERS,
-            Permissions::MODERATE_MEMBERS,
-            Permissions::BAN_MEMBERS
-        ] }
+        CommandPermissions {
+            required: vec![],
+            one_of: vec![
+                Permissions::MANAGE_NICKNAMES,
+                Permissions::KICK_MEMBERS,
+                Permissions::MODERATE_MEMBERS,
+                Permissions::BAN_MEMBERS,
+            ],
+        }
     }
 }

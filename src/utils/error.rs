@@ -2,13 +2,13 @@ use std::fmt::Display;
 
 #[derive(Debug)]
 pub struct AnyError {
-    pub inner: String
+    pub inner: String,
 }
 
 impl AnyError {
     pub fn new(id: &'static str) -> Self {
         Self {
-            inner: id.to_string()
+            inner: id.to_string(),
         }
     }
 }

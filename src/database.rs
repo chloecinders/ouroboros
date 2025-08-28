@@ -4,7 +4,7 @@ use tracing::info;
 use crate::SQL;
 
 #[derive(Debug, sqlx::Type, Clone)]
-#[sqlx(type_name = "action_type", rename_all="lowercase")]
+#[sqlx(type_name = "action_type", rename_all = "lowercase")]
 pub enum ActionType {
     Warn,
     Kick,
@@ -12,7 +12,7 @@ pub enum ActionType {
     Softban,
     Mute,
     Unban,
-    Unmute
+    Unmute,
 }
 
 impl std::fmt::Display for ActionType {
@@ -55,7 +55,10 @@ pub async fn create_actions_223320250818() {
             CONSTRAINT warns_pkey PRIMARY KEY (id)
         )
         "#
-    ).execute(SQL.get().unwrap()).await {
+    )
+    .execute(SQL.get().unwrap())
+    .await
+    {
         panic!("Couldnt run database migration create_actions_223320250818; Err = {err:?}");
     }
 }
@@ -69,7 +72,10 @@ pub async fn create_guild_settings_195120250826() {
             log_channel bigint
         )
         "#
-    ).execute(SQL.get().unwrap()).await {
+    )
+    .execute(SQL.get().unwrap())
+    .await
+    {
         panic!("Couldnt run database migration create_guild_settings_195120250826; Err = {err:?}");
     }
 }
@@ -91,7 +97,10 @@ pub async fn create_action_type_201420250826() {
             END IF;
         END$$;
         "#
-    ).execute(SQL.get().unwrap()).await {
+    )
+    .execute(SQL.get().unwrap())
+    .await
+    {
         panic!("Couldnt run database migration create_guild_settings_195120250826; Err = {err:?}");
     }
 }

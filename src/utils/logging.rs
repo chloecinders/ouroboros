@@ -15,8 +15,15 @@ pub async fn guild_log(http: &Http, guild: GuildId, msg: CreateMessage) {
         return;
     }
 
-    let Ok(channel) = http.get_channel(guild_settings.log.channel.unwrap_or(1).into()).await else {
-        warn!("Cannot get log channel; guild = {}, channel = {}", guild.get(), guild_settings.log.channel.unwrap_or(1));
+    let Ok(channel) = http
+        .get_channel(guild_settings.log.channel.unwrap_or(1).into())
+        .await
+    else {
+        warn!(
+            "Cannot get log channel; guild = {}, channel = {}",
+            guild.get(),
+            guild_settings.log.channel.unwrap_or(1)
+        );
         return;
     };
 
@@ -30,7 +37,9 @@ pub fn snowflake_to_timestamp(snowflake: u64) -> chrono::DateTime<chrono::Utc> {
     let timestamp = ((snowflake >> 22) as i64) + discord_epoch;
 
     DateTime::from_naive_utc_and_offset(
-        DateTime::from_timestamp_millis(timestamp).unwrap().naive_utc(),
+        DateTime::from_timestamp_millis(timestamp)
+            .unwrap()
+            .naive_utc(),
         chrono::Utc,
     )
 }

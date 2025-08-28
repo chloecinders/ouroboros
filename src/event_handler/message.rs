@@ -1,6 +1,11 @@
 use serenity::all::{Context, Message};
 
-use crate::{commands::{CommandArgument, TransformerError}, event_handler::{CommandError, Handler}, lexer::{lex, Token}, utils::check_guild_permission};
+use crate::{
+    commands::{CommandArgument, TransformerError},
+    event_handler::{CommandError, Handler},
+    lexer::{Token, lex},
+    utils::check_guild_permission,
+};
 
 pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
     if !msg.content.starts_with(handler.prefix.as_str()) || msg.guild_id.is_none() {
@@ -14,14 +19,20 @@ pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
     let command_name = parts.next().map(|s| s.raw).unwrap_or_default();
 
     if command_name == "help" {
-        if let Err(err) = handler.help_run(ctx.clone(), msg.clone(), parts.collect()).await {
+        if let Err(err) = handler
+            .help_run(ctx.clone(), msg.clone(), parts.collect())
+            .await
+        {
             handler.send_error(ctx, msg, contents, err).await;
         }
 
         return;
     }
 
-    let command = handler.commands.iter().find(|c| c.get_name() == command_name.to_lowercase());
+    let command = handler
+        .commands
+        .iter()
+        .find(|c| c.get_name() == command_name.to_lowercase());
 
     if let Some(c) = command {
         let permissions = c.get_permissions();
@@ -76,11 +87,18 @@ pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
                 match result {
                     Ok(r) => {
                         args.push(r);
-                    },
+                    }
                     Err(TransformerError::MissingArgumentError(err)) => {
-                        handler.send_error(ctx, msg, contents, CommandError::arg_not_found(&err.0, None)).await;
+                        handler
+                            .send_error(
+                                ctx,
+                                msg,
+                                contents,
+                                CommandError::arg_not_found(&err.0, None),
+                            )
+                            .await;
                         return;
-                    },
+                    }
                     Err(TransformerError::CommandError(err)) => {
                         handler.send_error(ctx, msg, contents, err).await;
                         return;
@@ -98,13 +116,19 @@ pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
             match result {
                 Ok(r) => {
                     args.push(r);
-                },
+                }
                 Err(TransformerError::CommandError(err)) => {
                     handler.send_error(ctx, msg, contents, err).await;
                     return;
-                },
+                }
                 Err(TransformerError::MissingArgumentError(_)) => {
-                    args.push(Token { contents: Some(CommandArgument::None), raw: String::new(), position: 0, length: 0, iteration: 0 });
+                    args.push(Token {
+                        contents: Some(CommandArgument::None),
+                        raw: String::new(),
+                        position: 0,
+                        length: 0,
+                        iteration: 0,
+                    });
                 }
             }
         }

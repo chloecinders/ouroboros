@@ -1,9 +1,22 @@
 use std::sync::Arc;
 
-use serenity::{all::{ChannelId, Context, CreateEmbed, CreateMessage, EventHandler, Guild, GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent}, async_trait};
+use serenity::{
+    all::{
+        ChannelId, Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EventHandler, Guild,
+        GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent,
+    },
+    async_trait,
+};
 use tracing::warn;
 
-use crate::{commands::{Ban, CBan, ColonThree, Command, Kick, Log, MsgDbg, Mute, Ping, Purge, Reason, Softban, Stats, Unban, Unmute, Update, Warn, Config}, constants::BRAND_RED, lexer::Token};
+use crate::{
+    commands::{
+        Ban, CBan, ColonThree, Command, Config, Kick, Log, MsgDbg, Mute, Ping, Purge, Reason,
+        Softban, Stats, Unban, Unmute, Update, Warn,
+    },
+    constants::BRAND_RED,
+    lexer::Token,
+};
 
 #[derive(Debug)]
 pub struct CommandError {
@@ -26,7 +39,12 @@ impl CommandError {
 
 impl std::fmt::Display for CommandError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Command Error: {}; hint: {}", self.title, self.hint.clone().unwrap_or(String::from("(None)")))
+        write!(
+            f,
+            "Command Error: {}; hint: {}",
+            self.title,
+            self.hint.clone().unwrap_or(String::from("(None)"))
+        )
     }
 }
 
@@ -46,16 +64,16 @@ impl std::error::Error for MissingArgumentError {}
 mod help_cmd;
 
 // events
-mod message;
-mod message_update;
-mod message_delete;
 mod guild_create;
-mod shards_ready;
 mod guild_member_update;
+mod message;
+mod message_delete;
+mod message_update;
+mod shards_ready;
 
 pub struct Handler {
     prefix: String,
-    commands: Vec<Arc<dyn Command>>
+    commands: Vec<Arc<dyn Command>>,
 }
 
 impl Handler {
@@ -80,10 +98,7 @@ impl Handler {
             Arc::new(Config::new()),
         ];
 
-        Self {
-            prefix,
-            commands
-        }
+        Self { prefix, commands }
     }
 }
 
@@ -113,15 +128,20 @@ impl Handler {
                 hint = format!("**hint:** {h}");
             }
 
-            error_message = format!("**error:** command failed to run```\n{input}\n\n{}\n```\n{}", err.title, hint);
+            error_message = format!(
+                "**error:** command failed to run```\n{input}\n\n{}\n```\n{}",
+                err.title, hint
+            );
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new()
-            .description(
-                error_message
-            ).color(BRAND_RED))
-            .reference_message(&msg);
+            .add_embed(
+                CreateEmbed::new()
+                    .description(error_message)
+                    .color(BRAND_RED),
+            )
+            .reference_message(&msg)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
         if let Err(e) = msg.channel_id.send_message(&ctx.http, reply).await {
             warn!("Could not send message; err = {e:?}")
@@ -131,11 +151,25 @@ impl Handler {
 
 #[async_trait]
 impl EventHandler for Handler {
-    async fn message(&self, ctx: Context, msg: Message) { message::message(self, ctx, msg).await }
-    async fn message_update(&self, ctx: Context, old_if_available: Option<Message>, new: Option<Message>, event: MessageUpdateEvent) {
+    async fn message(&self, ctx: Context, msg: Message) {
+        message::message(self, ctx, msg).await
+    }
+    async fn message_update(
+        &self,
+        ctx: Context,
+        old_if_available: Option<Message>,
+        new: Option<Message>,
+        event: MessageUpdateEvent,
+    ) {
         message_update::message_update(self, ctx, old_if_available, new, event).await
     }
-    async fn message_delete(&self, ctx: Context, channel_id: ChannelId, deleted_message_id: MessageId, guild_id: Option<GuildId>) {
+    async fn message_delete(
+        &self,
+        ctx: Context,
+        channel_id: ChannelId,
+        deleted_message_id: MessageId,
+        guild_id: Option<GuildId>,
+    ) {
         message_delete::message_delete(self, ctx, channel_id, deleted_message_id, guild_id).await
     }
     async fn guild_create(&self, ctx: Context, guild: Guild, is_new: Option<bool>) {
@@ -144,7 +178,13 @@ impl EventHandler for Handler {
     async fn shards_ready(&self, ctx: Context, total_shards: u32) {
         shards_ready::shards_ready(self, ctx, total_shards).await
     }
-    async fn guild_member_update(&self, ctx: Context, old_if_available: Option<Member>, new: Option<Member>, event: GuildMemberUpdateEvent) {
+    async fn guild_member_update(
+        &self,
+        ctx: Context,
+        old_if_available: Option<Member>,
+        new: Option<Member>,
+        event: GuildMemberUpdateEvent,
+    ) {
         guild_member_update::guild_member_update(self, ctx, old_if_available, new, event).await
     }
 }

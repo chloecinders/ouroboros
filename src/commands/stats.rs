@@ -1,10 +1,19 @@
 use std::time::Instant;
 
-use serenity::{all::{Context, CreateEmbed, CreateMessage, Message}, async_trait};
+use serenity::{
+    all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Message},
+    async_trait,
+};
 use sysinfo::System;
 use tracing::warn;
 
-use crate::{commands::{Command, CommandSyntax}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, START_TIME};
+use crate::{
+    START_TIME,
+    commands::{Command, CommandSyntax},
+    constants::BRAND_BLUE,
+    event_handler::CommandError,
+    lexer::Token,
+};
 
 pub struct Stats;
 
@@ -28,7 +37,7 @@ impl Command for Stats {
         String::from("Shows various statistics of the bot. Useful for nerds!")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![]
     }
 
@@ -39,11 +48,7 @@ impl Command for Stats {
             let elapsed = START_TIME.get().unwrap_or(&Instant::now()).elapsed();
             let seconds = elapsed.as_secs();
 
-            (
-                seconds / 3600,
-                (seconds % 3600) / 60,
-                seconds % 60
-            )
+            (seconds / 3600, (seconds % 3600) / 60, seconds % 60)
         };
 
         let memory = {
@@ -68,8 +73,13 @@ impl Command for Stats {
         };
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(description).color(BRAND_BLUE))
-            .reference_message(&msg);
+            .add_embed(
+                CreateEmbed::new()
+                    .description(description)
+                    .color(BRAND_BLUE),
+            )
+            .reference_message(&msg)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
         if let Err(e) = msg.channel_id.send_message(&ctx.http, reply).await {
             warn!("Could not send message; err = {e:?}");
@@ -78,6 +88,3 @@ impl Command for Stats {
         Ok(())
     }
 }
-
-
-

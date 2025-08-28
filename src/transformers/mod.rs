@@ -1,13 +1,13 @@
 pub struct Transformers;
 
-mod user;
-mod string;
-mod member;
-mod duration;
 mod consume;
+mod duration;
+mod guild_channel;
+mod i32;
+mod member;
+mod reply_consume;
 mod reply_member;
 mod reply_user;
-mod reply_consume;
-mod i32;
 mod some_string;
-mod guild_channel;
+mod string;
+mod user;

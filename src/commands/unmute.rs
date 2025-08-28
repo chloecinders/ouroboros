@@ -1,11 +1,25 @@
 use std::sync::Arc;
 
 use ouroboros_macros::command;
-use serenity::{all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, Permissions}, async_trait};
+use serenity::{
+    all::{
+        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
+        Permissions,
+    },
+    async_trait,
+};
 use sqlx::query;
 use tracing::{error, warn};
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::tinyid, SQL};
+use crate::{
+    SQL,
+    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    constants::BRAND_BLUE,
+    event_handler::CommandError,
+    lexer::Token,
+    transformers::Transformers,
+    utils::tinyid,
+};
 
 pub struct Unmute;
 
@@ -29,10 +43,10 @@ impl Command for Unmute {
         String::from("Unmutes a member in the server.")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax>  {
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![
             CommandSyntax::Member("member", true),
-            CommandSyntax::String("reason", false)
+            CommandSyntax::String("reason", false),
         ]
     }
 
@@ -42,11 +56,17 @@ impl Command for Unmute {
         ctx: Context,
         msg: Message,
         #[transformers::reply_member] mut member: Member,
-        #[transformers::reply_consume] reason: Option<String>
+        #[transformers::reply_consume] reason: Option<String>,
     ) -> Result<(), CommandError> {
-        let mut reason = reason.map(|s| {
-            if s.is_empty() || s.chars().all(char::is_whitespace) { String::from("No reason provided") } else { s }
-        }).unwrap_or(String::from("No reason provided"));
+        let mut reason = reason
+            .map(|s| {
+                if s.is_empty() || s.chars().all(char::is_whitespace) {
+                    String::from("No reason provided")
+                } else {
+                    s
+                }
+            })
+            .unwrap_or(String::from("No reason provided"));
 
         if reason.len() > 500 {
             reason.truncate(500);
@@ -61,7 +81,11 @@ impl Command for Unmute {
 
         if let Err(err) = res {
             warn!("Got error while unmuting; err = {err:?}");
-            return Err(CommandError { title: String::from("Could not unmute member"), hint: Some(String::from("please try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not unmute member"),
+                hint: Some(String::from("please try again later")),
+                arg: None,
+            });
         }
 
         let db_id = tinyid().await;
@@ -77,23 +101,48 @@ impl Command for Unmute {
 
         if let Err(err) = res {
             warn!("Got error while unmuting; err = {err:?}");
-            return Err(CommandError { title: String::from("Could not unmute member"), hint: Some(String::from("please try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not unmute member"),
+                hint: Some(String::from("please try again later")),
+                arg: None,
+            });
         }
 
         if let Err(err) = member.enable_communication(&ctx.http).await {
             warn!("Got error while unmuting; err = {err:?}");
 
             // cant do much here...
-            if query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await.is_err() {
-                error!("Got an error while unmuting and an error with the database! Stray unmute entry in DB & manual action required; id = {db_id}; err = {err:?}");
+            if query!("DELETE FROM actions WHERE id = $1", db_id)
+                .execute(SQL.get().unwrap())
+                .await
+                .is_err()
+            {
+                error!(
+                    "Got an error while unmuting and an error with the database! Stray unmute entry in DB & manual action required; id = {db_id}; err = {err:?}"
+                );
             }
 
-            return Err(CommandError { title: String::from("Could not unmute member"), hint: Some(String::from("check if the bot has the timeout members permission or try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not unmute member"),
+                hint: Some(String::from(
+                    "check if the bot has the timeout members permission or try again later",
+                )),
+                arg: None,
+            });
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Unmuted {}\n```\n{}\n```", member.mention(), reason)).color(BRAND_BLUE))
-            .reference_message(&msg);
+            .add_embed(
+                CreateEmbed::new()
+                    .description(format!(
+                        "Unmuted {}\n```\n{}\n```",
+                        member.mention(),
+                        reason
+                    ))
+                    .color(BRAND_BLUE),
+            )
+            .reference_message(&msg)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
             warn!("Could not send message; err = {err:?}");
@@ -103,8 +152,9 @@ impl Command for Unmute {
     }
 
     fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions { required: vec![
-            Permissions::MODERATE_MEMBERS
-        ], one_of: vec![] }
+        CommandPermissions {
+            required: vec![Permissions::MODERATE_MEMBERS],
+            one_of: vec![],
+        }
     }
 }

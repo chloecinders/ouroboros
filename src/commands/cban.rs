@@ -1,11 +1,25 @@
 use std::sync::Arc;
 
 use chrono::{Duration, Utc};
-use serenity::{all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, Permissions}, async_trait};
+use serenity::{
+    all::{
+        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
+        Permissions,
+    },
+    async_trait,
+};
 use sqlx::query;
 use tracing::{error, warn};
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::tinyid, SQL};
+use crate::{
+    SQL,
+    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    constants::BRAND_BLUE,
+    event_handler::CommandError,
+    lexer::Token,
+    transformers::Transformers,
+    utils::tinyid,
+};
 use ouroboros_macros::command;
 
 pub struct CBan;
@@ -27,19 +41,21 @@ impl Command for CBan {
     }
 
     fn get_full(&self) -> String {
-        String::from("Bans from the server and leaves a note in the users log. \
+        String::from(
+            "Bans from the server and leaves a note in the users log. \
             Defaults to permanent if no duration is provided. \
             Use 0 for the duration to make the ban permanent. \
             Ban expiry is checked every 5 minutes. \
-            Additionally deletes up to 7 days of the target members messages.")
+            Additionally deletes up to 7 days of the target members messages.",
+        )
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![
             CommandSyntax::Member("member", true),
             CommandSyntax::Duration("duration", false),
             CommandSyntax::Number("days", false),
-            CommandSyntax::Reason("reason")
+            CommandSyntax::Reason("reason"),
         ]
     }
 
@@ -51,12 +67,18 @@ impl Command for CBan {
         #[transformers::reply_user] user: User,
         #[transformers::duration] duration: Option<Duration>,
         #[transformers::i32] days: Option<i32>,
-        #[transformers::consume] reason: Option<String>
+        #[transformers::consume] reason: Option<String>,
     ) -> Result<(), CommandError> {
         let duration = duration.unwrap_or(Duration::zero());
-        let mut reason = reason.map(|s| {
-            if s.is_empty() || s.chars().all(char::is_whitespace) { String::from("No reason provided") } else { s }
-        }).unwrap_or(String::from("No reason provided"));
+        let mut reason = reason
+            .map(|s| {
+                if s.is_empty() || s.chars().all(char::is_whitespace) {
+                    String::from("No reason provided")
+                } else {
+                    s
+                }
+            })
+            .unwrap_or(String::from("No reason provided"));
         let days = days.unwrap_or(1).clamp(0, 7) as u8;
 
         if reason.len() > 500 {
@@ -68,12 +90,24 @@ impl Command for CBan {
 
         let time_string = if !duration.is_zero() {
             let (time, mut unit) = match () {
-                _ if (duration.num_days() as f64 / 365.0).fract() == 0.0 && duration.num_days() >= 365 => (duration.num_days() / 365, String::from("year")),
-                _ if (duration.num_days() as f64 / 30.0).fract() == 0.0 && duration.num_days() >= 30 => (duration.num_days() / 30, String::from("month")),
+                _ if (duration.num_days() as f64 / 365.0).fract() == 0.0
+                    && duration.num_days() >= 365 =>
+                {
+                    (duration.num_days() / 365, String::from("year"))
+                }
+                _ if (duration.num_days() as f64 / 30.0).fract() == 0.0
+                    && duration.num_days() >= 30 =>
+                {
+                    (duration.num_days() / 30, String::from("month"))
+                }
                 _ if duration.num_days() != 0 => (duration.num_days(), String::from("day")),
                 _ if duration.num_hours() != 0 => (duration.num_hours(), String::from("hour")),
-                _ if duration.num_minutes() != 0 => (duration.num_minutes(), String::from("minute")),
-                _ if duration.num_seconds() != 0 => (duration.num_seconds(), String::from("second")),
+                _ if duration.num_minutes() != 0 => {
+                    (duration.num_minutes(), String::from("minute"))
+                }
+                _ if duration.num_seconds() != 0 => {
+                    (duration.num_seconds(), String::from("second"))
+                }
                 _ => (0, String::new()),
             };
 
@@ -100,7 +134,11 @@ impl Command for CBan {
 
         if let Err(err) = res {
             warn!("Got error while banning; err = {err:?}");
-            return Err(CommandError { title: String::from("Could not ban member"), hint: Some(String::from("please try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not ban member"),
+                hint: Some(String::from("please try again later")),
+                arg: None,
+            });
         }
 
         let res = query!(
@@ -115,23 +153,54 @@ impl Command for CBan {
 
         if let Err(err) = res {
             warn!("Got error while banning; err = {err:?}");
-            return Err(CommandError { title: String::from("Could not ban member"), hint: Some(String::from("please try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not ban member"),
+                hint: Some(String::from("please try again later")),
+                arg: None,
+            });
         }
 
-        if let Err(err) = msg.guild_id.unwrap().ban_with_reason(&ctx.http, &user, days, &reason).await {
+        if let Err(err) = msg
+            .guild_id
+            .unwrap()
+            .ban_with_reason(&ctx.http, &user, days, &reason)
+            .await
+        {
             warn!("Got error while banning; err = {err:?}");
 
             // cant do much here...
-            if query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await.is_err() {
-                error!("Got an error while banning and an error with the database! Stray ban entry in DB & manual action required; id = {db_id}; err = {err:?}");
+            if query!("DELETE FROM actions WHERE id = $1", db_id)
+                .execute(SQL.get().unwrap())
+                .await
+                .is_err()
+            {
+                error!(
+                    "Got an error while banning and an error with the database! Stray ban entry in DB & manual action required; id = {db_id}; err = {err:?}"
+                );
             }
 
-            return Err(CommandError { title: String::from("Could not ban member"), hint: Some(String::from("check if the bot has the ban members permission or try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not ban member"),
+                hint: Some(String::from(
+                    "check if the bot has the ban members permission or try again later",
+                )),
+                arg: None,
+            });
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Banned {} {}\n```\n{}\n```", user.mention(), time_string, reason)).color(BRAND_BLUE))
-            .reference_message(&msg);
+            .add_embed(
+                CreateEmbed::new()
+                    .description(format!(
+                        "Banned {} {}\n```\n{}\n```",
+                        user.mention(),
+                        time_string,
+                        reason
+                    ))
+                    .color(BRAND_BLUE),
+            )
+            .reference_message(&msg)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
             warn!("Could not send message; err = {err:?}");
@@ -141,6 +210,9 @@ impl Command for CBan {
     }
 
     fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions { required: vec![Permissions::BAN_MEMBERS], one_of: vec![] }
+        CommandPermissions {
+            required: vec![Permissions::BAN_MEMBERS],
+            one_of: vec![],
+        }
     }
 }

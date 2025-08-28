@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_macro_input, Attribute, FnArg, ItemFn, Pat, PatType};
+use syn::{Attribute, FnArg, ItemFn, Pat, PatType, parse_macro_input};
 
 #[proc_macro_attribute]
 pub fn command(_attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -16,7 +16,9 @@ pub fn command(_attr: TokenStream, item: TokenStream) -> TokenStream {
     for arg in &sig.inputs {
         if let FnArg::Typed(PatType { attrs, pat, ty, .. }) = arg {
             for attr in attrs {
-                let Some(a) = parse_transformer_attr(attr.clone()) else { continue };
+                let Some(a) = parse_transformer_attr(attr.clone()) else {
+                    continue;
+                };
 
                 let binding = match &**pat {
                     Pat::Ident(id) => &id.ident,
@@ -30,11 +32,17 @@ pub fn command(_attr: TokenStream, item: TokenStream) -> TokenStream {
                         let last_segment = type_path.path.segments.last().unwrap();
 
                         if last_segment.ident == "Option" {
-                            if let syn::PathArguments::AngleBracketed(args) = &last_segment.arguments {
-                                if let Some(syn::GenericArgument::Type(syn::Type::Path(inner_type_path))) =
-                                    args.args.first()
+                            if let syn::PathArguments::AngleBracketed(args) =
+                                &last_segment.arguments
+                            {
+                                if let Some(syn::GenericArgument::Type(syn::Type::Path(
+                                    inner_type_path,
+                                ))) = args.args.first()
                                 {
-                                    format_ident!("{}", inner_type_path.path.segments.last().unwrap().ident)
+                                    format_ident!(
+                                        "{}",
+                                        inner_type_path.path.segments.last().unwrap().ident
+                                    )
                                 } else {
                                     panic!("Unsupported Option inner type")
                                 }
@@ -53,9 +61,7 @@ pub fn command(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 let binding_exp = if let syn::Type::Path(type_path) = &**ty {
                     if type_path.path.segments.last().unwrap().ident == "Option" {
                         let inner_type = match &type_path.path.segments.last().unwrap().arguments {
-                            syn::PathArguments::AngleBracketed(args) => {
-                                args.args.first().unwrap()
-                            }
+                            syn::PathArguments::AngleBracketed(args) => args.args.first().unwrap(),
                             _ => panic!("Unsupported Option type"),
                         };
                         quote! {

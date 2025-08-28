@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::Serialize;
 use sqlx::query;
 
-use crate::{utils::AnyError, SQL};
+use crate::{SQL, utils::AnyError};
 
 #[derive(Debug, Serialize, Clone, Default)]
 pub struct GuildSettings {
@@ -15,7 +15,7 @@ impl GuildSettings {
     pub fn new() -> Self {
         Self {
             inner: HashMap::new(),
-            invalid: true
+            invalid: true,
         }
     }
 
@@ -32,12 +32,15 @@ impl GuildSettings {
 
         match self.inner.get(&guild) {
             Some(s) => Ok(s.clone()),
-            None => Err(AnyError::new("guild_not_found"))
+            None => Err(AnyError::new("guild_not_found")),
         }
     }
 
     async fn fetch_data(&self) -> Result<HashMap<u64, Settings>, AnyError> {
-        if let Ok(data) = query!("SELECT * FROM guild_settings").fetch_all(SQL.get().unwrap()).await {
+        if let Ok(data) = query!("SELECT * FROM guild_settings")
+            .fetch_all(SQL.get().unwrap())
+            .await
+        {
             let mut map: HashMap<u64, Settings> = HashMap::new();
 
             data.into_iter().for_each(|record| {
@@ -45,9 +48,9 @@ impl GuildSettings {
                     record.guild_id as u64,
                     Settings {
                         log: SettingsLog {
-                            channel: record.log_channel.map(|n| n as u64)
-                        }
-                    }
+                            channel: record.log_channel.map(|n| n as u64),
+                        },
+                    },
                 );
             });
 
@@ -60,10 +63,10 @@ impl GuildSettings {
 
 #[derive(Debug, Serialize, Clone, Default)]
 pub struct Settings {
-    pub log: SettingsLog
+    pub log: SettingsLog,
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
 pub struct SettingsLog {
-    pub channel: Option<u64>
+    pub channel: Option<u64>,
 }

@@ -1,10 +1,24 @@
 use std::sync::Arc;
 
-use serenity::{all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, Permissions}, async_trait};
+use serenity::{
+    all::{
+        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
+        Permissions,
+    },
+    async_trait,
+};
 use sqlx::query;
 use tracing::{error, warn};
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::tinyid, SQL};
+use crate::{
+    SQL,
+    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    constants::BRAND_BLUE,
+    event_handler::CommandError,
+    lexer::Token,
+    transformers::Transformers,
+    utils::tinyid,
+};
 use ouroboros_macros::command;
 
 pub struct Softban;
@@ -32,10 +46,10 @@ impl Command for Softban {
             Clears 1 day of messages.")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![
             CommandSyntax::Member("user", true),
-            CommandSyntax::Consume("reason")
+            CommandSyntax::Consume("reason"),
         ]
     }
 
@@ -45,11 +59,17 @@ impl Command for Softban {
         ctx: Context,
         msg: Message,
         #[transformers::reply_member] member: Member,
-        #[transformers::reply_consume] reason: Option<String>
+        #[transformers::reply_consume] reason: Option<String>,
     ) -> Result<(), CommandError> {
-        let mut reason = reason.map(|s| {
-            if s.is_empty() || s.chars().all(char::is_whitespace) { String::from("No reason provided") } else { s }
-        }).unwrap_or(String::from("No reason provided"));
+        let mut reason = reason
+            .map(|s| {
+                if s.is_empty() || s.chars().all(char::is_whitespace) {
+                    String::from("No reason provided")
+                } else {
+                    s
+                }
+            })
+            .unwrap_or(String::from("No reason provided"));
 
         if reason.len() > 500 {
             reason.truncate(500);
@@ -69,18 +89,34 @@ impl Command for Softban {
 
         if let Err(err) = res {
             warn!("Got error while softbanning; err = {err:?}");
-            return Err(CommandError { title: String::from("Could not softban member"), hint: Some(String::from("please try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not softban member"),
+                hint: Some(String::from("please try again later")),
+                arg: None,
+            });
         }
 
         if let Err(err) = member.ban_with_reason(&ctx.http, 1, &reason).await {
             warn!("Got error while softbanning; err = {err:?}");
 
             // cant do much here...
-            if query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await.is_err() {
-                error!("Got an error while softbanning and an error with the database! Stray softban entry in DB & manual action required; id = {db_id}; err = {err:?}");
+            if query!("DELETE FROM actions WHERE id = $1", db_id)
+                .execute(SQL.get().unwrap())
+                .await
+                .is_err()
+            {
+                error!(
+                    "Got an error while softbanning and an error with the database! Stray softban entry in DB & manual action required; id = {db_id}; err = {err:?}"
+                );
             }
 
-            return Err(CommandError { title: String::from("Could not softban member"), hint: Some(String::from("check if the bot has the ban members permission or try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not softban member"),
+                hint: Some(String::from(
+                    "check if the bot has the ban members permission or try again later",
+                )),
+                arg: None,
+            });
         }
 
         if let Err(err) = member.unban(&ctx.http).await {
@@ -89,14 +125,25 @@ impl Command for Softban {
             // leave the entry in the db since they have still faced the consequences
             return Err(CommandError {
                 title: String::from("Member banned, but bot ran into an error trying to unban"),
-                hint: Some(String::from("manually unban the member and check if the bot has the ban members permission")),
-                arg: None
+                hint: Some(String::from(
+                    "manually unban the member and check if the bot has the ban members permission",
+                )),
+                arg: None,
             });
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Softbanned {}\n```\n{}\n```", member.mention(), reason)).color(BRAND_BLUE))
-            .reference_message(&msg);
+            .add_embed(
+                CreateEmbed::new()
+                    .description(format!(
+                        "Softbanned {}\n```\n{}\n```",
+                        member.mention(),
+                        reason
+                    ))
+                    .color(BRAND_BLUE),
+            )
+            .reference_message(&msg)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
             warn!("Could not send message; err = {err:?}");
@@ -106,6 +153,9 @@ impl Command for Softban {
     }
 
     fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions { required: vec![Permissions::KICK_MEMBERS], one_of: vec![] }
+        CommandPermissions {
+            required: vec![Permissions::KICK_MEMBERS],
+            one_of: vec![],
+        }
     }
 }

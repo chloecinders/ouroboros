@@ -1,10 +1,25 @@
 use std::sync::Arc;
 
-use serenity::{all::{Context, CreateEmbed, CreateMessage, Message, Permissions}, async_trait, json::{self, Value}};
+use serenity::{
+    all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Message, Permissions},
+    async_trait,
+    json::{self, Value},
+};
 use sqlx::query;
 use tracing::{error, warn};
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerError, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::Settings, GUILD_SETTINGS, SQL};
+use crate::{
+    GUILD_SETTINGS, SQL,
+    commands::{
+        Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerError,
+        TransformerFn,
+    },
+    constants::BRAND_BLUE,
+    event_handler::CommandError,
+    lexer::Token,
+    transformers::Transformers,
+    utils::Settings,
+};
 
 pub struct Config;
 
@@ -25,15 +40,17 @@ impl Command for Config {
     }
 
     fn get_full(&self) -> String {
-        String::from("Configures functions of the bot. \
+        String::from(
+            "Configures functions of the bot. \
             Available subcommands: list set get;\n \
             `list [group]` lists all groups/keys in a group\n \
             `set <group>.<key> <value>` sets a setting to value\n \
             `get <group>.<key>` gets the value of a setting \
-            To clear a setting set its value to `none`.")
+            To clear a setting set its value to `none`.",
+        )
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![
             CommandSyntax::String("subcommand", true),
             CommandSyntax::String("argument1", false),
@@ -41,16 +58,17 @@ impl Command for Config {
         ]
     }
 
-    async fn run(
-        &self,
-        ctx: Context,
-        msg: Message,
-        args: Vec<Token>
-    ) -> Result<(), CommandError> {
+    async fn run(&self, ctx: Context, msg: Message, args: Vec<Token>) -> Result<(), CommandError> {
         let mut args_iter = args.into_iter();
 
-        let Some(subcommand_token) = args_iter.next() else { return Err(CommandError::arg_not_found("String", Some("subcommand"))) };
-        let Token { contents: Some(CommandArgument::String(subcommand)), .. } = subcommand_token.clone() else {
+        let Some(subcommand_token) = args_iter.next() else {
+            return Err(CommandError::arg_not_found("String", Some("subcommand")));
+        };
+        let Token {
+            contents: Some(CommandArgument::String(subcommand)),
+            ..
+        } = subcommand_token.clone()
+        else {
             return Err(CommandError::arg_not_found("String", Some("subcommand")));
         };
 
@@ -77,34 +95,55 @@ impl Command for Config {
             Ok(s) => s,
             Err(_) => Settings {
                 ..Default::default()
-            }
+            },
         };
 
         if subcommand == "list" {
             let Ok(Value::Object(json_rep)) = json::to_value(&settings) else {
                 error!("Json serialization went wrong on guild settings");
-                return Err(CommandError { title: String::from("Could not fetch guild settings"), hint: Some(String::from("please try again later")), arg: None })
+                return Err(CommandError {
+                    title: String::from("Could not fetch guild settings"),
+                    hint: Some(String::from("please try again later")),
+                    arg: None,
+                });
             };
 
             let description = if let Some(group_key) = arg1 {
                 let Some(Value::Object(group)) = json_rep.get(&group_key) else {
-                    return Err(CommandError { title: String::from("Could not find group"), hint: Some(String::from("run `config list` for a list of all groups")), arg: None })
+                    return Err(CommandError {
+                        title: String::from("Could not find group"),
+                        hint: Some(String::from("run `config list` for a list of all groups")),
+                        arg: None,
+                    });
                 };
 
                 format!(
                     "**Available Config Groups**\n{}",
-                    group.keys().map(|k| format!("`{k}`")).collect::<Vec<String>>().join("\n")
+                    group
+                        .keys()
+                        .map(|k| format!("`{k}`"))
+                        .collect::<Vec<String>>()
+                        .join("\n")
                 )
             } else {
                 format!(
                     "**Available Settings In Group**\n{}",
-                    json_rep.keys().map(|k| format!("`{k}`")).collect::<Vec<String>>().join("\n")
+                    json_rep
+                        .keys()
+                        .map(|k| format!("`{k}`"))
+                        .collect::<Vec<String>>()
+                        .join("\n")
                 )
             };
 
             let reply = CreateMessage::new()
-                .add_embed(CreateEmbed::new().description(description).color(BRAND_BLUE))
-                .reference_message(&msg);
+                .add_embed(
+                    CreateEmbed::new()
+                        .description(description)
+                        .color(BRAND_BLUE),
+                )
+                .reference_message(&msg)
+                .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
             if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
                 warn!("Could not send message; err = {err:?}");
@@ -117,15 +156,28 @@ impl Command for Config {
             };
 
             let value = match setting.as_str() {
-                "log.channel" => settings.log.channel.map(|c| format!("<#{c}>")).unwrap_or(String::from("None")),
+                "log.channel" => settings
+                    .log
+                    .channel
+                    .map(|c| format!("<#{c}>"))
+                    .unwrap_or(String::from("None")),
                 _ => {
-                    return Err(CommandError { title: String::from("Could not find setting"), hint: Some(String::from("run config list for a list of valid settings")), arg: Some(arg1_token.unwrap()) })
+                    return Err(CommandError {
+                        title: String::from("Could not find setting"),
+                        hint: Some(String::from("run config list for a list of valid settings")),
+                        arg: Some(arg1_token.unwrap()),
+                    });
                 }
             };
 
             let reply = CreateMessage::new()
-                .add_embed(CreateEmbed::new().description(format!("{setting}: {value}")).color(BRAND_BLUE))
-                .reference_message(&msg);
+                .add_embed(
+                    CreateEmbed::new()
+                        .description(format!("{setting}: {value}"))
+                        .color(BRAND_BLUE),
+                )
+                .reference_message(&msg)
+                .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
             if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
                 warn!("Could not send message; err = {err:?}");
@@ -145,7 +197,13 @@ impl Command for Config {
 
             let query = match setting.as_str() {
                 "log.channel" => {
-                    if iter.peek().map(|t| t.raw.clone()).unwrap_or_default().to_lowercase() == "none" {
+                    if iter
+                        .peek()
+                        .map(|t| t.raw.clone())
+                        .unwrap_or_default()
+                        .to_lowercase()
+                        == "none"
+                    {
                         query!(
                             "UPDATE guild_settings SET log_channel = $2 WHERE guild_id = $1;",
                             msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64,
@@ -153,7 +211,10 @@ impl Command for Config {
                         )
                     } else {
                         match Transformers::guild_channel(&ctx, &msg, &mut iter).await {
-                            Ok(Token {contents: Some(CommandArgument::GuildChannel(channel)), .. }) => query!(
+                            Ok(Token {
+                                contents: Some(CommandArgument::GuildChannel(channel)),
+                                ..
+                            }) => query!(
                                 "UPDATE guild_settings SET log_channel = $2 WHERE guild_id = $1;",
                                 msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64,
                                 channel.id.get() as i64
@@ -162,26 +223,40 @@ impl Command for Config {
                                 err.arg = Some(arg2_token.unwrap());
                                 return Err(err);
                             }
-                            _ => unreachable!()
+                            _ => unreachable!(),
                         }
                     }
-
-                },
+                }
                 _ => {
-                    return Err(CommandError { title: String::from("Could not find setting"), hint: Some(String::from("run `config list` for a list of valid settings")), arg: Some(arg1_token.unwrap()) })
+                    return Err(CommandError {
+                        title: String::from("Could not find setting"),
+                        hint: Some(String::from(
+                            "run `config list` for a list of valid settings",
+                        )),
+                        arg: Some(arg1_token.unwrap()),
+                    });
                 }
             };
 
             if let Err(err) = query.execute(SQL.get().unwrap()).await {
                 warn!("Could not update guild settings; err = {err:?}");
-                return Err(CommandError { title: String::from("Could not update settings"), hint: Some(String::from("please try again later.")), arg: Some(arg1_token.unwrap()) })
+                return Err(CommandError {
+                    title: String::from("Could not update settings"),
+                    hint: Some(String::from("please try again later.")),
+                    arg: Some(arg1_token.unwrap()),
+                });
             }
 
             global.invalidate();
 
             let reply = CreateMessage::new()
-                .add_embed(CreateEmbed::new().description(format!("Successfully set {setting} to {value}")).color(BRAND_BLUE))
-                .reference_message(&msg);
+                .add_embed(
+                    CreateEmbed::new()
+                        .description(format!("Successfully set {setting} to {value}"))
+                        .color(BRAND_BLUE),
+                )
+                .reference_message(&msg)
+                .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
             if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
                 warn!("Could not send message; err = {err:?}");
@@ -189,7 +264,11 @@ impl Command for Config {
 
             Ok(())
         } else {
-            Err(CommandError { title: String::from("Subcommand not found"), hint: Some(String::from("available subcommands: list, get, set")), arg: Some(subcommand_token) })
+            Err(CommandError {
+                title: String::from("Subcommand not found"),
+                hint: Some(String::from("available subcommands: list, get, set")),
+                arg: Some(subcommand_token),
+            })
         }
     }
 
@@ -197,11 +276,14 @@ impl Command for Config {
         vec![
             Arc::new(Transformers::some_string),
             Arc::new(Transformers::string),
-            Arc::new(Transformers::some_string)
+            Arc::new(Transformers::some_string),
         ]
     }
 
     fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions { required: vec![Permissions::ADMINISTRATOR], one_of: vec![] }
+        CommandPermissions {
+            required: vec![Permissions::ADMINISTRATOR],
+            one_of: vec![],
+        }
     }
 }

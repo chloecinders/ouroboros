@@ -1,11 +1,25 @@
-use std::{sync::Arc};
+use std::sync::Arc;
 
 use chrono::{Duration, Utc};
-use serenity::{all::{Context, CreateEmbed, CreateMessage, EditMember, Mentionable, Message, Permissions}, async_trait};
+use serenity::{
+    all::{
+        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EditMember, Mentionable,
+        Message, Permissions,
+    },
+    async_trait,
+};
 use sqlx::query;
 use tracing::{error, warn};
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::tinyid, SQL};
+use crate::{
+    SQL,
+    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    constants::BRAND_BLUE,
+    event_handler::CommandError,
+    lexer::Token,
+    transformers::Transformers,
+    utils::tinyid,
+};
 use ouroboros_macros::command;
 
 pub struct Mute;
@@ -32,11 +46,11 @@ impl Command for Mute {
             Has a max duration of 28 days. Duration (including the removal of the timeout) is managed by Discord")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![
             CommandSyntax::Member("member", true),
             CommandSyntax::Duration("duration", true),
-            CommandSyntax::Reason("reason")
+            CommandSyntax::Reason("reason"),
         ]
     }
 
@@ -47,11 +61,17 @@ impl Command for Mute {
         msg: Message,
         #[transformers::reply_member] member: Member,
         #[transformers::duration] duration: Duration,
-        #[transformers::reply_consume] reason: Option<String>
+        #[transformers::reply_consume] reason: Option<String>,
     ) -> Result<(), CommandError> {
-        let mut reason = reason.map(|s| {
-            if s.is_empty() || s.chars().all(char::is_whitespace) { String::from("No reason provided") } else { s }
-        }).unwrap_or(String::from("No reason provided"));
+        let mut reason = reason
+            .map(|s| {
+                if s.is_empty() || s.chars().all(char::is_whitespace) {
+                    String::from("No reason provided")
+                } else {
+                    s
+                }
+            })
+            .unwrap_or(String::from("No reason provided"));
 
         if reason.len() > 500 {
             reason.truncate(500);
@@ -61,17 +81,33 @@ impl Command for Mute {
         let db_id = tinyid().await;
 
         if duration > Duration::days(28) {
-            return Err(CommandError { title: String::from("Timeouts have a max duration of 28 days."), hint: None, arg: Some(args.get(1).unwrap().clone()) });
+            return Err(CommandError {
+                title: String::from("Timeouts have a max duration of 28 days."),
+                hint: None,
+                arg: Some(args.get(1).unwrap().clone()),
+            });
         }
 
         let time_string = {
             let (time, mut unit) = match () {
-                _ if (duration.num_days() as f64 / 365.0).fract() == 0.0 && duration.num_days() >= 365 => (duration.num_days() / 365, String::from("year")),
-                _ if (duration.num_days() as f64 / 30.0).fract() == 0.0 && duration.num_days() >= 30 => (duration.num_days() / 30, String::from("month")),
+                _ if (duration.num_days() as f64 / 365.0).fract() == 0.0
+                    && duration.num_days() >= 365 =>
+                {
+                    (duration.num_days() / 365, String::from("year"))
+                }
+                _ if (duration.num_days() as f64 / 30.0).fract() == 0.0
+                    && duration.num_days() >= 30 =>
+                {
+                    (duration.num_days() / 30, String::from("month"))
+                }
                 _ if duration.num_days() != 0 => (duration.num_days(), String::from("day")),
                 _ if duration.num_hours() != 0 => (duration.num_hours(), String::from("hour")),
-                _ if duration.num_minutes() != 0 => (duration.num_minutes(), String::from("minute")),
-                _ if duration.num_seconds() != 0 => (duration.num_seconds(), String::from("second")),
+                _ if duration.num_minutes() != 0 => {
+                    (duration.num_minutes(), String::from("minute"))
+                }
+                _ if duration.num_seconds() != 0 => {
+                    (duration.num_seconds(), String::from("second"))
+                }
                 _ => (0, String::new()),
             };
 
@@ -96,7 +132,11 @@ impl Command for Mute {
 
         if let Err(err) = res {
             warn!("Got error while timing out; err = {err:?}");
-            return Err(CommandError { title: String::from("Could not time member out"), hint: Some(String::from("please try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not time member out"),
+                hint: Some(String::from("please try again later")),
+                arg: None,
+            });
         }
 
         let edit = EditMember::new()
@@ -107,16 +147,38 @@ impl Command for Mute {
             warn!("Got error while timinng out; err = {err:?}");
 
             // cant do much here...
-            if query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await.is_err() {
-                error!("Got an error while timing out and an error with the database! Stray timeout entry in DB & manual action required; id = {db_id}; err = {err:?}");
+            if query!("DELETE FROM actions WHERE id = $1", db_id)
+                .execute(SQL.get().unwrap())
+                .await
+                .is_err()
+            {
+                error!(
+                    "Got an error while timing out and an error with the database! Stray timeout entry in DB & manual action required; id = {db_id}; err = {err:?}"
+                );
             }
 
-            return Err(CommandError { title: String::from("Could not time member out"), hint: Some(String::from("check if the bot has the timeout members permission or try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not time member out"),
+                hint: Some(String::from(
+                    "check if the bot has the timeout members permission or try again later",
+                )),
+                arg: None,
+            });
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Timed {} out {}\n```\n{}\n```", member.mention(), time_string, reason)).color(BRAND_BLUE))
-            .reference_message(&msg);
+            .add_embed(
+                CreateEmbed::new()
+                    .description(format!(
+                        "Timed {} out {}\n```\n{}\n```",
+                        member.mention(),
+                        time_string,
+                        reason
+                    ))
+                    .color(BRAND_BLUE),
+            )
+            .reference_message(&msg)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
             warn!("Could not send message; err = {err:?}");
@@ -126,6 +188,9 @@ impl Command for Mute {
     }
 
     fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions { required: vec![Permissions::MODERATE_MEMBERS], one_of: vec![] }
+        CommandPermissions {
+            required: vec![Permissions::MODERATE_MEMBERS],
+            one_of: vec![],
+        }
     }
 }

@@ -25,12 +25,18 @@ pub async fn check_expiring_bans(http: &Arc<Http>) {
 
     for entry in data {
         let Ok(guild) = Guild::get(http, entry.guild_id as u64).await else {
-            warn!("task check_expiring_bans couldnt fetch guild; Id = {:?}", entry.guild_id);
+            warn!(
+                "task check_expiring_bans couldnt fetch guild; Id = {:?}",
+                entry.guild_id
+            );
             continue;
         };
 
         if guild.unban(http, entry.user_id as u64).await.is_err() {
-            warn!("task check_expiring_bans couldnt unban user; Guild = {:?} Id = {:?}", entry.guild_id, entry.user_id);
+            warn!(
+                "task check_expiring_bans couldnt unban user; Guild = {:?} Id = {:?}",
+                entry.guild_id, entry.user_id
+            );
             continue;
         } else {
             updated.push(entry.id);
@@ -42,8 +48,15 @@ pub async fn check_expiring_bans(http: &Arc<Http>) {
         UPDATE actions SET active = false WHERE id = ANY($1);
         "#,
         &updated
-    ).execute(SQL.get().unwrap()).await.is_err() {
-        error!("task check_expiring_bans couldnt update entries; entries = {:?}", updated);
+    )
+    .execute(SQL.get().unwrap())
+    .await
+    .is_err()
+    {
+        error!(
+            "task check_expiring_bans couldnt update entries; entries = {:?}",
+            updated
+        );
     } else {
         info!("task check_expiring_bans finished");
     }

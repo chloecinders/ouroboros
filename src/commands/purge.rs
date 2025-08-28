@@ -1,9 +1,17 @@
 use std::sync::Arc;
 
 use chrono::{Duration, Utc};
-use serenity::{all::{Context, GetMessages, Message, Permissions}, async_trait};
+use serenity::{
+    all::{Context, GetMessages, Message, Permissions},
+    async_trait,
+};
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, event_handler::CommandError, lexer::Token, transformers::Transformers};
+use crate::{
+    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    event_handler::CommandError,
+    lexer::Token,
+    transformers::Transformers,
+};
 use ouroboros_macros::command;
 
 pub struct Purge;
@@ -25,15 +33,15 @@ impl Command for Purge {
     }
 
     fn get_full(&self) -> String {
-        String::from("Mass deletes a specific amount of messages from a channel. \
+        String::from(
+            "Mass deletes a specific amount of messages from a channel. \
             Messages older than 2 weeks are ignored. \
-            Count must be between 2 and 100.")
+            Count must be between 2 and 100.",
+        )
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
-        vec![
-            CommandSyntax::Number("count", true)
-        ]
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
+        vec![CommandSyntax::Number("count", true)]
     }
 
     #[command]
@@ -44,17 +52,27 @@ impl Command for Purge {
         #[transformers::i32] count: i32,
     ) -> Result<(), CommandError> {
         if !(2..=100).contains(&count) {
-            return Err(CommandError { title: String::from("Message count must be between 2 and 100"), hint: None, arg: Some(args.first().unwrap().clone()) })
+            return Err(CommandError {
+                title: String::from("Message count must be between 2 and 100"),
+                hint: None,
+                arg: Some(args.first().unwrap().clone()),
+            });
         }
 
         let count = count as u8;
 
-        let Ok(messages) = msg.channel_id.messages(&ctx.http, GetMessages::new().limit(count)).await else {
+        let Ok(messages) = msg
+            .channel_id
+            .messages(&ctx.http, GetMessages::new().limit(count))
+            .await
+        else {
             return Err(CommandError {
                 title: String::from("Could not get channel messages"),
-                hint: Some(String::from("make sure the bot has enough permissions to view the messages of this channel")),
-                arg: None
-            })
+                hint: Some(String::from(
+                    "make sure the bot has enough permissions to view the messages of this channel",
+                )),
+                arg: None,
+            });
         };
 
         let now = Utc::now();
@@ -70,18 +88,28 @@ impl Command for Purge {
             }
         });
 
-        if msg.channel_id.delete_messages(&ctx.http, filtered).await.is_err() {
+        if msg
+            .channel_id
+            .delete_messages(&ctx.http, filtered)
+            .await
+            .is_err()
+        {
             return Err(CommandError {
                 title: String::from("Could not delete channel messages"),
-                hint: Some(String::from("make sure the bot has enough permissions to delete the messages of this channel")),
-                arg: None
-            })
+                hint: Some(String::from(
+                    "make sure the bot has enough permissions to delete the messages of this channel",
+                )),
+                arg: None,
+            });
         };
 
         Ok(())
     }
 
     fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions { required: vec![Permissions::MANAGE_MESSAGES], one_of: vec![] }
+        CommandPermissions {
+            required: vec![Permissions::MANAGE_MESSAGES],
+            one_of: vec![],
+        }
     }
 }

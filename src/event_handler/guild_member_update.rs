@@ -2,12 +2,31 @@ use std::io::Cursor;
 
 use image::{DynamicImage, GenericImage, imageops::FilterType};
 use reqwest::Client;
-use serenity::all::{Change, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage, GuildMemberUpdateEvent, Member, MemberAction, audit_log::Action};
+use serenity::all::{
+    Change, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
+    GuildMemberUpdateEvent, Member, MemberAction, audit_log::Action,
+};
 
 use crate::{constants::BRAND_BLUE, event_handler::Handler, utils::guild_log};
 
-pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_available: Option<Member>, new: Option<Member>, event: GuildMemberUpdateEvent) {
-    let audit_log = event.guild_id.audit_logs(&ctx.http, Some(Action::Member(MemberAction::Update)), None, None, Some(10)).await.ok();
+pub async fn guild_member_update(
+    _handler: &Handler,
+    ctx: Context,
+    old_if_available: Option<Member>,
+    new: Option<Member>,
+    event: GuildMemberUpdateEvent,
+) {
+    let audit_log = event
+        .guild_id
+        .audit_logs(
+            &ctx.http,
+            Some(Action::Member(MemberAction::Update)),
+            None,
+            None,
+            Some(10),
+        )
+        .await
+        .ok();
 
     let mut moderator_id: Option<u64> = None;
     let mut reason: Option<String> = None;
@@ -16,8 +35,7 @@ pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_availa
     if let Some(logs) = audit_log {
         'o: for entry in logs.entries {
             for change in entry.changes.unwrap_or(Vec::new()) {
-                if
-                    let Change::Nick { old, new } = change
+                if let Change::Nick { old, new } = change
                     && event.user.id.get() == entry.user_id.get()
                     && new == event.nick
                 {
@@ -38,34 +56,37 @@ pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_availa
             return;
         }
 
-        format!("\nName:\n`{}` -> `{}`", old.unwrap_or(String::from("(none)")), event.nick.unwrap_or(String::from("(none)")))
+        format!(
+            "\nName:\n`{}` -> `{}`",
+            old.unwrap_or(String::from("(none)")),
+            event.nick.unwrap_or(String::from("(none)"))
+        )
     } else {
         String::new()
     };
 
-    let avatar = if let Some(old) = old_if_available && let Some(new) = new {
-        let olda = old.avatar.or_else(|| old.user.avatar);
-        let newa = new.avatar.or_else(|| new.user.avatar);
-
-        if olda == newa {
+    let avatar = if let Some(old) = old_if_available
+        && let Some(new) = new
+    {
+        if old.avatar.or(old.user.avatar) == new.avatar.or(new.user.avatar) {
             (String::new(), None)
         } else {
             let client = Client::new();
 
             if let (Some(old_image), Some(new_image)) = (
                 get_member_avatar_image(&client, old).await,
-                get_member_avatar_image(&client, new).await
+                get_member_avatar_image(&client, new).await,
             ) {
                 let target_height = old_image.height();
 
                 let old_image = old_image.resize(
-                    (old_image.width() * target_height / old_image.height()) as u32,
+                    old_image.width() * target_height / old_image.height(),
                     target_height,
                     FilterType::Lanczos3,
                 );
 
                 let new_image = new_image.resize(
-                    (new_image.width() * target_height / new_image.height()) as u32,
+                    new_image.width() * target_height / new_image.height(),
                     target_height,
                     FilterType::Lanczos3,
                 );
@@ -77,7 +98,10 @@ pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_availa
                 output.copy_from(&new_image, new_image.width(), 0).unwrap();
 
                 let mut buff = Vec::new();
-                if output.write_to(&mut Cursor::new(&mut buff), image::ImageFormat::WebP).is_err() {
+                if output
+                    .write_to(&mut Cursor::new(&mut buff), image::ImageFormat::WebP)
+                    .is_err()
+                {
                     (String::new(), None)
                 } else {
                     (String::from("\nAvatar:\n"), Some(buff))
@@ -106,13 +130,21 @@ pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_availa
         String::new()
     };
 
-    let description = format!("**MEMBER UPDATE**\n-# <@{}>{}{}{}{}", event.user.id, moderator, name, reason, avatar.0);
+    let description = format!(
+        "**MEMBER UPDATE**\n-# <@{}>{}{}{}{}",
+        event.user.id, moderator, name, reason, avatar.0
+    );
     let mut embed = CreateEmbed::new()
         .color(BRAND_BLUE)
         .description(description)
         .author(
             CreateEmbedAuthor::new(format!("{}: {}", event.user.name, event.user.id.get()))
-                .icon_url(event.user.avatar_url().unwrap_or(event.user.default_avatar_url()))
+                .icon_url(
+                    event
+                        .user
+                        .avatar_url()
+                        .unwrap_or(event.user.default_avatar_url()),
+                ),
         );
 
     if !avatar.0.is_empty() {
@@ -129,7 +161,18 @@ pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_availa
 }
 
 async fn get_member_avatar_image(client: &Client, member: Member) -> Option<image::DynamicImage> {
-    let avatar_req = client.get(&member.avatar_url().unwrap_or(member.user.avatar_url().unwrap_or(member.user.default_avatar_url()))).send().await.ok()?;
+    let avatar_req = client
+        .get(
+            member.avatar_url().unwrap_or(
+                member
+                    .user
+                    .avatar_url()
+                    .unwrap_or(member.user.default_avatar_url()),
+            ),
+        )
+        .send()
+        .await
+        .ok()?;
     let bytes = avatar_req.bytes().await.ok()?;
     image::load_from_memory(&bytes).ok()
 }

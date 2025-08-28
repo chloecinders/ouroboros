@@ -1,10 +1,24 @@
 use std::sync::Arc;
 
-use serenity::{all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, Permissions}, async_trait};
+use serenity::{
+    all::{
+        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
+        Permissions,
+    },
+    async_trait,
+};
 use sqlx::query;
 use tracing::{error, warn};
 
-use crate::{commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::tinyid, SQL};
+use crate::{
+    SQL,
+    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    constants::BRAND_BLUE,
+    event_handler::CommandError,
+    lexer::Token,
+    transformers::Transformers,
+    utils::tinyid,
+};
 use ouroboros_macros::command;
 
 pub struct Kick;
@@ -29,10 +43,10 @@ impl Command for Kick {
         String::from("Kicks a member from the server and leaves a note in the users log.")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
+    fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![
             CommandSyntax::Member("member", true),
-            CommandSyntax::Reason("reason")
+            CommandSyntax::Reason("reason"),
         ]
     }
 
@@ -42,11 +56,17 @@ impl Command for Kick {
         ctx: Context,
         msg: Message,
         #[transformers::reply_member] member: Member,
-        #[transformers::reply_consume] reason: Option<String>
+        #[transformers::reply_consume] reason: Option<String>,
     ) -> Result<(), CommandError> {
-        let mut reason = reason.map(|s| {
-            if s.is_empty() || s.chars().all(char::is_whitespace) { String::from("No reason provided") } else { s }
-        }).unwrap_or(String::from("No reason provided"));
+        let mut reason = reason
+            .map(|s| {
+                if s.is_empty() || s.chars().all(char::is_whitespace) {
+                    String::from("No reason provided")
+                } else {
+                    s
+                }
+            })
+            .unwrap_or(String::from("No reason provided"));
 
         if reason.len() > 500 {
             reason.truncate(500);
@@ -66,23 +86,44 @@ impl Command for Kick {
 
         if let Err(err) = res {
             warn!("Got error while kicking; err = {err:?}");
-            return Err(CommandError { title: String::from("Could not kick member"), hint: Some(String::from("please try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not kick member"),
+                hint: Some(String::from("please try again later")),
+                arg: None,
+            });
         }
 
         if let Err(err) = member.kick_with_reason(&ctx.http, &reason).await {
             warn!("Got error while kicking; err = {err:?}");
 
             // cant do much here...
-            if query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await.is_err() {
-                error!("Got an error while kicking and an error with the database! Stray kick entry in DB & manual action required; id = {db_id}; err = {err:?}");
+            if query!("DELETE FROM actions WHERE id = $1", db_id)
+                .execute(SQL.get().unwrap())
+                .await
+                .is_err()
+            {
+                error!(
+                    "Got an error while kicking and an error with the database! Stray kick entry in DB & manual action required; id = {db_id}; err = {err:?}"
+                );
             }
 
-            return Err(CommandError { title: String::from("Could not kick member"), hint: Some(String::from("check if the bot has the kick members permission or try again later")), arg: None });
+            return Err(CommandError {
+                title: String::from("Could not kick member"),
+                hint: Some(String::from(
+                    "check if the bot has the kick members permission or try again later",
+                )),
+                arg: None,
+            });
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Kicked {}\n```\n{}\n```", member.mention(), reason)).color(BRAND_BLUE))
-            .reference_message(&msg);
+            .add_embed(
+                CreateEmbed::new()
+                    .description(format!("Kicked {}\n```\n{}\n```", member.mention(), reason))
+                    .color(BRAND_BLUE),
+            )
+            .reference_message(&msg)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
             warn!("Could not send message; err = {err:?}");
@@ -92,6 +133,9 @@ impl Command for Kick {
     }
 
     fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions { required: vec![Permissions::KICK_MEMBERS], one_of: vec![] }
+        CommandPermissions {
+            required: vec![Permissions::KICK_MEMBERS],
+            one_of: vec![],
+        }
     }
 }

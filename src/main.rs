@@ -1,12 +1,24 @@
-use std::{env, fs, sync::{Arc, OnceLock}, time::{Duration, Instant}};
+use std::{
+    env, fs,
+    sync::{Arc, OnceLock},
+    time::{Duration, Instant},
+};
 
-use serenity::{all::{GatewayIntents, Settings, ShardManager}, prelude::TypeMapKey, Client};
+use serenity::{
+    Client,
+    all::{GatewayIntents, Settings, ShardManager},
+    prelude::TypeMapKey,
+};
+use sqlx::{PgPool, postgres::PgPoolOptions};
 use tokio::{fs::File, io::AsyncReadExt, sync::Mutex, time::sleep};
-use sqlx::{postgres::PgPoolOptions, PgPool};
 use tracing::{error, warn};
 
-use crate::{config::{Config, Environment}, event_handler::Handler, utils::GuildSettings};
-use std::process::{Command as SystemCommand};
+use crate::{
+    config::{Config, Environment},
+    event_handler::Handler,
+    utils::GuildSettings,
+};
+use std::process::Command as SystemCommand;
 
 pub struct ShardManagerContainer;
 
@@ -14,15 +26,15 @@ impl TypeMapKey for ShardManagerContainer {
     type Value = Arc<ShardManager>;
 }
 
-mod config;
-mod event_handler;
 mod commands;
-mod transformers;
-mod lexer;
-mod database;
-mod utils;
-mod tasks;
+mod config;
 mod constants;
+mod database;
+mod event_handler;
+mod lexer;
+mod tasks;
+mod transformers;
+mod utils;
 
 pub static START_TIME: OnceLock<Instant> = OnceLock::new();
 pub static SQL: OnceLock<PgPool> = OnceLock::new();
@@ -31,11 +43,14 @@ pub static BOT_CONFIG: OnceLock<Environment> = OnceLock::new();
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::fmt()
-        .init();
+    tracing_subscriber::fmt::fmt().init();
 
     #[cfg(target_os = "windows")]
-    if let Some(arg) = std::env::args().collect::<Vec<String>>().iter().find(|a| a.starts_with("--update")) {
+    if let Some(arg) = std::env::args()
+        .collect::<Vec<String>>()
+        .iter()
+        .find(|a| a.starts_with("--update"))
+    {
         use std::process::exit;
         use tracing::info;
 
@@ -52,19 +67,22 @@ async fn main() {
 
     let _ = START_TIME.set(Instant::now());
 
-    let mut file = File::open("./Config.toml").await.expect("Could not find Config.toml in project root.");
+    let mut file = File::open("./Config.toml")
+        .await
+        .expect("Could not find Config.toml in project root.");
     let mut contents = String::new();
 
     if file.read_to_string(&mut contents).await.is_err() {
         panic!("Could not read Config.toml.");
     }
 
-    let config: Config = toml::from_str(contents.as_str()).unwrap_or_else(|_| panic!("Could not parse Config.toml."));
+    let config: Config = toml::from_str(contents.as_str())
+        .unwrap_or_else(|_| panic!("Could not parse Config.toml."));
 
     let active_env = match config.bot.env.as_str() {
         "release" => &config.release,
         "dev" => &config.dev,
-        _ => panic!("Unknown bot.env, verify bot.env is one of release or dev")
+        _ => panic!("Unknown bot.env, verify bot.env is one of release or dev"),
     };
 
     let _ = SQL.set({
@@ -79,7 +97,9 @@ async fn main() {
 
     database::run_migrations().await;
 
-    GUILD_SETTINGS.set(Mutex::new(GuildSettings::new())).unwrap();
+    GUILD_SETTINGS
+        .set(Mutex::new(GuildSettings::new()))
+        .unwrap();
 
     BOT_CONFIG.set(active_env.clone()).unwrap();
 
@@ -96,7 +116,11 @@ async fn main() {
         .expect("Unable to create client");
 
     let shard_manager = client.shard_manager.clone();
-    client.data.write().await.insert::<ShardManagerContainer>(shard_manager);
+    client
+        .data
+        .write()
+        .await
+        .insert::<ShardManagerContainer>(shard_manager);
 
     let http = client.http.clone();
 
@@ -129,7 +153,10 @@ fn update(arg: &str) -> std::io::Result<()> {
 
     let id = arg.split("=").last().unwrap_or("");
 
-    match SystemCommand::new(format!(".{}{}", std::path::MAIN_SEPARATOR, name)).arg(format!("--id={id}")).spawn() {
+    match SystemCommand::new(format!(".{}{}", std::path::MAIN_SEPARATOR, name))
+        .arg(format!("--id={id}"))
+        .spawn()
+    {
         Ok(c) => drop(c),
         Err(e) => error!("Could not spawn new process; err = {e:?}"),
     };
@@ -144,8 +171,7 @@ fn cleanup() -> std::io::Result<()> {
         let entry = entry?;
         let path = entry.path();
 
-        if
-            path.is_file()
+        if path.is_file()
             && let Some(filename) = path.file_name().and_then(|f| f.to_str())
             && filename.starts_with("new_")
             && filename.contains("ouroboros")

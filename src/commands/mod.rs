@@ -1,8 +1,14 @@
 use std::{iter::Peekable, pin::Pin, sync::Arc, vec::IntoIter};
 
+use crate::{
+    event_handler::{CommandError, MissingArgumentError},
+    lexer::Token,
+};
 use chrono::Duration;
-use serenity::{all::{Context, GuildChannel, Member, Message, Permissions, User}, async_trait};
-use crate::{event_handler::{CommandError, MissingArgumentError}, lexer::Token};
+use serenity::{
+    all::{Context, GuildChannel, Member, Message, Permissions, User},
+    async_trait,
+};
 
 #[allow(clippy::large_enum_variant)]
 pub enum TransformerError {
@@ -10,11 +16,16 @@ pub enum TransformerError {
     MissingArgumentError(MissingArgumentError),
 }
 
-pub type TransformerReturn<'a> = Pin<Box<dyn Future<Output = Result<Token, TransformerError>> + Send + 'a>>;
+pub type TransformerReturn<'a> =
+    Pin<Box<dyn Future<Output = Result<Token, TransformerError>> + Send + 'a>>;
 type TransformerFn = Arc<
-    dyn for<'a> Fn(&'a Context, &'a Message, &'a mut Peekable<IntoIter<Token>>)
-        -> TransformerReturn<'a>
-    + Send + Sync
+    dyn for<'a> Fn(
+            &'a Context,
+            &'a Message,
+            &'a mut Peekable<IntoIter<Token>>,
+        ) -> TransformerReturn<'a>
+        + Send
+        + Sync,
 >;
 
 #[derive(Debug, Clone)]
@@ -29,19 +40,19 @@ pub enum CommandArgument {
     GuildChannel(GuildChannel),
 }
 
-pub enum CommandSyntax<'a> {
-    Consume(&'a str),
-    User(&'a str, bool),
-    Member(&'a str, bool),
-    String(&'a str, bool),
-    Duration(&'a str, bool),
-    Reason(&'a str),
-    Number(&'a str, bool),
-    Or(Box<CommandSyntax<'a>>, Box<CommandSyntax<'a>>),
+pub enum CommandSyntax {
+    Consume(&'static str),
+    User(&'static str, bool),
+    Member(&'static str, bool),
+    String(&'static str, bool),
+    Duration(&'static str, bool),
+    Reason(&'static str),
+    Number(&'static str, bool),
+    Or(Box<CommandSyntax>, Box<CommandSyntax>),
 }
 
-impl<'a> CommandSyntax<'a> {
-    pub fn get_def(&'a self) -> String {
+impl CommandSyntax {
+    pub fn get_def(&self) -> String {
         let (inner, required) = match self {
             Self::Consume(name) | Self::Reason(name) => (format!("...[{name}]"), None),
             Self::Or(a, b) => (format!("({} || {})", a.get_def(), b.get_def()), None),
@@ -63,7 +74,7 @@ impl<'a> CommandSyntax<'a> {
         }
     }
 
-    pub fn get_example(&'a self) -> String {
+    pub fn get_example(&self) -> String {
         match self {
             CommandSyntax::Consume(_) => String::from("Some Text"),
             CommandSyntax::User(_, _) => String::from("123456789"),
@@ -80,7 +91,7 @@ impl<'a> CommandSyntax<'a> {
 #[derive(Default)]
 pub struct CommandPermissions {
     pub required: Vec<Permissions>,
-    pub one_of: Vec<Permissions>
+    pub one_of: Vec<Permissions>,
 }
 
 #[async_trait]
@@ -95,8 +106,12 @@ pub trait Command: Send + Sync {
     async fn run(&self, ctx: Context, msg: Message, args: Vec<Token>) -> Result<(), CommandError>;
 
     // Run helpers
-    fn get_transformers(&self) -> Vec<TransformerFn> { vec![] }
-    fn get_permissions(&self) -> CommandPermissions { Default::default() }
+    fn get_transformers(&self) -> Vec<TransformerFn> {
+        vec![]
+    }
+    fn get_permissions(&self) -> CommandPermissions {
+        Default::default()
+    }
 }
 
 mod ping;
