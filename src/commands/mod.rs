@@ -164,3 +164,6 @@ pub use update::Update;
 
 mod config;
 pub use config::Config;
+
+mod say;
+pub use say::Say;

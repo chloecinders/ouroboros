@@ -11,7 +11,7 @@ use tracing::warn;
 
 use crate::{
     commands::{
-        Ban, CBan, ColonThree, Command, Config, Kick, Log, MsgDbg, Mute, Ping, Purge, Reason,
+        Ban, CBan, ColonThree, Command, Config, Kick, Log, MsgDbg, Mute, Ping, Purge, Reason, Say,
         Softban, Stats, Unban, Unmute, Update, Warn,
     },
     constants::BRAND_RED,
@@ -96,6 +96,7 @@ impl Handler {
             Arc::new(Reason::new()),
             Arc::new(Update::new()),
             Arc::new(Config::new()),
+            Arc::new(Say::new()),
         ];
 
         Self { prefix, commands }
