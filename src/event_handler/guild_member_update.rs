@@ -1,8 +1,12 @@
+use std::fs;
+
 use serenity::all::{Change, Context, CreateEmbed, CreateEmbedAuthor, CreateMessage, GuildMemberUpdateEvent, Member, MemberAction, audit_log::Action};
 
 use crate::{constants::BRAND_BLUE, event_handler::Handler, utils::guild_log};
 
 pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_available: Option<Member>, _new: Option<Member>, event: GuildMemberUpdateEvent) {
+    let _ = fs::write("./text", format!("{old_if_available:#?}\n{_new:#?}"));
+
     let audit_log = {
         match event.guild_id.audit_logs(&ctx.http, Some(Action::Member(MemberAction::Update)), None, None, Some(10)).await {
             Ok(l) => Some(l),
