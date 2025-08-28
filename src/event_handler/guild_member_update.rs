@@ -1,17 +1,17 @@
-use std::fs;
+use std::io::Cursor;
 
-use serenity::all::{Change, Context, CreateEmbed, CreateEmbedAuthor, CreateMessage, GuildMemberUpdateEvent, Member, MemberAction, audit_log::Action};
+use image::{DynamicImage, GenericImage, imageops::FilterType};
+use reqwest::Client;
+use serenity::all::{Change, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage, GuildMemberUpdateEvent, Member, MemberAction, audit_log::Action};
 
 use crate::{constants::BRAND_BLUE, event_handler::Handler, utils::guild_log};
 
-pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_available: Option<Member>, _new: Option<Member>, event: GuildMemberUpdateEvent) {
-    let _ = fs::write("./text", format!("{old_if_available:#?}\n{_new:#?}"));
-
+pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_available: Option<Member>, new: Option<Member>, event: GuildMemberUpdateEvent) {
     let audit_log = event.guild_id.audit_logs(&ctx.http, Some(Action::Member(MemberAction::Update)), None, None, Some(10)).await.ok();
 
     let mut moderator_id: Option<u64> = None;
     let mut reason: Option<String> = None;
-    let mut old_nick: Option<Option<String>> = old_if_available.map(|o| o.nick);
+    let mut old_nick: Option<Option<String>> = old_if_available.clone().map(|o| o.nick);
 
     if let Some(logs) = audit_log {
         'o: for entry in logs.entries {
@@ -23,7 +23,10 @@ pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_availa
                 {
                     moderator_id = Some(entry.user_id.get());
                     reason = entry.reason.clone();
-                    old_nick = Some(old);
+
+                    if Some(old.clone()) != old_nick {
+                        old_nick = Some(old);
+                    }
                     break 'o;
                 }
             }
@@ -37,8 +40,59 @@ pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_availa
 
         format!("\nName:\n`{}` -> `{}`", old.unwrap_or(String::from("(none)")), event.nick.unwrap_or(String::from("(none)")))
     } else {
-        format!("\nName:\n`{}`", event.nick.unwrap_or(String::from("(none)")))
+        String::new()
     };
+
+    let avatar = if let Some(old) = old_if_available && let Some(new) = new {
+        let olda = old.avatar.or_else(|| old.user.avatar);
+        let newa = new.avatar.or_else(|| new.user.avatar);
+
+        if olda == newa {
+            (String::new(), None)
+        } else {
+            let client = Client::new();
+
+            if let (Some(old_image), Some(new_image)) = (
+                get_member_avatar_image(&client, old).await,
+                get_member_avatar_image(&client, new).await
+            ) {
+                let target_height = old_image.height();
+
+                let old_image = old_image.resize(
+                    (old_image.width() * target_height / old_image.height()) as u32,
+                    target_height,
+                    FilterType::Lanczos3,
+                );
+
+                let new_image = new_image.resize(
+                    (new_image.width() * target_height / new_image.height()) as u32,
+                    target_height,
+                    FilterType::Lanczos3,
+                );
+
+                let total_width = target_height * 2;
+                let mut output = DynamicImage::new_rgba8(total_width, target_height);
+
+                output.copy_from(&old_image, 0, 0).unwrap();
+                output.copy_from(&new_image, new_image.width(), 0).unwrap();
+
+                let mut buff = Vec::new();
+                if output.write_to(&mut Cursor::new(&mut buff), image::ImageFormat::WebP).is_err() {
+                    (String::new(), None)
+                } else {
+                    (String::from("\nAvatar:\n"), Some(buff))
+                }
+            } else {
+                (String::new(), None)
+            }
+        }
+    } else {
+        (String::new(), None)
+    };
+
+    if name.is_empty() || avatar.0.is_empty() {
+        return;
+    }
 
     let moderator = if let Some(id) = moderator_id {
         format!(" | Actor: <@{id}>")
@@ -52,8 +106,8 @@ pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_availa
         String::new()
     };
 
-    let description = format!("**MEMBER UPDATE**\n-# <@{}>{}{}{}", event.user.id, moderator, name, reason);
-    let embed = CreateEmbed::new()
+    let description = format!("**MEMBER UPDATE**\n-# <@{}>{}{}{}{}", event.user.id, moderator, name, reason, avatar.0);
+    let mut embed = CreateEmbed::new()
         .color(BRAND_BLUE)
         .description(description)
         .author(
@@ -61,5 +115,21 @@ pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_availa
                 .icon_url(event.user.avatar_url().unwrap_or(event.user.default_avatar_url()))
         );
 
-    guild_log(&ctx.http, event.guild_id, CreateMessage::new().add_embed(embed)).await;
+    if !avatar.0.is_empty() {
+        embed = embed.image("attachment://avatar.webp");
+    }
+
+    let mut msg = CreateMessage::new().add_embed(embed);
+
+    if !avatar.0.is_empty() {
+        msg = msg.add_file(CreateAttachment::bytes(avatar.1.unwrap(), "avatar.webp"));
+    }
+
+    guild_log(&ctx.http, event.guild_id, msg).await;
+}
+
+async fn get_member_avatar_image(client: &Client, member: Member) -> Option<image::DynamicImage> {
+    let avatar_req = client.get(&member.avatar_url().unwrap_or(member.user.avatar_url().unwrap_or(member.user.default_avatar_url()))).send().await.ok()?;
+    let bytes = avatar_req.bytes().await.ok()?;
+    image::load_from_memory(&bytes).ok()
 }

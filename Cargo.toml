@@ -16,6 +16,7 @@ sqlx = { version = "0.8.6", features = ["chrono", "json", "macros", "migrate", "
 chrono = "0.4.41"
 reqwest = { version = "0.12.23", features = ["json"] }
 zip = "4.5.0"
+image = "0.25.6"
 
 [workspace]
 members = ["ouroboros_macros"]
