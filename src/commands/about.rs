@@ -70,24 +70,24 @@ impl Command for About {
             };
 
             format!(
-                r#"
-                Hey, I'm {}!
-                A moderation bot made for one purpose and one purpose only: Moderation.
-                I'm currently in private beta and my source code will be released once I enter the public.
-                Type `+help` to see a list of all commands!
+                r#"Hey, I'm {}!
+A moderation bot made for one purpose and one purpose only: Moderation.
+I'm currently in private beta and my source code will be released once I enter the public.
+Type `+help` to see a list of all commands!
 
-                I was made in Rust by chloecinders!
+I was made in Rust by chloecinders!
 
-                Special thanks to:
-                ```
-                serenity-rs: Underlying Bot Framework
-                andreashgk: Rust Mentorship
-                Discord Previews & Rust Central: Bots pre-release testing grounds
-                ```
-
-                Nerd Stats:
-                Version: {}\nServers: {guild_count}\nUptime: {uptime}\nMemory: {memory:.2}MB
-            "#,
+Special thanks to:
+```
+serenity-rs: Underlying Bot Framework
+andreashgk: Rust Mentorship
+Discord Previews & Rust Central: Bots pre-release testing grounds
+```
+Nerd Stats:
+Version: {}
+Servers: {guild_count}
+Uptime: {uptime}
+Memory: {memory:.2}MB"#,
                 ctx.cache.current_user().name,
                 env!("CARGO_PKG_VERSION")
             )
