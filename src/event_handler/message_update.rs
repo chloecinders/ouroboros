@@ -30,7 +30,7 @@ pub async fn message_update(
     }
 
     let base = format!(
-        "**MESSAGE EDITED**\n-# Message {0} [jump](https://discord.com/channels/{3}/{0}/{2}) | Target: <@{1}> | Channel: <#{2}> ({2})",
+        "**MESSAGE EDITED**\n-# Message {0} [jump](https://discord.com/channels/{3}/{2}/{0}) | Target: <@{1}> | Channel: <#{2}> ({2})",
         new_msg.id.get(),
         new_msg.author.id.get(),
         new_msg.channel_id.get(),
