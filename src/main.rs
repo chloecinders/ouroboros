@@ -136,7 +136,7 @@ async fn main() {
     }
 }
 
-#[allow(unreachable_code)]
+#[allow(unreachable_code, dead_code)]
 fn update(arg: &str) -> std::io::Result<()> {
     let exe = env::current_exe()?;
 

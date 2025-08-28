@@ -43,17 +43,17 @@ impl Transformers {
                     format!("Message: {}", reply.content)
                 };
 
-                return Ok(Token {
+                Ok(Token {
                     contents: Some(CommandArgument::String(content)),
                     raw: String::new(),
                     position: 0,
                     length: 0,
                     iteration: 0,
-                });
+                })
             } else {
-                return Err(TransformerError::MissingArgumentError(
+                Err(TransformerError::MissingArgumentError(
                     MissingArgumentError(String::from("String")),
-                ));
+                ))
             }
         })
     }
