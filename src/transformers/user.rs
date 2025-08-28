@@ -44,16 +44,14 @@ impl Transformers {
             let user = {
                 if let Some(user) = ctx.cache.user(id) {
                     user.clone()
+                } else if let Ok(user) = ctx.http.get_user(id.into()).await {
+                    user.clone()
                 } else {
-                    if let Ok(user) = ctx.http.get_user(id.into()).await {
-                        user.clone()
-                    } else {
-                        return Err(TransformerError::CommandError(CommandError {
-                            arg: Some(input),
-                            title: String::from("Could not find the <Discord User>"),
-                            hint: Some(String::from("make sure the ID or mention you provided is valid and that its associated user exists!")),
-                        }));
-                    }
+                    return Err(TransformerError::CommandError(CommandError {
+                        arg: Some(input),
+                        title: String::from("Could not find the <Discord User>"),
+                        hint: Some(String::from("make sure the ID or mention you provided is valid and that its associated user exists!")),
+                    }));
                 }
             };
 

@@ -11,10 +11,10 @@ pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
     let strip = contents.strip_prefix(handler.prefix.as_str()).unwrap_or("");
     let lex = lex(String::from(strip));
     let mut parts = lex.into_iter().peekable();
-    let command_name = parts.next().map(|s| s.raw).unwrap_or(String::new());
+    let command_name = parts.next().map(|s| s.raw).unwrap_or_default();
 
     if command_name == "help" {
-        if let Err(err) = handler.help_run(ctx.clone(), msg.clone(), parts.map(|t| t).collect()).await {
+        if let Err(err) = handler.help_run(ctx.clone(), msg.clone(), parts.collect()).await {
             handler.send_error(ctx, msg, contents, err).await;
         }
 
@@ -26,7 +26,7 @@ pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
     if let Some(c) = command {
         let permissions = c.get_permissions();
 
-        if permissions.required.len() != 0 || permissions.one_of.len() != 0 {
+        if !permissions.required.is_empty() || !permissions.one_of.is_empty() {
             let Ok(member) = msg.member(&ctx.http).await else {
                 handler.send_error(ctx, msg, contents, CommandError {
                     title: String::from("You do not have permissions to execute this command."),
@@ -69,7 +69,7 @@ pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
         let mut transformers = c.get_transformers().into_iter();
         let mut args: Vec<Token> = vec![];
 
-        while let Some(_) = parts.peek() {
+        while parts.peek().is_some() {
             if let Some(transformer) = transformers.next() {
                 let result = transformer(&ctx, &msg, &mut parts).await;
 
@@ -92,7 +92,7 @@ pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
             }
         }
 
-        while let Some(transformer) = transformers.next() {
+        for transformer in transformers {
             let result = transformer(&ctx, &msg, &mut parts).await;
 
             match result {

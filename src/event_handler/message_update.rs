@@ -79,7 +79,7 @@ pub async fn message_update(
 
     let mut message = CreateMessage::new().add_embed(
         CreateEmbed::new()
-            .color(SOFT_YELLOW.clone())
+            .color(SOFT_YELLOW)
             .description(desc)
             .author(
                 CreateEmbedAuthor::new(format!("{}: {}", new_msg.author.name, new_msg.author.id.get()))

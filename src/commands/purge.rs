@@ -30,7 +30,7 @@ impl Command for Purge {
             Count must be between 2 and 100.")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax> {
+    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
         vec![
             CommandSyntax::Number("count", true)
         ]
@@ -43,7 +43,7 @@ impl Command for Purge {
         msg: Message,
         #[transformers::i32] count: i32,
     ) -> Result<(), CommandError> {
-        if count < 2 || count > 100 {
+        if !(2..=100).contains(&count) {
             return Err(CommandError { title: String::from("Message count must be between 2 and 100"), hint: None, arg: Some(args.first().unwrap().clone()) })
         }
 
@@ -70,7 +70,7 @@ impl Command for Purge {
             }
         });
 
-        if let Err(_) = msg.channel_id.delete_messages(&ctx.http, filtered).await {
+        if msg.channel_id.delete_messages(&ctx.http, filtered).await.is_err() {
             return Err(CommandError {
                 title: String::from("Could not delete channel messages"),
                 hint: Some(String::from("make sure the bot has enough permissions to delete the messages of this channel")),

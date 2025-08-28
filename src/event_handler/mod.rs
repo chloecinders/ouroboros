@@ -14,11 +14,11 @@ pub struct CommandError {
 
 impl CommandError {
     pub fn arg_not_found(arg_type: &str, name: Option<&str>) -> Self {
-        let name = name.map(|n| format!(": {}", n)).unwrap_or(String::new());
+        let name = name.map(|n| format!(": {n}")).unwrap_or_default();
 
         Self {
             arg: None,
-            title: format!("Missing argument, expected {}{}", arg_type, name),
+            title: format!("Missing argument, expected {arg_type}{name}"),
             hint: Some(String::from("for more information run !help (command)")),
         }
     }
@@ -120,7 +120,7 @@ impl Handler {
             .add_embed(CreateEmbed::new()
             .description(
                 error_message
-            ).color(BRAND_RED.clone()))
+            ).color(BRAND_RED))
             .reference_message(&msg);
 
         if let Err(e) = msg.channel_id.send_message(&ctx.http, reply).await {
@@ -142,7 +142,7 @@ impl EventHandler for Handler {
         guild_create::guild_create(self, ctx, guild, is_new).await
     }
     async fn shards_ready(&self, ctx: Context, total_shards: u32) {
-        shards_ready::shards_ready(&self, ctx, total_shards).await
+        shards_ready::shards_ready(self, ctx, total_shards).await
     }
     async fn guild_member_update(&self, ctx: Context, old_if_available: Option<Member>, new: Option<Member>, event: GuildMemberUpdateEvent) {
         guild_member_update::guild_member_update(self, ctx, old_if_available, new, event).await

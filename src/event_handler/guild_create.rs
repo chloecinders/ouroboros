@@ -8,14 +8,15 @@ pub async fn guild_create(_handler: &Handler, ctx: Context, guild: Guild, is_new
     if let Some(new) = is_new && new {
         let cfg = BOT_CONFIG.get().unwrap();
 
-        if cfg.whitelist_enabled.map_or(true, |b| !b) {
+        if cfg.whitelist_enabled.is_none_or(|b| !b) {
             return;
         }
 
-        if cfg.whitelist.as_ref().map_or(true, |ids| !ids.contains(&guild.id.get())) {
-            if let Err(err) = ctx.http.leave_guild(guild.id).await {
-                error!("Could not leave non-whitelisted guild! err = {err:?}; id = {}", guild.id.get());
-            }
+        if
+            cfg.whitelist.as_ref().is_none_or(|ids| !ids.contains(&guild.id.get()))
+            && let Err(err) = ctx.http.leave_guild(guild.id).await
+        {
+            error!("Could not leave non-whitelisted guild! err = {err:?}; id = {}", guild.id.get());
         }
 
         if let Err(err) = query!(

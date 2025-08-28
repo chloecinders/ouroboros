@@ -151,11 +151,7 @@ pub fn command(_attr: TokenStream, item: TokenStream) -> TokenStream {
 fn parse_transformer_attr(attr: Attribute) -> Option<String> {
     let mut segments_iter = attr.meta.path().segments.clone().into_iter();
 
-    let Some(path) = segments_iter.next() else {
-        return None;
-    };
-
-    if path.ident.to_string() != "transformers" {
+    if segments_iter.next()?.ident != "transformers" {
         return None;
     }
 

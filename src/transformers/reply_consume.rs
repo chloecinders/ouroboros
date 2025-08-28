@@ -7,7 +7,7 @@ use crate::{commands::{CommandArgument, TransformerError, TransformerReturn}, ev
 impl Transformers {
     pub fn reply_consume<'a>(ctx: &'a Context, msg: &'a Message, args: &'a mut Peekable<IntoIter<Token>>) -> TransformerReturn<'a> {
         Box::pin(async move {
-            if let Some(_) = args.peek() {
+            if args.peek().is_some() {
                 return Transformers::consume(ctx, msg, args).await;
             } else if let Some(reply) = msg.referenced_message.clone() {
                 let content = if
@@ -28,7 +28,7 @@ impl Transformers {
 
                     let content = embed.clone().description.unwrap_or(msg.content.clone());
 
-                    format!("{}{}", reason_type, content)
+                    format!("{reason_type}{content}")
                 } else {
                     format!("Message: {}", reply.content)
                 };

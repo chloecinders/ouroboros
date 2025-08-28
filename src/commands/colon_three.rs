@@ -25,7 +25,7 @@ impl Command for ColonThree {
         String::from(":3")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax> {
+    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
         vec![]
     }
 

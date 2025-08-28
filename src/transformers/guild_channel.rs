@@ -46,16 +46,13 @@ impl Transformers {
             };
 
             for (channel_id, channel) in channels.into_iter() {
-                if id == channel_id.get() {
-                    input.contents = Some(CommandArgument::GuildChannel(channel));
-                    return Ok(input);
-                } else if channel.name == input.raw {
+                if id == channel_id.get() || channel.name == input.raw {
                     input.contents = Some(CommandArgument::GuildChannel(channel));
                     return Ok(input);
                 }
             }
 
-            return Err(TransformerError::CommandError(CommandError {
+            Err(TransformerError::CommandError(CommandError {
                 title: String::from("Could not find channel in guild"),
                 hint: Some(String::from("make sure to input the channel id or the exact name.")),
                 arg: None

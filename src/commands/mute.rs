@@ -32,7 +32,7 @@ impl Command for Mute {
             Has a max duration of 28 days. Duration (including the removal of the timeout) is managed by Discord")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax> {
+    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
         vec![
             CommandSyntax::Member("member", true),
             CommandSyntax::Duration("duration", true),
@@ -107,7 +107,7 @@ impl Command for Mute {
             warn!("Got error while timinng out; err = {err:?}");
 
             // cant do much here...
-            if let Err(_) = query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await {
+            if query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await.is_err() {
                 error!("Got an error while timing out and an error with the database! Stray timeout entry in DB & manual action required; id = {db_id}; err = {err:?}");
             }
 
@@ -115,7 +115,7 @@ impl Command for Mute {
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Timed {} out {}\n```\n{}\n```", member.mention(), time_string, reason)).color(BRAND_BLUE.clone()))
+            .add_embed(CreateEmbed::new().description(format!("Timed {} out {}\n```\n{}\n```", member.mention(), time_string, reason)).color(BRAND_BLUE))
             .reference_message(&msg);
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {

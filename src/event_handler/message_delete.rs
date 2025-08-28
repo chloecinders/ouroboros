@@ -21,12 +21,7 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
         _ => {return}
     };
 
-    let audit_log = {
-        match guild_id.audit_logs(&ctx.http, Some(Action::Message(MessageAction::Delete)), None, None, Some(10)).await {
-            Ok(l) => Some(l),
-            Err(_) => None,
-        }
-    };
+    let audit_log = guild_id.audit_logs(&ctx.http, Some(Action::Message(MessageAction::Delete)), None, None, Some(10)).await.ok();
 
     let mut moderator_id: Option<u64> = None;
 
@@ -35,10 +30,10 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
             if let Some(target) = entry.target_id
                 && let Some(Some(channel)) = entry.options.clone().map(|o| o.channel_id)
                 && let Some(msg) = some_msg.clone()
+                && target.get() == msg.author.id.get()
+                && channel.get() == msg.channel_id.get()
             {
-                if target.get() == msg.author.id.get() && channel.get() == msg.channel_id.get() {
-                    moderator_id = Some(entry.user_id.get());
-                }
+                moderator_id = Some(entry.user_id.get());
             }
         } else {
             for entry in logs.entries {
@@ -49,10 +44,10 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
                     && let Some(target) = entry.target_id
                     && let Some(Some(channel)) = entry.options.clone().map(|o| o.channel_id)
                     && let Some(msg) = some_msg.clone()
+                    &&target.get() == msg.author.id.get()
+                    && channel.get() == msg.channel_id.get()
                 {
-                    if target.get() == msg.author.id.get() && channel.get() == msg.channel_id.get() {
-                        moderator_id = Some(entry.user_id.get());
-                    }
+                    moderator_id = Some(entry.user_id.get());
                 }
             }
         }
@@ -64,7 +59,7 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
     );
     let mut files = vec![];
     let mut embed = CreateEmbed::new()
-            .color(BRAND_RED.clone());
+            .color(BRAND_RED);
 
     if let Some(msg) = some_msg.clone() {
         description.push_str(&format!("| Target: <@{}> ", msg.author.id.get()));
@@ -84,7 +79,7 @@ pub async fn message_delete(_handler: &Handler, ctx: Context, channel_id: Channe
     description.push_str(&format!("| Channel: <#{0}> ({0}) ", channel_id.get()));
 
     if let Some(moderator) = moderator_id {
-        description.push_str(&format!("| Actor: <@{0}> ({0}) ", moderator));
+        description.push_str(&format!("| Actor: <@{moderator}> ({moderator}) "));
     }
 
     if let Some(msg) = some_msg {

@@ -16,13 +16,13 @@ impl Transformers {
             }
 
             if let Some(reply) = msg.referenced_message.clone() {
-                return Ok(Token {
+                Ok(Token {
                     contents: Some(CommandArgument::User(reply.author)),
                     raw: String::new(),
                     position: 0,
                     length: 0,
                     iteration: 0
-                });
+                })
             } else {
                 return Transformers::user(ctx, msg, args).await
             }

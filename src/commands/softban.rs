@@ -32,7 +32,7 @@ impl Command for Softban {
             Clears 1 day of messages.")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax> {
+    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
         vec![
             CommandSyntax::Member("user", true),
             CommandSyntax::Consume("reason")
@@ -76,7 +76,7 @@ impl Command for Softban {
             warn!("Got error while softbanning; err = {err:?}");
 
             // cant do much here...
-            if let Err(_) = query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await {
+            if query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await.is_err() {
                 error!("Got an error while softbanning and an error with the database! Stray softban entry in DB & manual action required; id = {db_id}; err = {err:?}");
             }
 
@@ -95,7 +95,7 @@ impl Command for Softban {
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Softbanned {}\n```\n{}\n```", member.mention(), reason)).color(BRAND_BLUE.clone()))
+            .add_embed(CreateEmbed::new().description(format!("Softbanned {}\n```\n{}\n```", member.mention(), reason)).color(BRAND_BLUE))
             .reference_message(&msg);
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {

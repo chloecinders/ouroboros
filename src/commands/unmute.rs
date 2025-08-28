@@ -84,7 +84,7 @@ impl Command for Unmute {
             warn!("Got error while unmuting; err = {err:?}");
 
             // cant do much here...
-            if let Err(_) = query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await {
+            if query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await.is_err() {
                 error!("Got an error while unmuting and an error with the database! Stray unmute entry in DB & manual action required; id = {db_id}; err = {err:?}");
             }
 
@@ -92,7 +92,7 @@ impl Command for Unmute {
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Unmuted {}\n```\n{}\n```", member.mention(), reason)).color(BRAND_BLUE.clone()))
+            .add_embed(CreateEmbed::new().description(format!("Unmuted {}\n```\n{}\n```", member.mention(), reason)).color(BRAND_BLUE))
             .reference_message(&msg);
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {

@@ -33,7 +33,7 @@ impl Command for Config {
             To clear a setting set its value to `none`.")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax> {
+    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
         vec![
             CommandSyntax::String("subcommand", true),
             CommandSyntax::String("argument1", false),
@@ -73,14 +73,10 @@ impl Command for Config {
         };
 
         let mut global = GUILD_SETTINGS.get().unwrap().lock().await;
-        let settings = match global.get(msg.guild_id.map(|g| g.get() as u64).unwrap_or(1)).await {
+        let settings = match global.get(msg.guild_id.map(|g| g.get()).unwrap_or(1)).await {
             Ok(s) => s,
-            Err(_) => {
-                let settings = Settings {
-                    ..Default::default()
-                };
-
-                settings
+            Err(_) => Settings {
+                ..Default::default()
             }
         };
 
@@ -97,17 +93,17 @@ impl Command for Config {
 
                 format!(
                     "**Available Config Groups**\n{}",
-                    group.keys().into_iter().map(|k| format!("`{k}`")).collect::<Vec<String>>().join("\n")
+                    group.keys().map(|k| format!("`{k}`")).collect::<Vec<String>>().join("\n")
                 )
             } else {
                 format!(
                     "**Available Settings In Group**\n{}",
-                    json_rep.keys().into_iter().map(|k| format!("`{k}`")).collect::<Vec<String>>().join("\n")
+                    json_rep.keys().map(|k| format!("`{k}`")).collect::<Vec<String>>().join("\n")
                 )
             };
 
             let reply = CreateMessage::new()
-                .add_embed(CreateEmbed::new().description(description).color(BRAND_BLUE.clone()))
+                .add_embed(CreateEmbed::new().description(description).color(BRAND_BLUE))
                 .reference_message(&msg);
 
             if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
@@ -128,7 +124,7 @@ impl Command for Config {
             };
 
             let reply = CreateMessage::new()
-                .add_embed(CreateEmbed::new().description(format!("{}: {}", setting, value)).color(BRAND_BLUE.clone()))
+                .add_embed(CreateEmbed::new().description(format!("{setting}: {value}")).color(BRAND_BLUE))
                 .reference_message(&msg);
 
             if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
@@ -149,7 +145,7 @@ impl Command for Config {
 
             let query = match setting.as_str() {
                 "log.channel" => {
-                    if iter.peek().map(|t| t.raw.clone()).unwrap_or(String::new()).to_lowercase() == "none" {
+                    if iter.peek().map(|t| t.raw.clone()).unwrap_or_default().to_lowercase() == "none" {
                         query!(
                             "UPDATE guild_settings SET log_channel = $2 WHERE guild_id = $1;",
                             msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64,
@@ -184,7 +180,7 @@ impl Command for Config {
             global.invalidate();
 
             let reply = CreateMessage::new()
-                .add_embed(CreateEmbed::new().description(format!("Successfully set {} to {}", setting, value)).color(BRAND_BLUE.clone()))
+                .add_embed(CreateEmbed::new().description(format!("Successfully set {setting} to {value}")).color(BRAND_BLUE))
                 .reference_message(&msg);
 
             if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {

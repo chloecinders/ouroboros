@@ -17,10 +17,10 @@ impl Handler {
 
             let cmd_perms = cmd.get_permissions();
 
-            let perms = if cmd_perms.one_of.len() == 0 && cmd_perms.required.len() == 0 { "" } else {
+            let perms = if cmd_perms.one_of.is_empty() && cmd_perms.required.is_empty() { "" } else {
                 let mut result = String::new();
 
-                if cmd_perms.required.len() != 0 {
+                if !cmd_perms.required.is_empty() {
                     let string = cmd_perms.required.iter().map(|p| {
                         let names = p.get_permission_names().into_iter().map(|n| n.to_uppercase().replace(" ", "_")).collect::<Vec<_>>();
                         names.join(" && ")
@@ -28,13 +28,13 @@ impl Handler {
                     result.push_str(&string);
                 }
 
-                if cmd_perms.one_of.len() != 0 {
+                if !cmd_perms.one_of.is_empty() {
                     let string = cmd_perms.one_of.iter().map(|p| {
                         let names = p.get_permission_names().into_iter().map(|n| n.to_uppercase().replace(" ", "_")).collect::<Vec<_>>();
                         names.join(" || ")
                     }).collect::<Vec<_>>().join(" || ");
 
-                    if result != "" {
+                    if !result.is_empty() {
                         result.push_str(&format!(" && ({string})"));
                     } else {
                         result.push_str(&string);
@@ -46,7 +46,7 @@ impl Handler {
 
             let mut hint_text = String::from("-# <name: type>, <> = required, [] = optional, ...[] = all text after last argument");
 
-            if perms.len() != 0 {
+            if !perms.is_empty() {
                 hint_text.push_str("\n-# && = AND, || = OR");
             }
 
@@ -83,7 +83,7 @@ impl Handler {
                                 hint_text
                             )
                         )
-                        .color(BRAND_BLUE.clone())
+                        .color(BRAND_BLUE)
                     )
                 .reference_message(&msg);
 
@@ -106,7 +106,7 @@ impl Handler {
             .add_embed(
                 CreateEmbed::new()
                     .description(full_msg)
-                    .color(BRAND_BLUE.clone())
+                    .color(BRAND_BLUE)
                 )
             .reference_message(&msg);
 

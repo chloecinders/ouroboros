@@ -29,7 +29,7 @@ impl Command for Warn {
         String::from("Warns a member, storing a note in the users log.")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax> {
+    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
         vec![
             CommandSyntax::Member("user", true),
             CommandSyntax::Consume("reason")

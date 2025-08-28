@@ -29,7 +29,7 @@ impl Command for Kick {
         String::from("Kicks a member from the server and leaves a note in the users log.")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax> {
+    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
         vec![
             CommandSyntax::Member("member", true),
             CommandSyntax::Reason("reason")
@@ -73,7 +73,7 @@ impl Command for Kick {
             warn!("Got error while kicking; err = {err:?}");
 
             // cant do much here...
-            if let Err(_) = query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await {
+            if query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await.is_err() {
                 error!("Got an error while kicking and an error with the database! Stray kick entry in DB & manual action required; id = {db_id}; err = {err:?}");
             }
 
@@ -81,7 +81,7 @@ impl Command for Kick {
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Kicked {}\n```\n{}\n```", member.mention(), reason)).color(BRAND_BLUE.clone()))
+            .add_embed(CreateEmbed::new().description(format!("Kicked {}\n```\n{}\n```", member.mention(), reason)).color(BRAND_BLUE))
             .reference_message(&msg);
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {

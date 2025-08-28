@@ -4,6 +4,7 @@ use chrono::Duration;
 use serenity::{all::{Context, GuildChannel, Member, Message, Permissions, User}, async_trait};
 use crate::{event_handler::{CommandError, MissingArgumentError}, lexer::Token};
 
+#[allow(clippy::large_enum_variant)]
 pub enum TransformerError {
     CommandError(CommandError),
     MissingArgumentError(MissingArgumentError),
@@ -94,8 +95,8 @@ pub trait Command: Send + Sync {
     async fn run(&self, ctx: Context, msg: Message, args: Vec<Token>) -> Result<(), CommandError>;
 
     // Run helpers
-    fn get_transformers<'a>(&self) -> Vec<TransformerFn> { vec![] }
-    fn get_permissions<'a>(&self) -> CommandPermissions { Default::default() }
+    fn get_transformers(&self) -> Vec<TransformerFn> { vec![] }
+    fn get_permissions(&self) -> CommandPermissions { Default::default() }
 }
 
 mod ping;

@@ -27,15 +27,16 @@ pub async fn shards_ready(_handler: &Handler, ctx: Context, _total_shards: u32) 
         settings.invalidate();
     }
 
-    if cfg.whitelist_enabled.map_or(true, |b| !b) {
+    if cfg.whitelist_enabled.is_none_or(|b| !b) {
         return;
     }
 
     for guild in ctx.cache.guilds() {
-        if cfg.whitelist.as_ref().map_or(true, |ids| !ids.contains(&guild.get())) {
-            if let Err(err) = ctx.http.leave_guild(guild).await {
-                error!("Could not leave non-whitelisted guild! err = {err:?}; id = {}", guild.get());
-            }
+        if
+            cfg.whitelist.as_ref().is_none_or(|ids| !ids.contains(&guild.get()))
+            && let Err(err) = ctx.http.leave_guild(guild).await
+        {
+            error!("Could not leave non-whitelisted guild! err = {err:?}; id = {}", guild.get());
         }
     }
 }

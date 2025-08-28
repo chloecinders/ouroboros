@@ -10,7 +10,7 @@ pub struct Token {
 }
 
 pub fn lex(input: String) -> Vec<Token> {
-    let mut iter = input.chars().into_iter().enumerate().peekable();
+    let mut iter = input.chars().enumerate().peekable();
     let mut tokens: Vec<Token> = vec![];
     let mut in_quotes = false;
     let mut token_start = 0;

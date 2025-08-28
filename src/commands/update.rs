@@ -29,7 +29,7 @@ impl Command for Update {
             Warning: This might print debug information in chat! Only run this in a channel you can see!")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax> {
+    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
         vec![]
     }
 
@@ -87,7 +87,7 @@ impl Command for Update {
         };
 
         if let Some(run) = json.workflow_runs.first() {
-            if run.status != "completed" || run.conclusion.clone().map_or(true, |c| c != "success") {
+            if run.status != "completed" || run.conclusion.clone().is_none_or(|c| c != "success") {
                 let err = format!("Latest run with id {} is not successful! Fix your code idiot!", run.id);
                 warn!(err);
                 let _ = msg.reply(&ctx.http(), err).await;
@@ -176,7 +176,7 @@ impl Command for Update {
             }
 
             let Ok(bytes) = res.bytes().await else {
-                let err = format!("Error fetching artifact file;");
+                let err = String::from("Error fetching artifact file;");
                 warn!(err);
                 let _ = msg.reply(&ctx.http(), err).await;
                 return Ok(());
@@ -195,7 +195,7 @@ impl Command for Update {
                 #[cfg(not(target_os = "windows"))]
                 let name = "Ouroboros";
 
-                let Ok(mut file) = zip.by_name(&format!("release/{}", name)) else {
+                let Ok(mut file) = zip.by_name(&format!("release/{name}")) else {
                     return Err(String::from("Failed to extract file"));
                 };
 
@@ -257,18 +257,21 @@ impl Command for Update {
                 exit(0);
             }
 
-            let child = match SystemCommand::new(format!(".{}{filename}", std::path::MAIN_SEPARATOR)).arg(format!("--update={}:{}", msg.channel_id.get(), msg.id.get())).spawn() {
-                Ok(c) => c,
-                Err(e) => {
-                    let err = format!("Could not run downloaded version; err = {e:?}");
-                    warn!(err);
-                    let _ = msg.reply(&ctx.http(), err).await;
-                    return Ok(());
-                }
-            };
+            #[cfg(target_os = "windows")]
+            {
+                let child = match SystemCommand::new(format!(".{}{filename}", std::path::MAIN_SEPARATOR)).arg(format!("--update={}:{}", msg.channel_id.get(), msg.id.get())).spawn() {
+                    Ok(c) => c,
+                    Err(e) => {
+                        let err = format!("Could not run downloaded version; err = {e:?}");
+                        warn!(err);
+                        let _ = msg.reply(&ctx.http(), err).await;
+                        return Ok(());
+                    }
+                };
 
-            drop(child);
-            exit(0);
+                drop(child);
+                exit(0);
+            }
         }
 
         Ok(())

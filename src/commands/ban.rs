@@ -33,7 +33,7 @@ impl Command for Ban {
             Ban expiry is checked every 5 minutes.")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax> {
+    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
         vec![
             CommandSyntax::Member("member", true),
             CommandSyntax::Duration("duration", false),
@@ -118,7 +118,7 @@ impl Command for Ban {
             warn!("Got error while banning; err = {err:?}");
 
             // cant do much here...
-            if let Err(_) = query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await {
+            if query!("DELETE FROM actions WHERE id = $1", db_id).execute(SQL.get().unwrap()).await.is_err() {
                 error!("Got an error while banning and an error with the database! Stray ban entry in DB & manual action required; id = {db_id}; err = {err:?}");
             }
 
@@ -126,7 +126,7 @@ impl Command for Ban {
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Banned {} {}\n```\n{}\n```", user.mention(), time_string, reason)).color(BRAND_BLUE.clone()))
+            .add_embed(CreateEmbed::new().description(format!("Banned {} {}\n```\n{}\n```", user.mention(), time_string, reason)).color(BRAND_BLUE))
             .reference_message(&msg);
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {

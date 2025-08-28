@@ -55,7 +55,7 @@ async fn main() {
     let mut file = File::open("./Config.toml").await.expect("Could not find Config.toml in project root.");
     let mut contents = String::new();
 
-    if let Err(_) = file.read_to_string(&mut contents).await {
+    if file.read_to_string(&mut contents).await.is_err() {
         panic!("Could not read Config.toml.");
     }
 
@@ -112,7 +112,8 @@ async fn main() {
     }
 }
 
-fn update(arg: &String) -> std::io::Result<()> {
+#[allow(unreachable_code)]
+fn update(arg: &str) -> std::io::Result<()> {
     let exe = env::current_exe()?;
 
     let name = "Ouroboros.exe";
@@ -143,13 +144,14 @@ fn cleanup() -> std::io::Result<()> {
         let entry = entry?;
         let path = entry.path();
 
-        if path.is_file() {
-            if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
-                if filename.starts_with("new_") && filename.contains("ouroboros") {
-                    fs::remove_file(&path)?;
-                    warn!("Deleted file; {}", filename);
-                }
-            }
+        if
+            path.is_file()
+            && let Some(filename) = path.file_name().and_then(|f| f.to_str())
+            && filename.starts_with("new_")
+            && filename.contains("ouroboros")
+        {
+            fs::remove_file(&path)?;
+            warn!("Deleted file; {}", filename);
         }
     }
 

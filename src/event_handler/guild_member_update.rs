@@ -7,12 +7,7 @@ use crate::{constants::BRAND_BLUE, event_handler::Handler, utils::guild_log};
 pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_available: Option<Member>, _new: Option<Member>, event: GuildMemberUpdateEvent) {
     let _ = fs::write("./text", format!("{old_if_available:#?}\n{_new:#?}"));
 
-    let audit_log = {
-        match event.guild_id.audit_logs(&ctx.http, Some(Action::Member(MemberAction::Update)), None, None, Some(10)).await {
-            Ok(l) => Some(l),
-            Err(_) => None,
-        }
-    };
+    let audit_log = event.guild_id.audit_logs(&ctx.http, Some(Action::Member(MemberAction::Update)), None, None, Some(10)).await.ok();
 
     let mut moderator_id: Option<u64> = None;
     let mut reason: Option<String> = None;
@@ -21,13 +16,15 @@ pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_availa
     if let Some(logs) = audit_log {
         'o: for entry in logs.entries {
             for change in entry.changes.unwrap_or(Vec::new()) {
-                if let Change::Nick { old, new } = change {
-                    if event.user.id.get() == entry.user_id.get() && new == event.nick {
-                        moderator_id = Some(entry.user_id.get());
-                        reason = entry.reason.clone();
-                        old_nick = Some(old);
-                        break 'o;
-                    }
+                if
+                    let Change::Nick { old, new } = change
+                    && event.user.id.get() == entry.user_id.get()
+                    && new == event.nick
+                {
+                    moderator_id = Some(entry.user_id.get());
+                    reason = entry.reason.clone();
+                    old_nick = Some(old);
+                    break 'o;
                 }
             }
         }
@@ -57,7 +54,7 @@ pub async fn guild_member_update(_handler: &Handler, ctx: Context, old_if_availa
 
     let description = format!("**MEMBER UPDATE**\n-# <@{}>{}{}{}", event.user.id, moderator, name, reason);
     let embed = CreateEmbed::new()
-        .color(BRAND_BLUE.clone())
+        .color(BRAND_BLUE)
         .description(description)
         .author(
             CreateEmbedAuthor::new(format!("{}: {}", event.user.name, event.user.id.get()))

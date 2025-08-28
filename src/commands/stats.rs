@@ -28,7 +28,7 @@ impl Command for Stats {
         String::from("Shows various statistics of the bot. Useful for nerds!")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax> {
+    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
         vec![]
     }
 
@@ -58,19 +58,17 @@ impl Command for Stats {
         let description = {
             let uptime = if uptime.0 != 0 {
                 format!("{}h {}m {}s", uptime.0, uptime.1, uptime.2)
+            } else if uptime.1 != 0 {
+                format!("{}m {}s", uptime.1, uptime.2)
             } else {
-                if uptime.1 != 0 {
-                    format!("{}m {}s", uptime.1, uptime.2)
-                } else {
-                    format!("{}s", uptime.2)
-                }
+                format!("{}s", uptime.2)
             };
 
-            format!("Servers: {}\nUptime: {}\nMemory: {:.2}MB", guild_count, uptime, memory)
+            format!("Servers: {guild_count}\nUptime: {uptime}\nMemory: {memory:.2}MB")
         };
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(description).color(BRAND_BLUE.clone()))
+            .add_embed(CreateEmbed::new().description(description).color(BRAND_BLUE))
             .reference_message(&msg);
 
         if let Err(e) = msg.channel_id.send_message(&ctx.http, reply).await {

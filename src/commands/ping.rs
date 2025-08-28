@@ -27,7 +27,7 @@ impl Command for Ping {
         String::from("Gets the bots HTTP and gateway latency. Useful for checking if the bot is lagging.")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax> {
+    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
         vec![]
     }
 
@@ -50,7 +50,7 @@ impl Command for Ping {
         .embed(
             CreateEmbed::new()
                 .description(format!("HTTP: {}ms\nGateway: {}ms", http_ping.as_millis(), gateway_ping.as_millis()))
-                .color(BRAND_BLUE.clone())
+                .color(BRAND_BLUE)
         )
         .reference_message(&msg);
 

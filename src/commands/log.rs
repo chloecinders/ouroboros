@@ -87,7 +87,7 @@ impl Log {
 
     async fn run_one(&self, ctx: Context, msg: Message, log: String) -> Result<(), CommandError> {
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(self.get_one_response(msg.guild_id.unwrap().get() as i64, log).await?).color(BRAND_BLUE.clone()))
+            .add_embed(CreateEmbed::new().description(self.get_one_response(msg.guild_id.unwrap().get() as i64, log).await?).color(BRAND_BLUE))
             .reference_message(&msg);
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
@@ -100,7 +100,7 @@ impl Log {
     fn create_chunked_response(&self, chunk: &[LogRecord]) -> String {
         let mut response = String::new();
 
-        chunk.into_iter().for_each(|data| {
+        chunk.iter().for_each(|data| {
             let mut record = data.clone();
 
             if record.reason.len() > 100 {
@@ -168,7 +168,7 @@ impl Command for Log {
         String::from("Shows the moderation actions taken on a member. This includes warns, bans, kicks, etc.")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax> {
+    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
         vec![
             CommandSyntax::Or(
                 Box::new(CommandSyntax::User("user", true)),
@@ -220,7 +220,7 @@ impl Command for Log {
 
         let Some(chunk) = chunks.first() else {
             let reply = CreateMessage::new()
-                .add_embed(CreateEmbed::new().description("No log entries found.").color(BRAND_BLUE.clone()))
+                .add_embed(CreateEmbed::new().description("No log entries found.").color(BRAND_BLUE))
                 .reference_message(&msg);
 
             if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
@@ -238,7 +238,7 @@ impl Command for Log {
             CreateButton::new("last").style(ButtonStyle::Secondary).label(">>")
         ];
         let mut log_buttons = vec![
-            CreateButton::new("1").style(ButtonStyle::Secondary).label("1").disabled(chunk.get(0).is_none()),
+            CreateButton::new("1").style(ButtonStyle::Secondary).label("1").disabled(chunk.is_empty()),
             CreateButton::new("2").style(ButtonStyle::Secondary).label("2").disabled(chunk.get(1).is_none()),
             CreateButton::new("3").style(ButtonStyle::Secondary).label("3").disabled(chunk.get(2).is_none()),
             CreateButton::new("4").style(ButtonStyle::Secondary).label("4").disabled(chunk.get(3).is_none()),
@@ -252,7 +252,7 @@ impl Command for Log {
         let response = self.create_chunked_response(chunk);
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(response).color(BRAND_BLUE.clone()))
+            .add_embed(CreateEmbed::new().description(response).color(BRAND_BLUE))
             .components(vec![CreateActionRow::Buttons(page_buttons.clone()), CreateActionRow::Buttons(log_buttons.clone())])
             .reference_message(&msg);
 
@@ -283,7 +283,7 @@ impl Command for Log {
 
         let get_updated_logs = |page: usize| -> Vec<CreateButton> {
             let chunk = chunks.get(page).unwrap();
-            let disabled: [bool; 5] = [chunk.get(0).is_none(), chunk.get(1).is_none(), chunk.get(2).is_none(), chunk.get(3).is_none(), chunk.get(4).is_none()];
+            let disabled: [bool; 5] = [chunk.is_empty(), chunk.get(1).is_none(), chunk.get(2).is_none(), chunk.get(3).is_none(), chunk.get(4).is_none()];
             let mut new = log_buttons.clone();
 
             new = new.into_iter().enumerate().map(|(i, d)| d.disabled(disabled[i])).collect();
@@ -302,61 +302,59 @@ impl Command for Log {
                 },
             };
 
-            
-
             match interaction.data.custom_id.as_str() {
                 "first" => {
                     page = 0;
                     let response = self.create_chunked_response(chunks.first().unwrap());
-                    if let Err(_) = interaction.create_response(
+                    if interaction.create_response(
                         &ctx.http,
                         CreateInteractionResponse::UpdateMessage(
                             CreateInteractionResponseMessage::default()
-                                .add_embed(CreateEmbed::new().description(response).color(BRAND_BLUE.clone()))
+                                .add_embed(CreateEmbed::new().description(response).color(BRAND_BLUE))
                                 .components(vec![CreateActionRow::Buttons(get_updated_buttons(page, [true, true, false, false])), CreateActionRow::Buttons(get_updated_logs(page))])
                         ),
-                    ).await { return Ok(()) }
+                    ).await.is_err() { return Ok(()) }
                 }
 
                 "prev" => {
                     page -= 1;
                     let response = self.create_chunked_response(chunks.get(page).unwrap());
-                    let none_prev = if page <= 0 { true } else { chunks.get(page - 1).is_none() };
-                    if let Err(_) = interaction.create_response(
+                    let none_prev = if page == 0 { true } else { chunks.get(page - 1).is_none() };
+                    if interaction.create_response(
                         &ctx.http,
                         CreateInteractionResponse::UpdateMessage(
                             CreateInteractionResponseMessage::default()
-                                .add_embed(CreateEmbed::new().description(response).color(BRAND_BLUE.clone()))
+                                .add_embed(CreateEmbed::new().description(response).color(BRAND_BLUE))
                                 .components(vec![CreateActionRow::Buttons(get_updated_buttons(page, [none_prev, none_prev, false, false])), CreateActionRow::Buttons(get_updated_logs(page))])
                         ),
-                    ).await { return Ok(()) }
+                    ).await.is_err() { return Ok(()) }
                 }
 
                 "next" => {
                     page += 1;
                     let response = self.create_chunked_response(chunks.get(page).unwrap());
                     let none_next = chunks.get(page + 1).is_none();
-                    if let Err(_) = interaction.create_response(
+                    if interaction.create_response(
                         &ctx.http,
                         CreateInteractionResponse::UpdateMessage(
                             CreateInteractionResponseMessage::default()
-                                .add_embed(CreateEmbed::new().description(response).color(BRAND_BLUE.clone()))
+                                .add_embed(CreateEmbed::new().description(response).color(BRAND_BLUE))
                                 .components(vec![CreateActionRow::Buttons(get_updated_buttons(page, [false, false, none_next, none_next])), CreateActionRow::Buttons(get_updated_logs(page))])
                         ),
-                    ).await { return Ok(()) }
+                    ).await.is_err() { return Ok(()) }
                 }
 
                 "last" => {
                     page = chunks.len() - 1;
                     let response = self.create_chunked_response(chunks.last().unwrap());
-                    if let Err(_) = interaction.create_response(
+                    if interaction.create_response(
                         &ctx.http,
                         CreateInteractionResponse::UpdateMessage(
                             CreateInteractionResponseMessage::default()
-                                .add_embed(CreateEmbed::new().description(response).color(BRAND_BLUE.clone()))
+                                .add_embed(CreateEmbed::new().description(response).color(BRAND_BLUE))
                                 .components(vec![CreateActionRow::Buttons(get_updated_buttons(page, [false, false, true, true])), CreateActionRow::Buttons(get_updated_logs(page))])
                         ),
-                    ).await { return Ok(()) }
+                    ).await.is_err() { return Ok(()) }
                 }
 
                 "1" | "2" | "3" | "4" | "5" => {
@@ -365,13 +363,13 @@ impl Command for Log {
 
                     let response = self.get_one_response(interaction.guild_id.unwrap().get() as i64, id).await?;
 
-                    if let Err(_) = interaction.create_response(
+                    if interaction.create_response(
                         &ctx.http,
                         CreateInteractionResponse::Message(
                             CreateInteractionResponseMessage::new()
-                                .add_embed(CreateEmbed::new().description(response).color(BRAND_BLUE.clone()))
+                                .add_embed(CreateEmbed::new().description(response).color(BRAND_BLUE))
                         ),
-                    ).await { return Ok(()) }
+                    ).await.is_err() { return Ok(()) }
                 }
 
                 _ => {}

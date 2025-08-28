@@ -29,7 +29,7 @@ pub async fn check_expiring_bans(http: &Arc<Http>) {
             continue;
         };
 
-        if let Err(_) = guild.unban(http, entry.user_id as u64).await {
+        if guild.unban(http, entry.user_id as u64).await.is_err() {
             warn!("task check_expiring_bans couldnt unban user; Guild = {:?} Id = {:?}", entry.guild_id, entry.user_id);
             continue;
         } else {
@@ -37,12 +37,12 @@ pub async fn check_expiring_bans(http: &Arc<Http>) {
         }
     }
 
-    if let Err(_) = query!(
+    if query!(
         r#"
         UPDATE actions SET active = false WHERE id = ANY($1);
         "#,
         &updated
-    ).execute(SQL.get().unwrap()).await {
+    ).execute(SQL.get().unwrap()).await.is_err() {
         error!("task check_expiring_bans couldnt update entries; entries = {:?}", updated);
     } else {
         info!("task check_expiring_bans finished");

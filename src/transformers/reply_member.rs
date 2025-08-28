@@ -24,13 +24,13 @@ impl Transformers {
                     }))
                 };
 
-                return Ok(Token {
+                Ok(Token {
                     contents: Some(CommandArgument::Member(member)),
                     raw: String::new(),
                     position: 0,
                     length: 0,
                     iteration: 0
-                });
+                })
             } else {
                 return Transformers::member(ctx, msg, args).await
             }

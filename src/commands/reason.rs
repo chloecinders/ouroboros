@@ -29,7 +29,7 @@ impl Command for Reason {
         String::from("Modifies the reason of a moderation action. Run the log command for the id.")
     }
 
-    fn get_syntax(&self) -> Vec<CommandSyntax> {
+    fn get_syntax(&self) -> Vec<CommandSyntax<'_>> {
         vec![
             CommandSyntax::String("id", false)
         ]
@@ -74,7 +74,7 @@ impl Command for Reason {
         };
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!("Modified {}\n```\n{}\n```", data.id, data.reason)).color(BRAND_BLUE.clone()))
+            .add_embed(CreateEmbed::new().description(format!("Modified {}\n```\n{}\n```", data.id, data.reason)).color(BRAND_BLUE))
             .reference_message(&msg);
 
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {

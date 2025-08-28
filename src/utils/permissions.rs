@@ -22,6 +22,5 @@ pub async fn check_guild_permission(ctx: &Context, member: &Member, permission: 
 
 pub fn is_developer(user: &User) -> bool {
     let cfg = BOT_CONFIG.get().unwrap();
-
-    return cfg.dev_ids.clone().map_or(false, |i| i.contains(&user.id.get()))
+    cfg.dev_ids.clone().is_some_and(|i| i.contains(&user.id.get()))
 }
