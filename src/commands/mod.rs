@@ -167,3 +167,6 @@ pub use config::Config;
 
 mod say;
 pub use say::Say;
+
+mod about;
+pub use about::About;

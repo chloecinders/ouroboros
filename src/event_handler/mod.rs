@@ -11,8 +11,8 @@ use tracing::warn;
 
 use crate::{
     commands::{
-        Ban, CBan, ColonThree, Command, Config, Kick, Log, MsgDbg, Mute, Ping, Purge, Reason, Say,
-        Softban, Stats, Unban, Unmute, Update, Warn,
+        About, Ban, CBan, ColonThree, Command, Config, Kick, Log, MsgDbg, Mute, Ping, Purge,
+        Reason, Say, Softban, Stats, Unban, Unmute, Update, Warn,
     },
     constants::BRAND_RED,
     lexer::Token,
@@ -97,6 +97,7 @@ impl Handler {
             Arc::new(Update::new()),
             Arc::new(Config::new()),
             Arc::new(Say::new()),
+            Arc::new(About::new()),
         ];
 
         Self { prefix, commands }
