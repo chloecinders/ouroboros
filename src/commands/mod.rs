@@ -37,6 +37,7 @@ pub enum CommandArgument {
     None,
     i32(i32),
     GuildChannel(GuildChannel),
+    bool(bool),
 }
 
 pub enum CommandSyntax {

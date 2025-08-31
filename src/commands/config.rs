@@ -1,18 +1,17 @@
-use std::sync::Arc;
+use std::{iter::Peekable, sync::Arc, vec::IntoIter};
 
 use serenity::{
     all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Message, Permissions},
     async_trait,
     json::{self, Value},
 };
-use sqlx::query;
 use tracing::{error, warn};
 
 use crate::{
     GUILD_SETTINGS, SQL,
     commands::{
         Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerError,
-        TransformerFn,
+        TransformerFn, TransformerReturn,
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
@@ -21,11 +20,26 @@ use crate::{
     utils::Settings,
 };
 
+type UnwrapTransformerFn = Box<dyn for<'a> Fn(
+    &'a Context,
+    &'a Message,
+    &'a mut Peekable<IntoIter<Token>>,
+) -> TransformerReturn<'a> + Send + Sync>;
+
 pub struct Config;
 
 impl Config {
     pub fn new() -> Self {
         Self {}
+    }
+
+    fn get_option_desc(&self, opt: &str) -> &str {
+        match opt {
+            "log" => "Settings controlling guild event logging",
+            "log.channel" => "<Discord Channel> The channel log messages get set in (none to disable log)",
+            "log.bot" => "<Bool> Should bots should be excluded from logs (bot message deletions, etc.)",
+            _ => ""
+        }
     }
 }
 
@@ -118,19 +132,19 @@ impl Command for Config {
                 };
 
                 format!(
-                    "**Available Config Groups**\n{}",
+                    "**Available Settings In Group**\n{}",
                     group
                         .keys()
-                        .map(|k| format!("`{k}`"))
+                        .map(|k| format!("`{k}` - {}", self.get_option_desc(format!("{group_key}.{k}").as_str())))
                         .collect::<Vec<String>>()
                         .join("\n")
                 )
             } else {
                 format!(
-                    "**Available Settings In Group**\n{}",
+                    "**Available Config Groups**\n{}",
                     json_rep
                         .keys()
-                        .map(|k| format!("`{k}`"))
+                        .map(|k| format!("`{k}` - {}", self.get_option_desc(k)))
                         .collect::<Vec<String>>()
                         .join("\n")
                 )
@@ -161,6 +175,11 @@ impl Command for Config {
                     .channel
                     .map(|c| format!("<#{c}>"))
                     .unwrap_or(String::from("None")),
+                "log.bot" => settings
+                    .log
+                    .bot
+                    .map(|c| format!("{c}"))
+                    .unwrap_or(String::from("false")),
                 _ => {
                     return Err(CommandError {
                         title: String::from("Could not find setting"),
@@ -195,38 +214,15 @@ impl Command for Config {
 
             let mut iter = vec![arg2_token.clone().unwrap()].into_iter().peekable();
 
-            let query = match setting.as_str() {
-                "log.channel" => {
-                    if iter
-                        .peek()
-                        .map(|t| t.raw.clone())
-                        .unwrap_or_default()
-                        .to_lowercase()
-                        == "none"
-                    {
-                        query!(
-                            "UPDATE guild_settings SET log_channel = $2 WHERE guild_id = $1;",
-                            msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64,
-                            None as Option<i64>
-                        )
-                    } else {
-                        match Transformers::guild_channel(&ctx, &msg, &mut iter).await {
-                            Ok(Token {
-                                contents: Some(CommandArgument::GuildChannel(channel)),
-                                ..
-                            }) => query!(
-                                "UPDATE guild_settings SET log_channel = $2 WHERE guild_id = $1;",
-                                msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64,
-                                channel.id.get() as i64
-                            ),
-                            Err(TransformerError::CommandError(mut err)) => {
-                                err.arg = Some(arg2_token.unwrap());
-                                return Err(err);
-                            }
-                            _ => unreachable!(),
-                        }
-                    }
-                }
+            let setting_info: (UnwrapTransformerFn, sqlx::query::Query<'_, sqlx::Postgres, sqlx::postgres::PgArguments>) = match setting.as_str() {
+                "log.channel" => (
+                    Box::new(Transformers::guild_channel),
+                    sqlx::query("UPDATE guild_settings SET log_channel = $2 WHERE guild_id = $1")
+                ),
+                "log.bot" => (
+                    Box::new(Transformers::bool),
+                    sqlx::query("UPDATE guild_settings SET log_bot = $2 WHERE guild_id = $1")
+                ),
                 _ => {
                     return Err(CommandError {
                         title: String::from("Could not find setting"),
@@ -238,7 +234,38 @@ impl Command for Config {
                 }
             };
 
-            if let Err(err) = query.execute(SQL.get().unwrap()).await {
+            let res = if iter
+                .peek()
+                .map(|t| t.raw.clone())
+                .unwrap_or_default()
+                .to_lowercase()
+                == "none"
+            {
+                setting_info.1.bind(msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64).bind(None as Option<i32>).execute(SQL.get().unwrap()).await
+            } else {
+                match setting_info.0(&ctx, &msg, &mut iter).await {
+                    Ok(Token {
+                        contents: Some(CommandArgument::GuildChannel(channel)),
+                        ..
+                    }) => setting_info.1.bind(msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64).bind(channel.id.get() as i64).execute(SQL.get().unwrap()).await,
+
+                    Ok(Token {
+                        contents: Some(CommandArgument::bool(b)),
+                        ..
+                    }) => setting_info.1.bind(msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64).bind(b).execute(SQL.get().unwrap()).await,
+
+                    Err(TransformerError::CommandError(mut err)) => {
+                        err.arg = Some(arg2_token.unwrap());
+                        return Err(err);
+                    }
+
+                    _ => {
+                        return Err(CommandError { title: String::from("Could not insert value into settings."), hint: None, arg: Some(arg2_token.unwrap()) });
+                    },
+                }
+            };
+
+            if let Err(err) = res {
                 warn!("Could not update guild settings; err = {err:?}");
                 return Err(CommandError {
                     title: String::from("Could not update settings"),

@@ -1,5 +1,5 @@
 use chrono::DateTime;
-use serenity::all::{CreateMessage, GuildId, Http};
+use serenity::all::{CreateMessage, GuildId, Http, User};
 use tracing::warn;
 
 use crate::GUILD_SETTINGS;

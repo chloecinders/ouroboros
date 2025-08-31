@@ -35,6 +35,7 @@ pub async fn run_migrations() {
     create_actions_223320250818().await;
     create_guild_settings_195120250826().await;
     create_action_type_201420250826().await;
+    add_log_bot_to_guild_settings_220420250829().await;
 }
 
 pub async fn create_actions_223320250818() {
@@ -102,5 +103,19 @@ pub async fn create_action_type_201420250826() {
     .await
     {
         panic!("Couldnt run database migration create_guild_settings_195120250826; Err = {err:?}");
+    }
+}
+
+pub async fn add_log_bot_to_guild_settings_220420250829() {
+    if let Err(err) = query!(
+        r#"
+        ALTER TABLE public.guild_settings
+        ADD COLUMN IF NOT EXISTS log_bot BOOLEAN
+        "#
+    )
+    .execute(SQL.get().unwrap())
+    .await
+    {
+        panic!("Couldnt run database migration add_log_bot_to_guild_settings_220420250829; Err = {err:?}");
     }
 }

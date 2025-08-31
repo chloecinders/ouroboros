@@ -6,8 +6,9 @@ use serenity::all::{
     Change, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
     GuildMemberUpdateEvent, Member, MemberAction, audit_log::Action,
 };
+use tracing::warn;
 
-use crate::{constants::BRAND_BLUE, event_handler::Handler, utils::guild_log};
+use crate::{GUILD_SETTINGS, constants::BRAND_BLUE, event_handler::Handler, utils::guild_log};
 
 pub async fn guild_member_update(
     _handler: &Handler,
@@ -16,6 +17,18 @@ pub async fn guild_member_update(
     new: Option<Member>,
     event: GuildMemberUpdateEvent,
 ) {
+    {
+        let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
+        let Ok(guild_settings) = settings.get(event.guild_id.get()).await else {
+            warn!("Found guild with no cached settings; Id = {}", event.guild_id.get());
+            return;
+        };
+
+        if event.user.bot && guild_settings.log.bot.is_none_or(|b| !b) {
+            return;
+        }
+    }
+
     let audit_log = event
         .guild_id
         .audit_logs(

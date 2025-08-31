@@ -3,11 +3,10 @@ use serenity::all::{
     Channel, ChannelId, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
     GuildId, MessageAction, MessageId, audit_log::Action,
 };
+use tracing::warn;
 
 use crate::{
-    constants::BRAND_RED,
-    event_handler::Handler,
-    utils::{guild_log, snowflake_to_timestamp},
+    GUILD_SETTINGS, constants::BRAND_RED, event_handler::Handler, utils::{guild_log, snowflake_to_timestamp}
 };
 
 pub async fn message_delete(
@@ -29,6 +28,19 @@ pub async fn message_delete(
         }
     };
 
+    if let Some(msg) = some_msg.clone() {
+        let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
+        let guild_id = msg.guild_id.map(|g| g.get()).unwrap_or(0);
+        if let Ok(guild_settings) = settings.get(guild_id).await {
+            if msg.author.bot && guild_settings.log.bot.is_some_and(|b| b) {
+                println!("fucker is a clanker");
+                return;
+            }
+        } else {
+            warn!("Found guild with no cached settings; Id = {}", guild_id);
+        };
+    }
+
     let guild_id = match channel_id.to_channel(&ctx.http).await {
         Ok(Channel::Guild(guild_channel)) => guild_channel.guild_id,
         _ => return,
@@ -49,7 +61,10 @@ pub async fn message_delete(
 
     if let Some(logs) = audit_log {
         if let Some(entry) = logs.entries.first() {
-            if let Some(target) = entry.target_id
+            let entry_time = snowflake_to_timestamp(entry.id.get());
+
+            if (Utc::now() - entry_time).num_seconds().abs() <= 300
+                && let Some(target) = entry.target_id
                 && let Some(Some(channel)) = entry.options.clone().map(|o| o.channel_id)
                 && let Some(msg) = some_msg.clone()
                 && target.get() == msg.author.id.get()
@@ -61,11 +76,12 @@ pub async fn message_delete(
             for entry in logs.entries {
                 let entry_time = snowflake_to_timestamp(entry.id.get());
 
-                if (Utc::now() - entry_time).num_seconds().abs() <= 5
+                if
+                    (Utc::now() - entry_time).num_seconds().abs() <= 5
                     && let Some(target) = entry.target_id
                     && let Some(Some(channel)) = entry.options.clone().map(|o| o.channel_id)
                     && let Some(msg) = some_msg.clone()
-                    && target.get() == msg.author.id.get()
+                    &&target.get() == msg.author.id.get()
                     && channel.get() == msg.channel_id.get()
                 {
                     moderator_id = Some(entry.user_id.get());
@@ -101,6 +117,8 @@ pub async fn message_delete(
 
     if let Some(moderator) = moderator_id {
         description.push_str(&format!("| Actor: <@{moderator}> ({moderator}) "));
+    } else {
+        return
     }
 
     if let Some(msg) = some_msg {
