@@ -21,6 +21,7 @@ token = "" # bot token
 prefix = "!" # bot prefix
 database_url = "postgres://user:password@ip/database" # database url, must be postgres
 max_connections = 5 # database max connections
+msg_cache = 100 # discord message cache size (per channel)
 repository = "chloecinders/ouroboros" # the repository to update from
 github_token = "" # the github token with actions access to the repository in case its private
 dev_ids = [1234567890] # list of user ids which have access to developer commands
@@ -33,4 +34,5 @@ token = ""
 prefix = "!"
 database_url = ""
 max_connections = 5
+msg_cache = 100
 ```
