@@ -128,6 +128,7 @@ pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
                         position: 0,
                         length: 0,
                         iteration: 0,
+                        quoted: false,
                     });
                 }
             }

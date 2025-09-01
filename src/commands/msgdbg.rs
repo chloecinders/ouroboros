@@ -7,7 +7,7 @@ use tracing::warn;
 use crate::{
     commands::{Command, CommandPermissions, CommandSyntax, TransformerFn},
     event_handler::CommandError,
-    lexer::Token,
+    lexer::{Token, lex},
     utils::is_developer,
 };
 use ouroboros_macros::command;
@@ -47,7 +47,7 @@ impl Command for MsgDbg {
             };
 
             let r = CreateMessage::new().add_file(CreateAttachment::bytes(
-                format!("{reply:#?}").as_bytes(),
+                format!("{:?}\n{reply:#?}", lex(reply.content.clone()).into_iter().map(|t| t.raw).collect::<Vec<_>>()).as_bytes(),
                 "msg.rs",
             ));
 
