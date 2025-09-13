@@ -1,10 +1,7 @@
 use std::sync::Arc;
 
 use serenity::{
-    all::{
-        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
-        Permissions,
-    },
+    all::{Context, Mentionable, Message, Permissions},
     async_trait,
 };
 use sqlx::query;
@@ -13,11 +10,10 @@ use tracing::warn;
 use crate::{
     SQL,
     commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
-    constants::BRAND_BLUE,
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::tinyid,
+    utils::{message_and_dm, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -91,19 +87,20 @@ impl Command for Warn {
             });
         }
 
-        let reply = CreateMessage::new()
-            .add_embed(
-                CreateEmbed::new()
-                    .description(format!("Warned {}\n```\n{}\n```", member.mention(), reason))
-                    .color(BRAND_BLUE)
-                    .clone(),
-            )
-            .reference_message(&msg)
-            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
-
-        if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
-            warn!("Could not send message; err = {err:?}");
-        }
+        message_and_dm(
+            &ctx,
+            &msg,
+            &member.user,
+            format!("Warned {}\n```\n{}\n```", member.user.mention(), reason),
+            format!(
+                "You have been warned in {}\n```\n{}\n```",
+                msg.guild(&ctx.cache)
+                    .map(|g| g.name.clone())
+                    .unwrap_or(String::from("UNKNOWN_GUILD")),
+                reason
+            ),
+        )
+        .await;
 
         Ok(())
     }

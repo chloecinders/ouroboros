@@ -47,7 +47,14 @@ impl Command for MsgDbg {
             };
 
             let r = CreateMessage::new().add_file(CreateAttachment::bytes(
-                format!("{:?}\n{reply:#?}", lex(reply.content.clone()).into_iter().map(|t| t.raw).collect::<Vec<_>>()).as_bytes(),
+                format!(
+                    "{:?}\n{reply:#?}",
+                    lex(reply.content.clone())
+                        .into_iter()
+                        .map(|t| t.raw)
+                        .collect::<Vec<_>>()
+                )
+                .as_bytes(),
                 "msg.rs",
             ));
 

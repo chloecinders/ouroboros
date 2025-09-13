@@ -2,10 +2,7 @@ use std::sync::Arc;
 
 use chrono::{Duration, Utc};
 use serenity::{
-    all::{
-        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
-        Permissions,
-    },
+    all::{Context, Mentionable, Message, Permissions},
     async_trait,
 };
 use sqlx::query;
@@ -14,11 +11,10 @@ use tracing::{error, warn};
 use crate::{
     SQL,
     commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
-    constants::BRAND_BLUE,
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::tinyid,
+    utils::{message_and_dm, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -184,23 +180,26 @@ impl Command for Ban {
             });
         }
 
-        let reply = CreateMessage::new()
-            .add_embed(
-                CreateEmbed::new()
-                    .description(format!(
-                        "Banned {} {}\n```\n{}\n```",
-                        user.mention(),
-                        time_string,
-                        reason
-                    ))
-                    .color(BRAND_BLUE),
-            )
-            .reference_message(&msg)
-            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
-
-        if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
-            warn!("Could not send message; err = {err:?}");
-        }
+        message_and_dm(
+            &ctx,
+            &msg,
+            &user,
+            format!(
+                "Banned {} {}\n```\n{}\n```",
+                user.mention(),
+                time_string,
+                reason
+            ),
+            format!(
+                "You have been banned from {} {}\n```\n{}\n```",
+                msg.guild(&ctx.cache)
+                    .map(|g| g.name.clone())
+                    .unwrap_or(String::from("UNKNOWN_GUILD")),
+                time_string,
+                reason
+            ),
+        )
+        .await;
 
         Ok(())
     }
