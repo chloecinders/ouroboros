@@ -61,7 +61,7 @@ impl Command for CBan {
         ctx: Context,
         msg: Message,
         #[transformers::reply_user] user: User,
-        #[transformers::duration] duration: Option<Duration>,
+        #[transformers::maybe_duration] duration: Option<Duration>,
         #[transformers::i32] days: Option<i32>,
         #[transformers::consume] reason: Option<String>,
     ) -> Result<(), CommandError> {

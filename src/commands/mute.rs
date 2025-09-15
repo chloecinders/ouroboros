@@ -104,7 +104,13 @@ impl Command for Mute {
                 _ if duration.num_seconds() != 0 => {
                     (duration.num_seconds(), String::from("second"))
                 }
-                _ => (0, String::new()),
+                _ => {
+                    return Err(CommandError {
+                        title: String::from("Timeout duration can not be zero"),
+                        hint: None,
+                        arg: None,
+                    });
+                }
             };
 
             if time > 1 {

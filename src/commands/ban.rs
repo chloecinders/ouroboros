@@ -59,7 +59,7 @@ impl Command for Ban {
         ctx: Context,
         msg: Message,
         #[transformers::reply_user] user: User,
-        #[transformers::duration] duration: Option<Duration>,
+        #[transformers::maybe_duration] duration: Option<Duration>,
         #[transformers::reply_consume] reason: Option<String>,
     ) -> Result<(), CommandError> {
         let duration = duration.unwrap_or(Duration::zero());
