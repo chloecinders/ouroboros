@@ -50,25 +50,12 @@ impl Command for ExtractId {
             embed_locations.into_iter().for_each(|s| { search_text.push_str("\n"); search_text.push_str(&s.unwrap_or_default()); });
         }
 
-         let mut ids = Vec::new();
-        let mut current = String::new();
-
-        for ch in search_text.chars() {
-            if ch.is_ascii_digit() {
-                current.push(ch);
-            } else {
-                if !current.is_empty() {
-                    if current.len() >= 5 && current.len() <= 20 {
-                        ids.push(current.clone());
-                    }
-                    current.clear();
-                }
-            }
-        }
-
-        if !current.is_empty() && current.len() >= 5 && current.len() <= 20 {
-            ids.push(current);
-        }
+        let ids: Vec<String> = search_text
+            .split_whitespace()
+            .filter(|part| part.chars().all(|c| c.is_ascii_digit()))
+            .filter(|part| part.len() >= 5 && part.len() <= 20)
+            .map(|s| s.to_string())
+            .collect();
 
         if ids.is_empty() {
             let reply = CreateMessage::new()
