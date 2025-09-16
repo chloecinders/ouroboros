@@ -95,7 +95,6 @@ impl Command for Softban {
         if let Err(err) = member.ban_with_reason(&ctx.http, 1, &reason).await {
             warn!("Got error while softbanning; err = {err:?}");
 
-            // cant do much here...
             if query!("DELETE FROM actions WHERE id = $1", db_id)
                 .execute(SQL.get().unwrap())
                 .await

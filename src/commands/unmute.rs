@@ -111,7 +111,6 @@ impl Command for Unmute {
         if let Err(err) = member.enable_communication(&ctx.http).await {
             warn!("Got error while unmuting; err = {err:?}");
 
-            // cant do much here...
             if query!("DELETE FROM actions WHERE id = $1", db_id)
                 .execute(SQL.get().unwrap())
                 .await

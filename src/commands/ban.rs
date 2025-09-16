@@ -41,6 +41,7 @@ impl Command for Ban {
             "Bans from the server and leaves a note in the users log. \
             Defaults to permanent if no duration is provided. \
             Use 0 for the duration to make the ban permanent. \
+            If the duration cannot be resolved it will default to permanent. \
             Ban expiry is checked every 5 minutes.",
         )
     }
@@ -160,7 +161,6 @@ impl Command for Ban {
         {
             warn!("Got error while banning; err = {err:?}");
 
-            // cant do much here...
             if query!("DELETE FROM actions WHERE id = $1", db_id)
                 .execute(SQL.get().unwrap())
                 .await

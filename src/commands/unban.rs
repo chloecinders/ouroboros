@@ -116,7 +116,6 @@ impl Command for Unban {
         {
             warn!("Got error while unbanning; err = {err:?}");
 
-            // cant do much here...
             if query!("DELETE FROM actions WHERE id = $1", db_id)
                 .execute(SQL.get().unwrap())
                 .await

@@ -92,7 +92,6 @@ impl Command for Kick {
         if let Err(err) = member.kick_with_reason(&ctx.http, &reason).await {
             warn!("Got error while kicking; err = {err:?}");
 
-            // cant do much here...
             if query!("DELETE FROM actions WHERE id = $1", db_id)
                 .execute(SQL.get().unwrap())
                 .await

@@ -36,7 +36,7 @@ pub enum CommandArgument {
     Duration(chrono::Duration),
     None,
     i32(i32),
-    GuildChannel(GuildChannel),
+    GuildChannel(GuildChannel)
 }
 
 pub enum CommandSyntax {
@@ -172,3 +172,6 @@ pub use about::About;
 
 mod duration;
 pub use duration::Duration;
+
+mod extract_id;
+pub use extract_id::ExtractId;

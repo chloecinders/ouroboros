@@ -148,7 +148,6 @@ impl Command for Mute {
         if let Err(err) = member.guild_id.edit_member(&ctx.http, &member, edit).await {
             warn!("Got error while timinng out; err = {err:?}");
 
-            // cant do much here...
             if query!("DELETE FROM actions WHERE id = $1", db_id)
                 .execute(SQL.get().unwrap())
                 .await
