@@ -175,3 +175,6 @@ pub use duration::Duration;
 
 mod extract_id;
 pub use extract_id::ExtractId;
+
+mod cache;
+pub use cache::Cache;
