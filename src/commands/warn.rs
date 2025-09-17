@@ -9,7 +9,7 @@ use tracing::warn;
 
 use crate::{
     SQL,
-    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn},
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
@@ -46,6 +46,10 @@ impl Command for Warn {
         ]
     }
 
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Moderation
+    }
+
     #[command]
     async fn run(
         &self,
@@ -69,9 +73,11 @@ impl Command for Warn {
             reason.push_str("...");
         }
 
+        let db_id = tinyid().await;
+
         let res = query!(
             "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason) VALUES ($1, 'warn', $2, $3, $4, $5)",
-            tinyid().await,
+            db_id,
             msg.guild_id.map(|g| g.get() as i64).unwrap_or(0),
             member.user.id.get() as i64,
             msg.author.id.get() as i64,
@@ -99,6 +105,7 @@ impl Command for Warn {
                     .unwrap_or(String::from("UNKNOWN_GUILD")),
                 reason
             ),
+            Some(db_id)
         )
         .await;
 

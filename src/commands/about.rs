@@ -9,7 +9,7 @@ use tracing::warn;
 
 use crate::{
     START_TIME,
-    commands::{Command, CommandSyntax},
+    commands::{Command, CommandCategory, CommandSyntax},
     constants::BRAND_BLUE,
     event_handler::CommandError,
     lexer::Token,
@@ -39,6 +39,10 @@ impl Command for About {
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Misc
     }
 
     async fn run(&self, ctx: Context, msg: Message, _args: Vec<Token>) -> Result<(), CommandError> {

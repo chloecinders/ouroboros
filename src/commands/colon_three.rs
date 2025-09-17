@@ -4,7 +4,7 @@ use serenity::{
 };
 
 use crate::{
-    commands::{Command, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{Command, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn},
     event_handler::CommandError,
     lexer::Token,
 };
@@ -36,12 +36,13 @@ impl Command for ColonThree {
         vec![]
     }
 
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Misc
+    }
+
     #[command]
     async fn run(&self, ctx: Context, msg: Message) -> Result<(), CommandError> {
-        if msg.author.id.get() == 998374248970211451 {
-            let _ = msg.reply(&ctx.http, ":3").await;
-        }
-
+        let _ = msg.reply(&ctx.http, ":3").await;
         Ok(())
     }
 

@@ -10,7 +10,7 @@ use tracing::{error, warn};
 
 use crate::{
     SQL,
-    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn},
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
@@ -33,7 +33,7 @@ impl Command for Mute {
     }
 
     fn get_short(&self) -> String {
-        String::from("Uses the Discord timeout feature on a member.")
+        String::from("Uses the Discord timeout feature on a member")
     }
 
     fn get_full(&self) -> String {
@@ -48,6 +48,10 @@ impl Command for Mute {
             CommandSyntax::Duration("duration", true),
             CommandSyntax::Reason("reason"),
         ]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Moderation
     }
 
     #[command]
@@ -185,6 +189,7 @@ impl Command for Mute {
                 time_string,
                 reason
             ),
+            Some(db_id)
         )
         .await;
 

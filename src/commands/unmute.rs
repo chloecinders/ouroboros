@@ -3,8 +3,7 @@ use std::sync::Arc;
 use ouroboros_macros::command;
 use serenity::{
     all::{
-        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
-        Permissions,
+        Context, CreateAllowedMentions, CreateEmbed, CreateEmbedFooter, CreateMessage, Mentionable, Message, Permissions
     },
     async_trait,
 };
@@ -13,7 +12,7 @@ use tracing::{error, warn};
 
 use crate::{
     SQL,
-    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn},
     constants::BRAND_BLUE,
     event_handler::CommandError,
     lexer::Token,
@@ -48,6 +47,10 @@ impl Command for Unmute {
             CommandSyntax::Member("member", true),
             CommandSyntax::String("reason", false),
         ]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Moderation
     }
 
     #[command]
@@ -138,7 +141,8 @@ impl Command for Unmute {
                         member.mention(),
                         reason
                     ))
-                    .color(BRAND_BLUE),
+                    .color(BRAND_BLUE)
+                    .footer(CreateEmbedFooter::new(format!("Log ID: {db_id}")))
             )
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));

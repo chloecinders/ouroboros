@@ -10,7 +10,7 @@ use tracing::{error, warn};
 
 use crate::{
     SQL,
-    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn},
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
@@ -54,6 +54,10 @@ impl Command for CBan {
             CommandSyntax::Number("days", false),
             CommandSyntax::Reason("reason"),
         ]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Moderation
     }
 
     #[command]
@@ -202,6 +206,7 @@ impl Command for CBan {
                 time_string,
                 reason
             ),
+            Some(db_id)
         )
         .await;
 

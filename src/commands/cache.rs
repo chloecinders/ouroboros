@@ -7,7 +7,7 @@ use serenity::{
 use tracing::warn;
 
 use crate::{
-    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers
+    commands::{Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers
 };
 use ouroboros_macros::command;
 
@@ -40,6 +40,10 @@ impl Command for Cache {
         vec![
             CommandSyntax::User("user", true),
         ]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Utilities
     }
 
     #[command]

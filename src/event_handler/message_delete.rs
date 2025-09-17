@@ -45,7 +45,7 @@ pub async fn message_delete(
         .await
         .ok();
 
-    let mut moderator_id: Option<u64> = None;
+    let mut actor_id: Option<u64> = None;
 
     if let Some(logs) = audit_log {
         if let Some(entry) = logs.entries.first() {
@@ -55,7 +55,7 @@ pub async fn message_delete(
                 && target.get() == msg.author.id.get()
                 && channel.get() == msg.channel_id.get()
             {
-                moderator_id = Some(entry.user_id.get());
+                actor_id = Some(entry.user_id.get());
             }
         } else {
             for entry in logs.entries {
@@ -68,7 +68,7 @@ pub async fn message_delete(
                     && target.get() == msg.author.id.get()
                     && channel.get() == msg.channel_id.get()
                 {
-                    moderator_id = Some(entry.user_id.get());
+                    actor_id = Some(entry.user_id.get());
                 }
             }
         }
@@ -99,7 +99,7 @@ pub async fn message_delete(
 
     description.push_str(&format!("| Channel: <#{0}> ({0}) ", channel_id.get()));
 
-    if let Some(moderator) = moderator_id {
+    if let Some(moderator) = actor_id {
         description.push_str(&format!("| Actor: <@{moderator}> ({moderator}) "));
     }
 

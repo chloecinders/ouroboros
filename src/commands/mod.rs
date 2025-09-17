@@ -1,4 +1,4 @@
-use std::{iter::Peekable, pin::Pin, sync::Arc, vec::IntoIter};
+use std::{fmt::Debug, iter::Peekable, pin::Pin, sync::Arc, vec::IntoIter};
 
 use crate::{
     event_handler::{CommandError, MissingArgumentError},
@@ -48,6 +48,27 @@ pub enum CommandSyntax {
     Reason(&'static str),
     Number(&'static str, bool),
     Or(Box<CommandSyntax>, Box<CommandSyntax>),
+}
+
+#[derive(PartialEq, Eq, Hash)]
+pub enum CommandCategory {
+    Misc,
+    Utilities,
+    Moderation,
+    Admin,
+    Developer
+}
+
+impl CommandCategory {
+    pub fn to_string(&self) -> String {
+        String::from(match self {
+            CommandCategory::Misc => "Misc",
+            CommandCategory::Utilities => "Utilities",
+            CommandCategory::Moderation => "Moderation",
+            CommandCategory::Admin => "Admin",
+            CommandCategory::Developer => "Developer",
+        })
+    }
 }
 
 impl CommandSyntax {
@@ -100,6 +121,7 @@ pub trait Command: Send + Sync {
     fn get_short(&self) -> String;
     fn get_full(&self) -> String;
     fn get_syntax(&self) -> Vec<CommandSyntax>;
+    fn get_category(&self) -> CommandCategory;
 
     // Runner
     async fn run(&self, ctx: Context, msg: Message, args: Vec<Token>) -> Result<(), CommandError>;

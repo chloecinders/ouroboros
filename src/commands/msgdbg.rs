@@ -5,7 +5,7 @@ use serenity::{
 use tracing::warn;
 
 use crate::{
-    commands::{Command, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{Command, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn},
     event_handler::CommandError,
     lexer::{Token, lex},
     utils::is_developer,
@@ -27,15 +27,19 @@ impl Command for MsgDbg {
     }
 
     fn get_short(&self) -> String {
-        String::from("")
+        String::from("Gets message debug information")
     }
 
     fn get_full(&self) -> String {
-        String::from(":3")
+        String::from("Reply to a message with this command to return debug information. Will be sent as a file in Discord and directly printed into the stdout.")
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Developer
     }
 
     #[command]

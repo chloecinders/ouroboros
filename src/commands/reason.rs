@@ -10,7 +10,7 @@ use tracing::warn;
 
 use crate::{
     SQL,
-    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn},
     constants::BRAND_BLUE,
     event_handler::CommandError,
     lexer::Token,
@@ -44,6 +44,10 @@ impl Command for Reason {
             CommandSyntax::String("id", false),
             CommandSyntax::Consume("reason"),
         ]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Moderation
     }
 
     #[command]

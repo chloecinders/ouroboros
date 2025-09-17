@@ -9,7 +9,7 @@ use tracing::{error, warn};
 
 use crate::{
     SQL,
-    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn},
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
@@ -44,6 +44,10 @@ impl Command for Kick {
             CommandSyntax::Member("member", true),
             CommandSyntax::Reason("reason"),
         ]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Moderation
     }
 
     #[command]
@@ -123,6 +127,7 @@ impl Command for Kick {
                     .unwrap_or(String::from("UNKNOWN_GUILD")),
                 reason
             ),
+            Some(db_id)
         )
         .await;
 
