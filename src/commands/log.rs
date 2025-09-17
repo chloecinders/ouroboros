@@ -14,7 +14,9 @@ use tracing::warn;
 
 use crate::{
     SQL,
-    commands::{Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{
+        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
+    },
     constants::BRAND_BLUE,
     database::ActionType,
     event_handler::CommandError,
@@ -418,9 +420,17 @@ impl Command for Log {
             };
 
             if interaction.user.id.get() != msg.author.id.get() {
-                if let Err(e) = interaction.create_response(&ctx.http, CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new().content("You are not the author of the original message!").ephemeral(true)
-                )).await {
+                if let Err(e) = interaction
+                    .create_response(
+                        &ctx.http,
+                        CreateInteractionResponse::Message(
+                            CreateInteractionResponseMessage::new()
+                                .content("You are not the author of the original message!")
+                                .ephemeral(true),
+                        ),
+                    )
+                    .await
+                {
                     warn!("Could not send message; err = {e:?}");
                 }
 

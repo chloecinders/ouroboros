@@ -31,7 +31,9 @@ impl Command for MsgDbg {
     }
 
     fn get_full(&self) -> String {
-        String::from("Reply to a message with this command to return debug information. Will be sent as a file in Discord and directly printed into the stdout.")
+        String::from(
+            "Reply to a message with this command to return debug information. Will be sent as a file in Discord and directly printed into the stdout.",
+        )
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {

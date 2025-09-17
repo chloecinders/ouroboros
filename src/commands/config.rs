@@ -11,7 +11,8 @@ use tracing::{error, warn};
 use crate::{
     GUILD_SETTINGS, SQL,
     commands::{
-        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerError, TransformerFn
+        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax,
+        TransformerError, TransformerFn,
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,

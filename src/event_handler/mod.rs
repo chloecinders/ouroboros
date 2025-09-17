@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use serenity::{
     all::{
-        ChannelId, Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EventHandler, Guild, GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent
+        ChannelId, Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EventHandler, Guild,
+        GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent,
     },
     async_trait,
 };
@@ -10,7 +11,8 @@ use tracing::warn;
 
 use crate::{
     commands::{
-        About, Ban, CBan, Cache, ColonThree, Command, Config, Duration, ExtractId, Kick, Log, MsgDbg, Mute, Ping, Purge, Reason, Say, Softban, Stats, Unban, Unmute, Update, Warn
+        About, Ban, CBan, Cache, ColonThree, Command, Config, Duration, ExtractId, Kick, Log,
+        MsgDbg, Mute, Ping, Purge, Reason, Say, Softban, Stats, Unban, Unmute, Update, Warn,
     },
     constants::BRAND_RED,
     lexer::Token,
@@ -98,7 +100,7 @@ impl Handler {
             Arc::new(About::new()),
             Arc::new(Duration::new()),
             Arc::new(ExtractId::new()),
-            Arc::new(Cache::new())
+            Arc::new(Cache::new()),
         ];
 
         Self { prefix, commands }

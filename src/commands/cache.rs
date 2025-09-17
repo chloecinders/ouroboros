@@ -1,13 +1,22 @@
 use std::sync::Arc;
 
 use serenity::{
-    all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message, Permissions},
+    all::{
+        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
+        Permissions,
+    },
     async_trait,
 };
 use tracing::warn;
 
 use crate::{
-    commands::{Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn}, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers
+    commands::{
+        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
+    },
+    constants::BRAND_BLUE,
+    event_handler::CommandError,
+    lexer::Token,
+    transformers::Transformers,
 };
 use ouroboros_macros::command;
 
@@ -32,14 +41,12 @@ impl Command for Cache {
     fn get_full(&self) -> String {
         String::from(
             "Bans and immediately unbans a user to make clients cache the user. \
-            Does not work on members who are already in the server, as those do not need to be forced into the cache."
+            Does not work on members who are already in the server, as those do not need to be forced into the cache.",
         )
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
-        vec![
-            CommandSyntax::User("user", true),
-        ]
+        vec![CommandSyntax::User("user", true)]
     }
 
     fn get_category(&self) -> CommandCategory {
@@ -53,7 +60,13 @@ impl Command for Cache {
         msg: Message,
         #[transformers::reply_user] user: User,
     ) -> Result<(), CommandError> {
-        if msg.guild_id.unwrap().member(&ctx.http, user.id).await.is_ok() {
+        if msg
+            .guild_id
+            .unwrap()
+            .member(&ctx.http, user.id)
+            .await
+            .is_ok()
+        {
             return Err(CommandError {
                 title: String::from("User was found in the server"),
                 hint: None,
@@ -78,12 +91,7 @@ impl Command for Cache {
             });
         }
 
-        if let Err(err) = msg
-            .guild_id
-            .unwrap()
-            .unban(&ctx.http, &user)
-            .await
-        {
+        if let Err(err) = msg.guild_id.unwrap().unban(&ctx.http, &user).await {
             warn!("Got error while unbanning; err = {err:?}");
 
             return Err(CommandError {
@@ -96,10 +104,11 @@ impl Command for Cache {
         }
 
         let reply = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(format!(
-                "Forced {} into the client cache",
-                user.mention()
-            )).color(BRAND_BLUE))
+            .add_embed(
+                CreateEmbed::new()
+                    .description(format!("Forced {} into the client cache", user.mention()))
+                    .color(BRAND_BLUE),
+            )
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 

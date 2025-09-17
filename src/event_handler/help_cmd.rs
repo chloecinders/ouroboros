@@ -1,10 +1,18 @@
 use std::{sync::Arc, time::Duration};
 
-use serenity::all::{ButtonStyle, Context, CreateActionRow, CreateAllowedMentions, CreateButton, CreateEmbed, CreateEmbedFooter, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, EditMessage, Message};
+use serenity::all::{
+    ButtonStyle, Context, CreateActionRow, CreateAllowedMentions, CreateButton, CreateEmbed,
+    CreateEmbedFooter, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage,
+    EditMessage, Message,
+};
 use tracing::warn;
 
 use crate::{
-    commands::{Command, CommandCategory}, constants::BRAND_BLUE, event_handler::{CommandError, Handler}, lexer::Token, utils::is_developer
+    commands::{Command, CommandCategory},
+    constants::BRAND_BLUE,
+    event_handler::{CommandError, Handler},
+    lexer::Token,
+    utils::is_developer,
 };
 
 impl Handler {
@@ -138,7 +146,10 @@ impl Handler {
                 return;
             }
 
-            if let Some((_, vec)) = command_pages.iter_mut().find(|(k, _)| k == &c.get_category()) {
+            if let Some((_, vec)) = command_pages
+                .iter_mut()
+                .find(|(k, _)| k == &c.get_category())
+            {
                 vec.push(c);
             } else {
                 command_pages.push((c.get_category(), vec![c]));
@@ -147,7 +158,7 @@ impl Handler {
 
         let get_page_body = |page: usize| {
             let Some(page) = command_pages.get(page) else {
-                return String::new()
+                return String::new();
             };
 
             let mut body = format!("**{}**\n", page.0.to_string().to_uppercase());
@@ -205,9 +216,12 @@ impl Handler {
             .add_embed(
                 CreateEmbed::new()
                     .description(get_page_body(current_page))
-                    .footer(CreateEmbedFooter::new(format!("View additional information using {}help <command: String>", self.prefix)))
-                    .color(BRAND_BLUE)
-                )
+                    .footer(CreateEmbedFooter::new(format!(
+                        "View additional information using {}help <command: String>",
+                        self.prefix
+                    )))
+                    .color(BRAND_BLUE),
+            )
             .components(vec![CreateActionRow::Buttons(page_buttons.clone())])
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
@@ -232,7 +246,8 @@ impl Handler {
                     let _ = new_msg
                         .edit(
                             &ctx.http,
-                            EditMessage::new().components(vec![CreateActionRow::Buttons(page_buttons),]),
+                            EditMessage::new()
+                                .components(vec![CreateActionRow::Buttons(page_buttons)]),
                         )
                         .await;
                     return Ok(());
@@ -240,9 +255,17 @@ impl Handler {
             };
 
             if interaction.user.id != msg.author.id {
-                if let Err(e) = interaction.create_response(&ctx.http, CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new().content("You are not the author of the original message!").ephemeral(true)
-                )).await {
+                if let Err(e) = interaction
+                    .create_response(
+                        &ctx.http,
+                        CreateInteractionResponse::Message(
+                            CreateInteractionResponseMessage::new()
+                                .content("You are not the author of the original message!")
+                                .ephemeral(true),
+                        ),
+                    )
+                    .await
+                {
                     warn!("Could not send message; err = {e:?}");
                 }
 

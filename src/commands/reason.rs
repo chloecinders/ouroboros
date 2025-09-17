@@ -10,7 +10,9 @@ use tracing::warn;
 
 use crate::{
     SQL,
-    commands::{Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{
+        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
+    },
     constants::BRAND_BLUE,
     event_handler::CommandError,
     lexer::Token,

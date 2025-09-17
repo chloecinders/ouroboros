@@ -1,3 +1,4 @@
+use core::fmt;
 use std::{fmt::Debug, iter::Peekable, pin::Pin, sync::Arc, vec::IntoIter};
 
 use crate::{
@@ -36,7 +37,7 @@ pub enum CommandArgument {
     Duration(chrono::Duration),
     None,
     i32(i32),
-    GuildChannel(GuildChannel)
+    GuildChannel(GuildChannel),
 }
 
 pub enum CommandSyntax {
@@ -56,18 +57,22 @@ pub enum CommandCategory {
     Utilities,
     Moderation,
     Admin,
-    Developer
+    Developer,
 }
 
-impl CommandCategory {
-    pub fn to_string(&self) -> String {
-        String::from(match self {
-            CommandCategory::Misc => "Misc",
-            CommandCategory::Utilities => "Utilities",
-            CommandCategory::Moderation => "Moderation",
-            CommandCategory::Admin => "Admin",
-            CommandCategory::Developer => "Developer",
-        })
+impl fmt::Display for CommandCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                CommandCategory::Misc => "Misc",
+                CommandCategory::Utilities => "Utilities",
+                CommandCategory::Moderation => "Moderation",
+                CommandCategory::Admin => "Admin",
+                CommandCategory::Developer => "Developer",
+            }
+        )
     }
 }
 
