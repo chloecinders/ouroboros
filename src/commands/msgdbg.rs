@@ -5,9 +5,9 @@ use serenity::{
 use tracing::warn;
 
 use crate::{
-    commands::{Command, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{Command, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn},
     event_handler::CommandError,
-    lexer::Token,
+    lexer::{Token, lex},
     utils::is_developer,
 };
 use ouroboros_macros::command;
@@ -27,15 +27,21 @@ impl Command for MsgDbg {
     }
 
     fn get_short(&self) -> String {
-        String::from("")
+        String::from("Gets message debug information")
     }
 
     fn get_full(&self) -> String {
-        String::from(":3")
+        String::from(
+            "Reply to a message with this command to return debug information. Will be sent as a file in Discord and directly printed into the stdout.",
+        )
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Developer
     }
 
     #[command]
@@ -47,7 +53,14 @@ impl Command for MsgDbg {
             };
 
             let r = CreateMessage::new().add_file(CreateAttachment::bytes(
-                format!("{reply:#?}").as_bytes(),
+                format!(
+                    "{:?}\n{reply:#?}",
+                    lex(reply.content.clone())
+                        .into_iter()
+                        .map(|t| t.raw)
+                        .collect::<Vec<_>>()
+                )
+                .as_bytes(),
                 "msg.rs",
             ));
 

@@ -14,7 +14,9 @@ use tracing::warn;
 
 use crate::{
     SQL,
-    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{
+        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
+    },
     constants::BRAND_BLUE,
     database::ActionType,
     event_handler::CommandError,
@@ -212,6 +214,10 @@ impl Command for Log {
         )]
     }
 
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Moderation
+    }
+
     async fn run(&self, ctx: Context, msg: Message, args: Vec<Token>) -> Result<(), CommandError> {
         let mut args_iter = args.clone().into_iter().peekable();
         let Ok(token) = Transformers::user(&ctx, &msg, &mut args_iter).await else {
@@ -341,7 +347,7 @@ impl Command for Log {
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-        let mut msg = match msg.channel_id.send_message(&ctx.http, reply.clone()).await {
+        let mut new_msg = match msg.channel_id.send_message(&ctx.http, reply.clone()).await {
             Ok(m) => m,
             Err(err) => {
                 warn!("Could not send message; err = {err:?}");
@@ -391,7 +397,7 @@ impl Command for Log {
         };
 
         loop {
-            let interaction = match msg
+            let interaction = match new_msg
                 .await_component_interaction(&ctx.shard)
                 .timeout(Duration::from_secs(60 * 5))
                 .await
@@ -400,7 +406,7 @@ impl Command for Log {
                 None => {
                     page_buttons = page_buttons.into_iter().map(|b| b.disabled(true)).collect();
                     log_buttons = log_buttons.into_iter().map(|b| b.disabled(true)).collect();
-                    let _ = msg
+                    let _ = new_msg
                         .edit(
                             &ctx.http,
                             EditMessage::new().components(vec![
@@ -412,6 +418,24 @@ impl Command for Log {
                     return Ok(());
                 }
             };
+
+            if interaction.user.id.get() != msg.author.id.get() {
+                if let Err(e) = interaction
+                    .create_response(
+                        &ctx.http,
+                        CreateInteractionResponse::Message(
+                            CreateInteractionResponseMessage::new()
+                                .content("You are not the author of the original message!")
+                                .ephemeral(true),
+                        ),
+                    )
+                    .await
+                {
+                    warn!("Could not send message; err = {e:?}");
+                }
+
+                continue;
+            }
 
             match interaction.data.custom_id.as_str() {
                 "first" => {

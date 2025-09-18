@@ -21,6 +21,7 @@ impl Transformers {
                 position: 0,
                 length: 0,
                 iteration: 0,
+                quoted: false,
             };
 
             let reason: String = {
@@ -29,7 +30,12 @@ impl Transformers {
                 {
                     new_token.position = t.position;
                     new_token.iteration = t.iteration;
-                    msg.content[t.position + 1..].to_string().clone()
+
+                    if t.quoted {
+                        msg.content[t.position..].to_string().clone()
+                    } else {
+                        msg.content[t.position + 1..].to_string().clone()
+                    }
                 } else {
                     String::new()
                 }

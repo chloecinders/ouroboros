@@ -10,8 +10,7 @@ use tracing::{error, warn};
 use crate::{
     GUILD_SETTINGS, SQL,
     commands::{
-        Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerError,
-        TransformerFn, TransformerReturn,
+        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerError, TransformerFn, TransformerReturn
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
@@ -50,7 +49,7 @@ impl Command for Config {
     }
 
     fn get_short(&self) -> String {
-        String::from("Configures functions of the bot.")
+        String::from("Configures functions of the bot")
     }
 
     fn get_full(&self) -> String {
@@ -70,6 +69,10 @@ impl Command for Config {
             CommandSyntax::String("argument1", false),
             CommandSyntax::String("argument2", false),
         ]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Admin
     }
 
     async fn run(&self, ctx: Context, msg: Message, args: Vec<Token>) -> Result<(), CommandError> {

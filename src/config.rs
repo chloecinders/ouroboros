@@ -18,6 +18,7 @@ pub struct Environment {
     pub prefix: String,
     pub database_url: String,
     pub max_connections: u32,
+    pub msg_cache: usize,
     pub dev_ids: Option<Vec<u64>>,
     pub whitelist_enabled: Option<bool>,
     pub whitelist: Option<Vec<u64>>,

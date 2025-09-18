@@ -1,4 +1,5 @@
-use std::{iter::Peekable, pin::Pin, sync::Arc, vec::IntoIter};
+use core::fmt;
+use std::{fmt::Debug, iter::Peekable, pin::Pin, sync::Arc, vec::IntoIter};
 
 use crate::{
     event_handler::{CommandError, MissingArgumentError},
@@ -51,6 +52,31 @@ pub enum CommandSyntax {
     Or(Box<CommandSyntax>, Box<CommandSyntax>),
 }
 
+#[derive(PartialEq, Eq, Hash)]
+pub enum CommandCategory {
+    Misc,
+    Utilities,
+    Moderation,
+    Admin,
+    Developer,
+}
+
+impl fmt::Display for CommandCategory {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                CommandCategory::Misc => "Misc",
+                CommandCategory::Utilities => "Utilities",
+                CommandCategory::Moderation => "Moderation",
+                CommandCategory::Admin => "Admin",
+                CommandCategory::Developer => "Developer",
+            }
+        )
+    }
+}
+
 impl CommandSyntax {
     pub fn get_def(&self) -> String {
         let (inner, required) = match self {
@@ -101,6 +127,7 @@ pub trait Command: Send + Sync {
     fn get_short(&self) -> String;
     fn get_full(&self) -> String;
     fn get_syntax(&self) -> Vec<CommandSyntax>;
+    fn get_category(&self) -> CommandCategory;
 
     // Runner
     async fn run(&self, ctx: Context, msg: Message, args: Vec<Token>) -> Result<(), CommandError>;
@@ -173,3 +200,9 @@ pub use about::About;
 
 mod duration;
 pub use duration::Duration;
+
+mod extract_id;
+pub use extract_id::ExtractId;
+
+mod cache;
+pub use cache::Cache;

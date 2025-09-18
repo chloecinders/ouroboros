@@ -1,10 +1,7 @@
 use std::sync::Arc;
 
 use serenity::{
-    all::{
-        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
-        Permissions,
-    },
+    all::{Context, Mentionable, Message, Permissions},
     async_trait,
 };
 use sqlx::query;
@@ -12,12 +9,13 @@ use tracing::{error, warn};
 
 use crate::{
     SQL,
-    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
-    constants::BRAND_BLUE,
+    commands::{
+        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
+    },
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::tinyid,
+    utils::{message_and_dm, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -48,6 +46,10 @@ impl Command for Kick {
             CommandSyntax::Member("member", true),
             CommandSyntax::Reason("reason"),
         ]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Moderation
     }
 
     #[command]
@@ -96,7 +98,6 @@ impl Command for Kick {
         if let Err(err) = member.kick_with_reason(&ctx.http, &reason).await {
             warn!("Got error while kicking; err = {err:?}");
 
-            // cant do much here...
             if query!("DELETE FROM actions WHERE id = $1", db_id)
                 .execute(SQL.get().unwrap())
                 .await
@@ -116,18 +117,21 @@ impl Command for Kick {
             });
         }
 
-        let reply = CreateMessage::new()
-            .add_embed(
-                CreateEmbed::new()
-                    .description(format!("Kicked {}\n```\n{}\n```", member.mention(), reason))
-                    .color(BRAND_BLUE),
-            )
-            .reference_message(&msg)
-            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
-
-        if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
-            warn!("Could not send message; err = {err:?}");
-        }
+        message_and_dm(
+            &ctx,
+            &msg,
+            &member.user,
+            format!("Kicked {}\n```\n{}\n```", member.user.mention(), reason),
+            format!(
+                "You have been kicked from {}\n```\n{}\n```",
+                msg.guild(&ctx.cache)
+                    .map(|g| g.name.clone())
+                    .unwrap_or(String::from("UNKNOWN_GUILD")),
+                reason
+            ),
+            Some(db_id),
+        )
+        .await;
 
         Ok(())
     }

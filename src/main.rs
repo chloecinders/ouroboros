@@ -106,7 +106,7 @@ async fn main() {
     let intents = GatewayIntents::all();
 
     let mut cache_settings = Settings::default();
-    cache_settings.max_messages = 1000;
+    cache_settings.max_messages = active_env.msg_cache;
     let handler = Handler::new(active_env.prefix.clone());
 
     let mut client = Client::builder(&active_env.token, intents)

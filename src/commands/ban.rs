@@ -2,10 +2,7 @@ use std::sync::Arc;
 
 use chrono::{Duration, Utc};
 use serenity::{
-    all::{
-        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
-        Permissions,
-    },
+    all::{Context, Mentionable, Message, Permissions},
     async_trait,
 };
 use sqlx::query;
@@ -13,12 +10,13 @@ use tracing::{error, warn};
 
 use crate::{
     SQL,
-    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
-    constants::BRAND_BLUE,
+    commands::{
+        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
+    },
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::tinyid,
+    utils::{message_and_dm, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -45,6 +43,7 @@ impl Command for Ban {
             "Bans from the server and leaves a note in the users log. \
             Defaults to permanent if no duration is provided. \
             Use 0 for the duration to make the ban permanent. \
+            If the duration cannot be resolved it will default to permanent. \
             Ban expiry is checked every 5 minutes.",
         )
     }
@@ -57,13 +56,17 @@ impl Command for Ban {
         ]
     }
 
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Moderation
+    }
+
     #[command]
     async fn run(
         &self,
         ctx: Context,
         msg: Message,
         #[transformers::reply_user] user: User,
-        #[transformers::duration] duration: Option<Duration>,
+        #[transformers::maybe_duration] duration: Option<Duration>,
         #[transformers::reply_consume] reason: Option<String>,
     ) -> Result<(), CommandError> {
         let duration = duration.unwrap_or(Duration::zero());
@@ -164,7 +167,6 @@ impl Command for Ban {
         {
             warn!("Got error while banning; err = {err:?}");
 
-            // cant do much here...
             if query!("DELETE FROM actions WHERE id = $1", db_id)
                 .execute(SQL.get().unwrap())
                 .await
@@ -184,23 +186,27 @@ impl Command for Ban {
             });
         }
 
-        let reply = CreateMessage::new()
-            .add_embed(
-                CreateEmbed::new()
-                    .description(format!(
-                        "Banned {} {}\n```\n{}\n```",
-                        user.mention(),
-                        time_string,
-                        reason
-                    ))
-                    .color(BRAND_BLUE),
-            )
-            .reference_message(&msg)
-            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
-
-        if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
-            warn!("Could not send message; err = {err:?}");
-        }
+        message_and_dm(
+            &ctx,
+            &msg,
+            &user,
+            format!(
+                "Banned {} {}\n```\n{}\n```",
+                user.mention(),
+                time_string,
+                reason
+            ),
+            format!(
+                "You have been banned from {} {}\n```\n{}\n```",
+                msg.guild(&ctx.cache)
+                    .map(|g| g.name.clone())
+                    .unwrap_or(String::from("UNKNOWN_GUILD")),
+                time_string,
+                reason
+            ),
+            Some(db_id),
+        )
+        .await;
 
         Ok(())
     }

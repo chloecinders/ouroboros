@@ -14,7 +14,9 @@ use tracing::warn;
 
 use crate::{
     SQL,
-    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{
+        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
+    },
     constants::BRAND_BLUE,
     database::ActionType,
     event_handler::CommandError,
@@ -54,6 +56,10 @@ impl Command for Duration {
             CommandSyntax::String("id", false),
             CommandSyntax::Duration("duration", true),
         ]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Moderation
     }
 
     #[command]

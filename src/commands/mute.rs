@@ -2,10 +2,7 @@ use std::sync::Arc;
 
 use chrono::{Duration, Utc};
 use serenity::{
-    all::{
-        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EditMember, Mentionable,
-        Message, Permissions,
-    },
+    all::{Context, EditMember, Mentionable, Message, Permissions},
     async_trait,
 };
 use sqlx::query;
@@ -13,12 +10,13 @@ use tracing::{error, warn};
 
 use crate::{
     SQL,
-    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
-    constants::BRAND_BLUE,
+    commands::{
+        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
+    },
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::tinyid,
+    utils::{message_and_dm, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -37,7 +35,7 @@ impl Command for Mute {
     }
 
     fn get_short(&self) -> String {
-        String::from("Uses the Discord timeout feature on a member.")
+        String::from("Uses the Discord timeout feature on a member")
     }
 
     fn get_full(&self) -> String {
@@ -52,6 +50,10 @@ impl Command for Mute {
             CommandSyntax::Duration("duration", true),
             CommandSyntax::Reason("reason"),
         ]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Moderation
     }
 
     #[command]
@@ -108,7 +110,13 @@ impl Command for Mute {
                 _ if duration.num_seconds() != 0 => {
                     (duration.num_seconds(), String::from("second"))
                 }
-                _ => (0, String::new()),
+                _ => {
+                    return Err(CommandError {
+                        title: String::from("Timeout duration can not be zero"),
+                        hint: None,
+                        arg: None,
+                    });
+                }
             };
 
             if time > 1 {
@@ -146,7 +154,6 @@ impl Command for Mute {
         if let Err(err) = member.guild_id.edit_member(&ctx.http, &member, edit).await {
             warn!("Got error while timinng out; err = {err:?}");
 
-            // cant do much here...
             if query!("DELETE FROM actions WHERE id = $1", db_id)
                 .execute(SQL.get().unwrap())
                 .await
@@ -166,23 +173,27 @@ impl Command for Mute {
             });
         }
 
-        let reply = CreateMessage::new()
-            .add_embed(
-                CreateEmbed::new()
-                    .description(format!(
-                        "Timed {} out {}\n```\n{}\n```",
-                        member.mention(),
-                        time_string,
-                        reason
-                    ))
-                    .color(BRAND_BLUE),
-            )
-            .reference_message(&msg)
-            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
-
-        if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
-            warn!("Could not send message; err = {err:?}");
-        }
+        message_and_dm(
+            &ctx,
+            &msg,
+            &member.user,
+            format!(
+                "Timed {} out {}\n```\n{}\n```",
+                member.mention(),
+                time_string,
+                reason
+            ),
+            format!(
+                "You have been timed out from {} {}\n```\n{}\n```",
+                msg.guild(&ctx.cache)
+                    .map(|g| g.name.clone())
+                    .unwrap_or(String::from("UNKNOWN_GUILD")),
+                time_string,
+                reason
+            ),
+            Some(db_id),
+        )
+        .await;
 
         Ok(())
     }

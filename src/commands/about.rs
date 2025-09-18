@@ -9,7 +9,7 @@ use tracing::warn;
 
 use crate::{
     START_TIME,
-    commands::{Command, CommandSyntax},
+    commands::{Command, CommandCategory, CommandSyntax},
     constants::BRAND_BLUE,
     event_handler::CommandError,
     lexer::Token,
@@ -39,6 +39,10 @@ impl Command for About {
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Misc
     }
 
     async fn run(&self, ctx: Context, msg: Message, _args: Vec<Token>) -> Result<(), CommandError> {
@@ -72,7 +76,7 @@ impl Command for About {
             format!(
                 r#"Hey, I'm {}!
 A moderation bot made for one purpose and one purpose only: Moderation.
-I'm currently in private beta and my source code will be released once I enter the public.
+I'm currently in private beta but my source code is available at <https://github.com/chloecinders/ouroboros>.
 Type `+help` to see a list of all commands!
 
 I was made in Rust by chloecinders!

@@ -1,10 +1,7 @@
 use std::sync::Arc;
 
 use serenity::{
-    all::{
-        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
-        Permissions,
-    },
+    all::{Context, Mentionable, Message, Permissions},
     async_trait,
 };
 use sqlx::query;
@@ -12,12 +9,13 @@ use tracing::warn;
 
 use crate::{
     SQL,
-    commands::{Command, CommandArgument, CommandPermissions, CommandSyntax, TransformerFn},
-    constants::BRAND_BLUE,
+    commands::{
+        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
+    },
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::tinyid,
+    utils::{message_and_dm, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -50,6 +48,10 @@ impl Command for Warn {
         ]
     }
 
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Moderation
+    }
+
     #[command]
     async fn run(
         &self,
@@ -73,9 +75,11 @@ impl Command for Warn {
             reason.push_str("...");
         }
 
+        let db_id = tinyid().await;
+
         let res = query!(
             "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason) VALUES ($1, 'warn', $2, $3, $4, $5)",
-            tinyid().await,
+            db_id,
             msg.guild_id.map(|g| g.get() as i64).unwrap_or(0),
             member.user.id.get() as i64,
             msg.author.id.get() as i64,
@@ -91,19 +95,21 @@ impl Command for Warn {
             });
         }
 
-        let reply = CreateMessage::new()
-            .add_embed(
-                CreateEmbed::new()
-                    .description(format!("Warned {}\n```\n{}\n```", member.mention(), reason))
-                    .color(BRAND_BLUE)
-                    .clone(),
-            )
-            .reference_message(&msg)
-            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
-
-        if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
-            warn!("Could not send message; err = {err:?}");
-        }
+        message_and_dm(
+            &ctx,
+            &msg,
+            &member.user,
+            format!("Warned {}\n```\n{}\n```", member.user.mention(), reason),
+            format!(
+                "You have been warned in {}\n```\n{}\n```",
+                msg.guild(&ctx.cache)
+                    .map(|g| g.name.clone())
+                    .unwrap_or(String::from("UNKNOWN_GUILD")),
+                reason
+            ),
+            Some(db_id),
+        )
+        .await;
 
         Ok(())
     }

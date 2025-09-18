@@ -9,7 +9,7 @@ use tracing::warn;
 
 use crate::{
     ShardManagerContainer,
-    commands::{Command, CommandSyntax},
+    commands::{Command, CommandCategory, CommandSyntax},
     constants::BRAND_BLUE,
     event_handler::CommandError,
     lexer::Token,
@@ -41,6 +41,10 @@ impl Command for Ping {
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Misc
     }
 
     async fn run(

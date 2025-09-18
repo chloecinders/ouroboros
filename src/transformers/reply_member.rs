@@ -46,6 +46,7 @@ impl Transformers {
                     position: 0,
                     length: 0,
                     iteration: 0,
+                    quoted: false,
                 })
             } else {
                 return Transformers::member(ctx, msg, args).await;

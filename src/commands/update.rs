@@ -7,7 +7,7 @@ use tracing::warn;
 
 use crate::{
     BOT_CONFIG,
-    commands::{Command, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{Command, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn},
     event_handler::CommandError,
     lexer::Token,
     utils::is_developer,
@@ -30,18 +30,22 @@ impl Command for Update {
     }
 
     fn get_short(&self) -> String {
-        String::from("")
+        String::from("Updates the bot remotely")
     }
 
     fn get_full(&self) -> String {
         String::from(
             "Updates the Bot using the Github repository in the config. \
-            Warning: This might print debug information in chat! Only run this in a channel you can see!",
+            Warning: This might print debug information in chat! Only run this in a channel with members you trust!",
         )
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
         vec![]
+    }
+
+    fn get_category(&self) -> CommandCategory {
+        CommandCategory::Developer
     }
 
     #[command]
