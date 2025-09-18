@@ -23,7 +23,7 @@ pub async fn message_and_dm(
     };
 
     if dm_user.direct_message(&ctx.http, dm).await.is_err() {
-        footer.push_str(" | DM failed. Target DMs off.");
+        footer.push_str(" | DM failed. Target has DMs off.");
     }
 
     let mut embed = CreateEmbed::new().description(server_msg).color(BRAND_BLUE);
