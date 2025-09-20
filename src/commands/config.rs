@@ -35,8 +35,9 @@ impl Config {
     fn get_option_desc(&self, opt: &str) -> &str {
         match opt {
             "log" => "Settings controlling guild event logging",
-            "log.channel" => "<Discord Channel> The channel log messages get set in (none to disable log)",
-            "log.bot" => "<Bool> Should bots should be excluded from logs (bot message deletions, etc.)",
+            "log.channel_id" => "<Discord Channel> The channel server activity logs get sent in",
+            "log.log_bots" => "<Bool> Include bots in server activity logs",
+            "log.mod_channel_id" => "<Discord Channel> The channel mod activity logs get sent in",
             _ => ""
         }
     }
@@ -173,16 +174,21 @@ impl Command for Config {
             };
 
             let value = match setting.as_str() {
-                "log.channel" => settings
+                "log.channel_id" => settings
                     .log
-                    .channel
+                    .channel_id
                     .map(|c| format!("<#{c}>"))
                     .unwrap_or(String::from("None")),
-                "log.bot" => settings
+                "log.log_bots" => settings
                     .log
-                    .bot
+                    .log_bots
                     .map(|c| format!("{c}"))
                     .unwrap_or(String::from("false")),
+                "log.mod_channel_id" => settings
+                    .log
+                    .mod_channel_id
+                    .map(|c| format!("<#{c}>"))
+                    .unwrap_or(String::from("None")),
                 _ => {
                     return Err(CommandError {
                         title: String::from("Could not find setting"),
@@ -218,13 +224,17 @@ impl Command for Config {
             let mut iter = vec![arg2_token.clone().unwrap()].into_iter().peekable();
 
             let setting_info: (UnwrapTransformerFn, sqlx::query::Query<'_, sqlx::Postgres, sqlx::postgres::PgArguments>) = match setting.as_str() {
-                "log.channel" => (
+                "log.channel_id" => (
                     Box::new(Transformers::guild_channel),
                     sqlx::query("UPDATE guild_settings SET log_channel = $2 WHERE guild_id = $1")
                 ),
-                "log.bot" => (
+                "log.log_bots" => (
                     Box::new(Transformers::bool),
                     sqlx::query("UPDATE guild_settings SET log_bot = $2 WHERE guild_id = $1")
+                ),
+                "log.mod_channel_id" => (
+                    Box::new(Transformers::guild_channel),
+                    sqlx::query("UPDATE guild_settings SET log_mod = $2 WHERE guild_id = $1")
                 ),
                 _ => {
                     return Err(CommandError {

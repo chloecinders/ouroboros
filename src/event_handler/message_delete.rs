@@ -31,9 +31,9 @@ pub async fn message_delete(
     if let Some(msg) = some_msg.clone() {
         let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
         let guild_id = msg.guild_id.map(|g| g.get()).unwrap_or(0);
+
         if let Ok(guild_settings) = settings.get(guild_id).await {
-            if msg.author.bot && guild_settings.log.bot.is_some_and(|b| b) {
-                println!("fucker is a clanker");
+            if msg.author.bot && guild_settings.log.log_bots.is_none_or(|b| b) {
                 return;
             }
         } else {

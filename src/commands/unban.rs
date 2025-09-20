@@ -3,7 +3,7 @@ use std::sync::Arc;
 use ouroboros_macros::command;
 use serenity::{
     all::{
-        Context, CreateAllowedMentions, CreateEmbed, CreateEmbedFooter, CreateMessage, Mentionable,
+        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable,
         Message, Permissions,
     },
     async_trait,
@@ -20,7 +20,7 @@ use crate::{
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::tinyid,
+    utils::{guild_mod_log, tinyid},
 };
 
 pub struct Unban;
@@ -144,9 +144,8 @@ impl Command for Unban {
         let reply = CreateMessage::new()
             .add_embed(
                 CreateEmbed::new()
-                    .description(format!("Unbanned {}\n```\n{}\n```", user.mention(), reason))
-                    .color(BRAND_BLUE)
-                    .footer(CreateEmbedFooter::new(format!("Log ID: {db_id}"))),
+                    .description(format!("**{} UNBANNED**\n-# Log ID: `{db_id}`\n```\n{reason}\n```", user.mention()))
+                    .color(BRAND_BLUE),
             )
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
@@ -154,6 +153,23 @@ impl Command for Unban {
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
             warn!("Could not send message; err = {err:?}");
         }
+
+        guild_mod_log(
+            &ctx.http,
+            msg.guild_id.unwrap(),
+            CreateMessage::new()
+                .add_embed(
+                    CreateEmbed::new()
+                        .description(format!(
+                            "**MEMBER UNBANNED**\n-# Log ID: `{db_id}` | Actor: {} `{}` | Target: {} `{}`\n```\n{reason}\n```",
+                            msg.author.mention(),
+                            msg.author.id.get(),
+                            user.mention(),
+                            user.id.get()
+                        ))
+                        .color(BRAND_BLUE)
+                )
+        ).await;
 
         Ok(())
     }

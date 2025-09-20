@@ -1,21 +1,16 @@
 use std::sync::Arc;
 
 use serenity::{
-    all::{Context, Mentionable, Message, Permissions},
+    all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, Permissions},
     async_trait,
 };
 use sqlx::query;
 use tracing::{error, warn};
 
 use crate::{
-    SQL,
-    commands::{
+    SQL, commands::{
         Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
-    },
-    event_handler::CommandError,
-    lexer::Token,
-    transformers::Transformers,
-    utils::{message_and_dm, tinyid},
+    }, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::{guild_mod_log, message_and_dm, tinyid}
 };
 use ouroboros_macros::command;
 
@@ -137,17 +132,35 @@ impl Command for Softban {
             &ctx,
             &msg,
             &member.user,
-            format!("Softbanned {}\n```\n{}\n```", member.user.mention(), reason),
+            |a| format!(
+                "**{} SOFTBANNED**\n-# Log ID: `{db_id}`{a}\n```\n{reason}\n```",
+                member.mention()
+            ),
             format!(
-                "You have been softbanned from {}\n```\n{}\n```",
+                "You have been kicked from {}\n```\n{}\n```",
                 msg.guild(&ctx.cache)
                     .map(|g| g.name.clone())
                     .unwrap_or(String::from("UNKNOWN_GUILD")),
                 reason
             ),
-            Some(db_id),
-        )
-        .await;
+        ).await;
+
+        guild_mod_log(
+            &ctx.http,
+            msg.guild_id.unwrap(),
+            CreateMessage::new()
+                .add_embed(
+                    CreateEmbed::new()
+                        .description(format!(
+                            "**MEMBER SOFTBANNED**\n-# Log ID: `{db_id}` | Actor: {} `{}` | Target: {} `{}`\n```\n{reason}\n```",
+                            msg.author.mention(),
+                            msg.author.id.get(),
+                            member.mention(),
+                            member.user.id.get()
+                        ))
+                        .color(BRAND_BLUE)
+                )
+        ).await;
 
         Ok(())
     }

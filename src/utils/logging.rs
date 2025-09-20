@@ -1,5 +1,5 @@
 use chrono::DateTime;
-use serenity::all::{CreateMessage, GuildId, Http, User};
+use serenity::all::{CreateMessage, GuildId, Http};
 use tracing::warn;
 
 use crate::GUILD_SETTINGS;
@@ -11,24 +11,52 @@ pub async fn guild_log(http: &Http, guild: GuildId, msg: CreateMessage) {
         return;
     };
 
-    if guild_settings.log.channel.is_none() {
+    if guild_settings.log.channel_id.is_none() {
         return;
     }
 
     let Ok(channel) = http
-        .get_channel(guild_settings.log.channel.unwrap_or(1).into())
+        .get_channel(guild_settings.log.channel_id.unwrap_or(1).into())
         .await
     else {
         warn!(
             "Cannot get log channel; guild = {}, channel = {}",
             guild.get(),
-            guild_settings.log.channel.unwrap_or(1)
+            guild_settings.log.channel_id.unwrap_or(1)
         );
         return;
     };
 
     if let Err(err) = channel.id().send_message(http, msg).await {
         warn!("Cannot not send log message; err = {err:?}");
+    }
+}
+
+pub async fn guild_mod_log(http: &Http, guild: GuildId, msg: CreateMessage) {
+    let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
+    let Ok(guild_settings) = settings.get(guild.get()).await else {
+        warn!("Found guild with no cached settings; Id = {}", guild.get());
+        return;
+    };
+
+    if guild_settings.log.mod_channel_id.is_none() {
+        return;
+    }
+
+    let Ok(channel) = http
+        .get_channel(guild_settings.log.mod_channel_id.unwrap_or(1).into())
+        .await
+    else {
+        warn!(
+            "Cannot get log channel; guild = {}, channel = {}",
+            guild.get(),
+            guild_settings.log.mod_channel_id.unwrap_or(1)
+        );
+        return;
+    };
+
+    if let Err(err) = channel.id().send_message(http, msg).await {
+        warn!("Cannot not send mod log message; err = {err:?}");
     }
 }
 

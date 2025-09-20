@@ -48,8 +48,9 @@ impl GuildSettings {
                     record.guild_id as u64,
                     Settings {
                         log: SettingsLog {
-                            channel: record.log_channel.map(|n| n as u64),
-                            bot: record.log_bot
+                            channel_id: record.log_channel.map(|n| n as u64),
+                            log_bots: record.log_bot,
+                            mod_channel_id: record.log_mod.map(|n| n as u64)
                         },
                     },
                 );
@@ -69,6 +70,7 @@ pub struct Settings {
 
 #[derive(Debug, Serialize, Clone, Default)]
 pub struct SettingsLog {
-    pub channel: Option<u64>,
-    pub bot: Option<bool>
+    pub channel_id: Option<u64>,
+    pub log_bots: Option<bool>,
+    pub mod_channel_id: Option<u64>,
 }

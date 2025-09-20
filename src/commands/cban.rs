@@ -2,21 +2,16 @@ use std::sync::Arc;
 
 use chrono::{Duration, Utc};
 use serenity::{
-    all::{Context, Mentionable, Message, Permissions},
+    all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, Permissions},
     async_trait,
 };
 use sqlx::query;
 use tracing::{error, warn};
 
 use crate::{
-    SQL,
-    commands::{
+    SQL, commands::{
         Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
-    },
-    event_handler::CommandError,
-    lexer::Token,
-    transformers::Transformers,
-    utils::{message_and_dm, tinyid},
+    }, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::{guild_mod_log, message_and_dm, tinyid}
 };
 use ouroboros_macros::command;
 
@@ -194,11 +189,9 @@ impl Command for CBan {
             &ctx,
             &msg,
             &user,
-            format!(
-                "Banned {} {}\n```\n{}\n```",
-                user.mention(),
-                time_string,
-                reason
+            |a| format!(
+                "**{} BANNED**\n-# Log ID: `{db_id}` | Duration: {time_string} | Cleared {days} days of messages{a}\n```\n{reason}\n```",
+                user.mention()
             ),
             format!(
                 "You have been banned from {} {}\n```\n{}\n```",
@@ -208,9 +201,23 @@ impl Command for CBan {
                 time_string,
                 reason
             ),
-            Some(db_id),
-        )
-        .await;
+        ).await;
+        guild_mod_log(
+            &ctx.http,
+            msg.guild_id.unwrap(),
+            CreateMessage::new()
+                .add_embed(
+                    CreateEmbed::new()
+                        .description(format!(
+                            "**MEMBER BANNED**\n-# Log ID: `{db_id}` | Actor: {} `{}` | Target: {} `{}` | Duration: {time_string} | Cleared {days} days of messages\n```\n{reason}\n```",
+                            msg.author.mention(),
+                            msg.author.id.get(),
+                            user.mention(),
+                            user.id.get()
+                        ))
+                        .color(BRAND_BLUE)
+                )
+        ).await;
 
         Ok(())
     }

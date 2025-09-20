@@ -2,17 +2,14 @@ use std::sync::Arc;
 
 use chrono::{Duration, Utc};
 use serenity::{
-    all::{Context, GetMessages, Message, Permissions},
+    all::{Context, CreateEmbed, CreateMessage, GetMessages, Mentionable, Message, Permissions},
     async_trait,
 };
 
 use crate::{
     commands::{
         Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
-    },
-    event_handler::CommandError,
-    lexer::Token,
-    transformers::Transformers,
+    }, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::guild_mod_log
 };
 use ouroboros_macros::command;
 
@@ -94,6 +91,8 @@ impl Command for Purge {
             }
         });
 
+        let ids = filtered.clone().map(|m| m.get().to_string()).collect::<Vec<_>>();
+
         if msg
             .channel_id
             .delete_messages(&ctx.http, filtered)
@@ -108,6 +107,24 @@ impl Command for Purge {
                 arg: None,
             });
         };
+
+        guild_mod_log(
+            &ctx.http,
+            msg.guild_id.unwrap(),
+            CreateMessage::new()
+                .add_embed(
+                    CreateEmbed::new()
+                        .description(format!(
+                            "**MESSAGES PURGED**\n-# Actor: {} `{}` | Channel: <#{}> | Count: {}\n```\n{}\n```",
+                            msg.author.mention(),
+                            msg.author.id.get(),
+                            msg.channel_id.get(),
+                            count,
+                            ids.join("\n")
+                        ))
+                        .color(BRAND_BLUE)
+                )
+        ).await;
 
         Ok(())
     }

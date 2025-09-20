@@ -2,21 +2,16 @@ use std::sync::Arc;
 
 use chrono::{Duration, Utc};
 use serenity::{
-    all::{Context, EditMember, Mentionable, Message, Permissions},
+    all::{Context, CreateEmbed, CreateMessage, EditMember, Mentionable, Message, Permissions},
     async_trait,
 };
 use sqlx::query;
 use tracing::{error, warn};
 
 use crate::{
-    SQL,
-    commands::{
+    SQL, commands::{
         Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
-    },
-    event_handler::CommandError,
-    lexer::Token,
-    transformers::Transformers,
-    utils::{message_and_dm, tinyid},
+    }, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::{guild_mod_log, message_and_dm, tinyid}
 };
 use ouroboros_macros::command;
 
@@ -123,7 +118,7 @@ impl Command for Mute {
                 unit += "s";
             }
 
-            format!("for {time} {unit}")
+            format!("{time} {unit}")
         };
 
         let duration = Utc::now() + duration;
@@ -177,11 +172,9 @@ impl Command for Mute {
             &ctx,
             &msg,
             &member.user,
-            format!(
-                "Timed {} out {}\n```\n{}\n```",
-                member.mention(),
-                time_string,
-                reason
+            |a| format!(
+                "**{} TIMEOUT**\n-# Log ID: `{db_id}` | Duration: {time_string}{a}\n```\n{reason}\n```",
+                member.mention()
             ),
             format!(
                 "You have been timed out from {} {}\n```\n{}\n```",
@@ -191,9 +184,24 @@ impl Command for Mute {
                 time_string,
                 reason
             ),
-            Some(db_id),
         )
         .await;
+        guild_mod_log(
+            &ctx.http,
+            msg.guild_id.unwrap(),
+            CreateMessage::new()
+                .add_embed(
+                    CreateEmbed::new()
+                        .description(format!(
+                            "**MEMBER TIMEOUT**\n-# Log ID: `{db_id}` | Actor: {} `{}` | Target: {} `{}` | Duration: {time_string}\n```\n{reason}\n```",
+                            msg.author.mention(),
+                            msg.author.id.get(),
+                            member.mention(),
+                            member.user.id.get()
+                        ))
+                        .color(BRAND_BLUE)
+                )
+        ).await;
 
         Ok(())
     }

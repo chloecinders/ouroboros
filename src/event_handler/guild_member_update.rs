@@ -1,5 +1,6 @@
 use std::io::Cursor;
 
+use chrono::Utc;
 use image::{DynamicImage, GenericImage, imageops::FilterType};
 use reqwest::Client;
 use serenity::all::{
@@ -8,7 +9,7 @@ use serenity::all::{
 };
 use tracing::warn;
 
-use crate::{GUILD_SETTINGS, constants::BRAND_BLUE, event_handler::Handler, utils::guild_log};
+use crate::{GUILD_SETTINGS, constants::BRAND_BLUE, event_handler::Handler, utils::{guild_log, snowflake_to_timestamp}};
 
 pub async fn guild_member_update(
     _handler: &Handler,
@@ -24,7 +25,7 @@ pub async fn guild_member_update(
             return;
         };
 
-        if event.user.bot && guild_settings.log.bot.is_none_or(|b| !b) {
+        if event.user.bot && guild_settings.log.log_bots.is_none_or(|b| b) {
             return;
         }
     }
@@ -48,10 +49,21 @@ pub async fn guild_member_update(
     if let Some(logs) = audit_log {
         'o: for entry in logs.entries {
             for change in entry.changes.unwrap_or(Vec::new()) {
+                let entry_time = snowflake_to_timestamp(entry.id.get());
+
                 if let Change::Nick { old, new } = change
                     && event.user.id.get() == entry.user_id.get()
                     && new == event.nick
+                    && (Utc::now() - entry_time).num_seconds().abs() <= 300
                 {
+                    if old_if_available.clone().is_some_and(|old_user| {
+                        old.clone().is_some_and(|old_nick| {
+                            old_user.display_name() == old_nick
+                        })
+                    }) {
+                        continue;
+                    }
+
                     moderator_id = Some(entry.user_id.get());
                     reason = entry.reason.clone();
 
@@ -128,6 +140,7 @@ pub async fn guild_member_update(
     };
 
     if name.is_empty() || avatar.0.is_empty() {
+        println!("{} {}", name, avatar.0);
         return;
     }
 

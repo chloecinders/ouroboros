@@ -3,7 +3,7 @@ use std::sync::Arc;
 use ouroboros_macros::command;
 use serenity::{
     all::{
-        Context, CreateAllowedMentions, CreateEmbed, CreateEmbedFooter, CreateMessage, Mentionable,
+        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable,
         Message, Permissions,
     },
     async_trait,
@@ -20,7 +20,7 @@ use crate::{
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::tinyid,
+    utils::{guild_mod_log, tinyid},
 };
 
 pub struct Unmute;
@@ -139,13 +139,8 @@ impl Command for Unmute {
         let reply = CreateMessage::new()
             .add_embed(
                 CreateEmbed::new()
-                    .description(format!(
-                        "Unmuted {}\n```\n{}\n```",
-                        member.mention(),
-                        reason
-                    ))
-                    .color(BRAND_BLUE)
-                    .footer(CreateEmbedFooter::new(format!("Log ID: {db_id}"))),
+                    .description(format!("**{} UNMUTED**\n-# Log ID: `{db_id}`\n```\n{reason}\n```", member.mention()))
+                    .color(BRAND_BLUE),
             )
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
@@ -153,6 +148,23 @@ impl Command for Unmute {
         if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
             warn!("Could not send message; err = {err:?}");
         }
+
+        guild_mod_log(
+            &ctx.http,
+            msg.guild_id.unwrap(),
+            CreateMessage::new()
+                .add_embed(
+                    CreateEmbed::new()
+                        .description(format!(
+                            "**MEMBER UNMUTED**\n-# Log ID: `{db_id}` | Actor: {} `{}` | Target: {} `{}`\n```\n{reason}\n```",
+                            msg.author.mention(),
+                            msg.author.id.get(),
+                            member.mention(),
+                            member.user.id.get()
+                        ))
+                        .color(BRAND_BLUE)
+                )
+        ).await;
 
         Ok(())
     }
