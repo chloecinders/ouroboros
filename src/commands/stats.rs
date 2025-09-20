@@ -73,7 +73,7 @@ impl Command for Stats {
                 format!("{}s", uptime.2)
             };
 
-            format!("Servers: {guild_count}\nUptime: {uptime}\nMemory: {memory:.2}MB")
+            format!("**STATS**\nServers: {guild_count}\nUptime: {uptime}\nMemory: {memory:.2}MB")
         };
 
         let reply = CreateMessage::new()

@@ -74,7 +74,8 @@ impl Command for About {
             };
 
             format!(
-                r#"Hey, I'm {}!
+                r#"**ABOUT**
+Hey, I'm {}!
 A moderation bot made for one purpose and one purpose only: Moderation.
 I'm currently in private beta but my source code is available at <https://github.com/chloecinders/ouroboros>.
 Type `+help` to see a list of all commands!

@@ -33,7 +33,7 @@ pub async fn guild_member_update(
             return;
         };
 
-        if event.user.bot && guild_settings.log.log_bots.is_none_or(|b| b) {
+        if event.user.bot && guild_settings.log.log_bots.is_none_or(|b| !b) {
             return;
         }
     }
@@ -85,14 +85,14 @@ pub async fn guild_member_update(
 
     let name = if let Some(old) = old_nick {
         if old == event.nick {
-            return;
+            String::new()
+        } else {
+            format!(
+                "\nName:\n`{}` -> `{}`",
+                old.unwrap_or(String::from("(none)")),
+                event.nick.unwrap_or(String::from("(none)"))
+            )
         }
-
-        format!(
-            "\nName:\n`{}` -> `{}`",
-            old.unwrap_or(String::from("(none)")),
-            event.nick.unwrap_or(String::from("(none)"))
-        )
     } else {
         String::new()
     };
@@ -146,8 +146,7 @@ pub async fn guild_member_update(
         (String::new(), None)
     };
 
-    if name.is_empty() || avatar.0.is_empty() {
-        println!("{} {}", name, avatar.0);
+    if name.is_empty() && avatar.0.is_empty() {
         return;
     }
 

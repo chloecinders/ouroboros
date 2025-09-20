@@ -36,7 +36,7 @@ pub async fn message_delete(
         let guild_id = msg.guild_id.map(|g| g.get()).unwrap_or(0);
 
         if let Ok(guild_settings) = settings.get(guild_id).await {
-            if msg.author.bot && guild_settings.log.log_bots.is_none_or(|b| b) {
+            if msg.author.bot && guild_settings.log.log_bots.is_none_or(|b| !b) {
                 return;
             }
         } else {

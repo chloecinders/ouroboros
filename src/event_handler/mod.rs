@@ -3,7 +3,7 @@ use std::sync::Arc;
 use serenity::{
     all::{
         ChannelId, Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EventHandler, Guild,
-        GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent,
+        GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent, User,
     },
     async_trait,
 };
@@ -70,6 +70,7 @@ mod message;
 mod message_delete;
 mod message_update;
 mod shards_ready;
+mod guild_ban_addition;
 
 pub struct Handler {
     prefix: String,
@@ -191,5 +192,8 @@ impl EventHandler for Handler {
         event: GuildMemberUpdateEvent,
     ) {
         guild_member_update::guild_member_update(self, ctx, old_if_available, new, event).await
+    }
+    async fn guild_member_removal(&self, ctx: Context, guild_id: GuildId, user: User, member_data_if_available: Option<Member>) {
+        guild_ban_addition::guild_member_removal(self, ctx, guild_id, user, member_data_if_available).await
     }
 }
