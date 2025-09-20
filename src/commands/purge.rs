@@ -9,7 +9,12 @@ use serenity::{
 use crate::{
     commands::{
         Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
-    }, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::guild_mod_log
+    },
+    constants::BRAND_BLUE,
+    event_handler::CommandError,
+    lexer::Token,
+    transformers::Transformers,
+    utils::guild_mod_log,
 };
 use ouroboros_macros::command;
 
@@ -91,7 +96,10 @@ impl Command for Purge {
             }
         });
 
-        let ids = filtered.clone().map(|m| m.get().to_string()).collect::<Vec<_>>();
+        let ids = filtered
+            .clone()
+            .map(|m| m.get().to_string())
+            .collect::<Vec<_>>();
 
         if msg
             .channel_id

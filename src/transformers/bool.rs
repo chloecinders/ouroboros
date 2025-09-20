@@ -22,10 +22,26 @@ impl Transformers {
                 ));
             };
 
-            let res = match input.raw.to_lowercase().as_str() {
-                "true" | "y" | "yes" | "yeah" | "t" | "ok" | "on" | "enabled" | "1" | "enable" | "check" | "checked" | "sure" | "yep" | "aye" | "valid" | "correct" => true,
-                _ => false
-            };
+            let res = matches!(
+                input.raw.to_lowercase().as_str(),
+                "true"
+                    | "y"
+                    | "yes"
+                    | "yeah"
+                    | "t"
+                    | "ok"
+                    | "on"
+                    | "enabled"
+                    | "1"
+                    | "enable"
+                    | "check"
+                    | "checked"
+                    | "sure"
+                    | "yep"
+                    | "aye"
+                    | "valid"
+                    | "correct"
+            );
 
             input.contents = Some(CommandArgument::bool(res));
             Ok(input)

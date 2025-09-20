@@ -3,8 +3,8 @@ use std::sync::Arc;
 use ouroboros_macros::command;
 use serenity::{
     all::{
-        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable,
-        Message, Permissions,
+        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
+        Permissions,
     },
     async_trait,
 };
@@ -144,7 +144,10 @@ impl Command for Unban {
         let reply = CreateMessage::new()
             .add_embed(
                 CreateEmbed::new()
-                    .description(format!("**{} UNBANNED**\n-# Log ID: `{db_id}`\n```\n{reason}\n```", user.mention()))
+                    .description(format!(
+                        "**{} UNBANNED**\n-# Log ID: `{db_id}`\n```\n{reason}\n```",
+                        user.mention()
+                    ))
                     .color(BRAND_BLUE),
             )
             .reference_message(&msg)

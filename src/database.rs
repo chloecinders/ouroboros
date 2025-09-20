@@ -117,7 +117,9 @@ pub async fn add_log_bot_to_guild_settings_220420250829() {
     .execute(SQL.get().unwrap())
     .await
     {
-        panic!("Couldnt run database migration add_log_bot_to_guild_settings_220420250829; Err = {err:?}");
+        panic!(
+            "Couldnt run database migration add_log_bot_to_guild_settings_220420250829; Err = {err:?}"
+        );
     }
 }
 
@@ -131,6 +133,8 @@ pub async fn add_log_mod_to_guild_settings_021020250918() {
     .execute(SQL.get().unwrap())
     .await
     {
-        panic!("Couldnt run database migration add_log_mod_to_guild_settings_021020250918; Err = {err:?}");
+        panic!(
+            "Couldnt run database migration add_log_mod_to_guild_settings_021020250918; Err = {err:?}"
+        );
     }
 }

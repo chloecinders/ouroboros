@@ -9,7 +9,12 @@ use serenity::all::{
 };
 use tracing::warn;
 
-use crate::{GUILD_SETTINGS, constants::BRAND_BLUE, event_handler::Handler, utils::{guild_log, snowflake_to_timestamp}};
+use crate::{
+    GUILD_SETTINGS,
+    constants::BRAND_BLUE,
+    event_handler::Handler,
+    utils::{guild_log, snowflake_to_timestamp},
+};
 
 pub async fn guild_member_update(
     _handler: &Handler,
@@ -21,7 +26,10 @@ pub async fn guild_member_update(
     {
         let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
         let Ok(guild_settings) = settings.get(event.guild_id.get()).await else {
-            warn!("Found guild with no cached settings; Id = {}", event.guild_id.get());
+            warn!(
+                "Found guild with no cached settings; Id = {}",
+                event.guild_id.get()
+            );
             return;
         };
 
@@ -57,9 +65,8 @@ pub async fn guild_member_update(
                     && (Utc::now() - entry_time).num_seconds().abs() <= 300
                 {
                     if old_if_available.clone().is_some_and(|old_user| {
-                        old.clone().is_some_and(|old_nick| {
-                            old_user.display_name() == old_nick
-                        })
+                        old.clone()
+                            .is_some_and(|old_nick| old_user.display_name() == old_nick)
                     }) {
                         continue;
                     }

@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use ouroboros_macros::command;
 use serenity::{
-    all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message, Permissions},
+    all::{
+        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
+        Permissions,
+    },
     async_trait,
 };
 use sqlx::query;
@@ -16,7 +19,8 @@ use crate::{
     constants::BRAND_BLUE,
     event_handler::CommandError,
     lexer::Token,
-    transformers::Transformers, utils::guild_mod_log,
+    transformers::Transformers,
+    utils::guild_mod_log,
 };
 
 pub struct Reason;
@@ -120,18 +124,18 @@ impl Command for Reason {
         guild_mod_log(
             &ctx.http,
             msg.guild_id.unwrap(),
-            CreateMessage::new()
-                .add_embed(
-                    CreateEmbed::new()
-                        .description(format!(
-                            "**ACTION UPDATED**\n-# Log ID: `{id}` | Actor: {} `{}`\n```\n{}\n```",
-                            msg.author.mention(),
-                            msg.author.id.get(),
-                            reason
-                        ))
-                        .color(BRAND_BLUE)
-                )
-        ).await;
+            CreateMessage::new().add_embed(
+                CreateEmbed::new()
+                    .description(format!(
+                        "**ACTION UPDATED**\n-# Log ID: `{id}` | Actor: {} `{}`\n```\n{}\n```",
+                        msg.author.mention(),
+                        msg.author.id.get(),
+                        reason
+                    ))
+                    .color(BRAND_BLUE),
+            ),
+        )
+        .await;
 
         Ok(())
     }

@@ -4,7 +4,8 @@ use chrono::Utc;
 use ouroboros_macros::command;
 use serenity::{
     all::{
-        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EditMember, Mentionable, Message, Permissions
+        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EditMember, Mentionable,
+        Message, Permissions,
     },
     async_trait,
 };
@@ -20,7 +21,8 @@ use crate::{
     database::ActionType,
     event_handler::CommandError,
     lexer::Token,
-    transformers::Transformers, utils::guild_mod_log,
+    transformers::Transformers,
+    utils::guild_mod_log,
 };
 
 pub struct Duration;
@@ -200,11 +202,10 @@ impl Command for Duration {
         let reply = CreateMessage::new()
             .add_embed(
                 CreateEmbed::new()
-                    .description(
-                        format!(
-                            "**`{id}` UPDATED**\n-# New Expiry: {}",
-                            new_expiry_date.format("%Y-%m-%d %H:%M:%S")
-                        ))
+                    .description(format!(
+                        "**`{id}` UPDATED**\n-# New Expiry: {}",
+                        new_expiry_date.format("%Y-%m-%d %H:%M:%S")
+                    ))
                     .color(BRAND_BLUE),
             )
             .reference_message(&msg)
@@ -217,18 +218,18 @@ impl Command for Duration {
         guild_mod_log(
             &ctx.http,
             msg.guild_id.unwrap(),
-            CreateMessage::new()
-                .add_embed(
-                    CreateEmbed::new()
-                        .description(format!(
-                            "**ACTION UPDATED**\n-# Log ID: `{id}` | Actor: {} `{}` | New Expiry: {}",
-                            msg.author.mention(),
-                            msg.author.id.get(),
-                            new_expiry_date.format("%Y-%m-%d %H:%M:%S")
-                        ))
-                        .color(BRAND_BLUE)
-                )
-        ).await;
+            CreateMessage::new().add_embed(
+                CreateEmbed::new()
+                    .description(format!(
+                        "**ACTION UPDATED**\n-# Log ID: `{id}` | Actor: {} `{}` | New Expiry: {}",
+                        msg.author.mention(),
+                        msg.author.id.get(),
+                        new_expiry_date.format("%Y-%m-%d %H:%M:%S")
+                    ))
+                    .color(BRAND_BLUE),
+            ),
+        )
+        .await;
 
         Ok(())
     }

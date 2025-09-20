@@ -1,6 +1,4 @@
-use serenity::all::{
-    Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Message, User,
-};
+use serenity::all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Message, User};
 use tracing::warn;
 
 use crate::constants::BRAND_BLUE;
@@ -21,7 +19,9 @@ pub async fn message_and_dm(
         addition = String::from(" | DM failed; Target has DMs off.");
     }
 
-    let embed = CreateEmbed::new().description(server_msg(addition)).color(BRAND_BLUE);
+    let embed = CreateEmbed::new()
+        .description(server_msg(addition))
+        .color(BRAND_BLUE);
 
     let reply = CreateMessage::new()
         .add_embed(embed)

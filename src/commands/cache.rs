@@ -16,7 +16,8 @@ use crate::{
     constants::BRAND_BLUE,
     event_handler::CommandError,
     lexer::Token,
-    transformers::Transformers, utils::guild_mod_log,
+    transformers::Transformers,
+    utils::guild_mod_log,
 };
 use ouroboros_macros::command;
 
@@ -106,7 +107,11 @@ impl Command for Cache {
         let reply = CreateMessage::new()
             .add_embed(
                 CreateEmbed::new()
-                    .description(format!("**{0} CACHED**\n-# Target: {0} `{1}`", user.mention(), user.id.get()))
+                    .description(format!(
+                        "**{0} CACHED**\n-# Target: {0} `{1}`",
+                        user.mention(),
+                        user.id.get()
+                    ))
                     .color(BRAND_BLUE),
             )
             .reference_message(&msg)
@@ -119,19 +124,19 @@ impl Command for Cache {
         guild_mod_log(
             &ctx.http,
             msg.guild_id.unwrap(),
-            CreateMessage::new()
-                .add_embed(
-                    CreateEmbed::new()
-                        .description(format!(
-                            "**MEMBER CACHED**\n-# Actor: {} `{}` | Target: {} `{}`",
-                            msg.author.mention(),
-                            msg.author.id.get(),
-                            user.mention(),
-                            user.id.get()
-                        ))
-                        .color(BRAND_BLUE)
-                )
-        ).await;
+            CreateMessage::new().add_embed(
+                CreateEmbed::new()
+                    .description(format!(
+                        "**MEMBER CACHED**\n-# Actor: {} `{}` | Target: {} `{}`",
+                        msg.author.mention(),
+                        msg.author.id.get(),
+                        user.mention(),
+                        user.id.get()
+                    ))
+                    .color(BRAND_BLUE),
+            ),
+        )
+        .await;
 
         Ok(())
     }

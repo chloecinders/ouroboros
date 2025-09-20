@@ -10,7 +10,8 @@ use tracing::{error, warn};
 use crate::{
     GUILD_SETTINGS, SQL,
     commands::{
-        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerError, TransformerFn, TransformerReturn
+        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax,
+        TransformerError, TransformerFn, TransformerReturn,
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
@@ -19,11 +20,15 @@ use crate::{
     utils::Settings,
 };
 
-type UnwrapTransformerFn = Box<dyn for<'a> Fn(
-    &'a Context,
-    &'a Message,
-    &'a mut Peekable<IntoIter<Token>>,
-) -> TransformerReturn<'a> + Send + Sync>;
+type UnwrapTransformerFn = Box<
+    dyn for<'a> Fn(
+            &'a Context,
+            &'a Message,
+            &'a mut Peekable<IntoIter<Token>>,
+        ) -> TransformerReturn<'a>
+        + Send
+        + Sync,
+>;
 
 pub struct Config;
 
@@ -38,7 +43,7 @@ impl Config {
             "log.channel_id" => "<Discord Channel> The channel server activity logs get sent in",
             "log.log_bots" => "<Bool> Include bots in server activity logs",
             "log.mod_channel_id" => "<Discord Channel> The channel mod activity logs get sent in",
-            _ => ""
+            _ => "",
         }
     }
 }
@@ -139,7 +144,10 @@ impl Command for Config {
                     "**Available Settings In Group**\n{}",
                     group
                         .keys()
-                        .map(|k| format!("`{k}` - {}", self.get_option_desc(format!("{group_key}.{k}").as_str())))
+                        .map(|k| format!(
+                            "`{k}` - {}",
+                            self.get_option_desc(format!("{group_key}.{k}").as_str())
+                        ))
                         .collect::<Vec<String>>()
                         .join("\n")
                 )
@@ -223,18 +231,21 @@ impl Command for Config {
 
             let mut iter = vec![arg2_token.clone().unwrap()].into_iter().peekable();
 
-            let setting_info: (UnwrapTransformerFn, sqlx::query::Query<'_, sqlx::Postgres, sqlx::postgres::PgArguments>) = match setting.as_str() {
+            let setting_info: (
+                UnwrapTransformerFn,
+                sqlx::query::Query<'_, sqlx::Postgres, sqlx::postgres::PgArguments>,
+            ) = match setting.as_str() {
                 "log.channel_id" => (
                     Box::new(Transformers::guild_channel),
-                    sqlx::query("UPDATE guild_settings SET log_channel = $2 WHERE guild_id = $1")
+                    sqlx::query("UPDATE guild_settings SET log_channel = $2 WHERE guild_id = $1"),
                 ),
                 "log.log_bots" => (
                     Box::new(Transformers::bool),
-                    sqlx::query("UPDATE guild_settings SET log_bot = $2 WHERE guild_id = $1")
+                    sqlx::query("UPDATE guild_settings SET log_bot = $2 WHERE guild_id = $1"),
                 ),
                 "log.mod_channel_id" => (
                     Box::new(Transformers::guild_channel),
-                    sqlx::query("UPDATE guild_settings SET log_mod = $2 WHERE guild_id = $1")
+                    sqlx::query("UPDATE guild_settings SET log_mod = $2 WHERE guild_id = $1"),
                 ),
                 _ => {
                     return Err(CommandError {
@@ -254,18 +265,37 @@ impl Command for Config {
                 .to_lowercase()
                 == "none"
             {
-                setting_info.1.bind(msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64).bind(None as Option<i32>).execute(SQL.get().unwrap()).await
+                setting_info
+                    .1
+                    .bind(msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64)
+                    .bind(None as Option<i32>)
+                    .execute(SQL.get().unwrap())
+                    .await
             } else {
                 match setting_info.0(&ctx, &msg, &mut iter).await {
                     Ok(Token {
                         contents: Some(CommandArgument::GuildChannel(channel)),
                         ..
-                    }) => setting_info.1.bind(msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64).bind(channel.id.get() as i64).execute(SQL.get().unwrap()).await,
+                    }) => {
+                        setting_info
+                            .1
+                            .bind(msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64)
+                            .bind(channel.id.get() as i64)
+                            .execute(SQL.get().unwrap())
+                            .await
+                    }
 
                     Ok(Token {
                         contents: Some(CommandArgument::bool(b)),
                         ..
-                    }) => setting_info.1.bind(msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64).bind(b).execute(SQL.get().unwrap()).await,
+                    }) => {
+                        setting_info
+                            .1
+                            .bind(msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64)
+                            .bind(b)
+                            .execute(SQL.get().unwrap())
+                            .await
+                    }
 
                     Err(TransformerError::CommandError(mut err)) => {
                         err.arg = Some(arg2_token.unwrap());
@@ -273,8 +303,12 @@ impl Command for Config {
                     }
 
                     _ => {
-                        return Err(CommandError { title: String::from("Could not insert value into settings."), hint: None, arg: Some(arg2_token.unwrap()) });
-                    },
+                        return Err(CommandError {
+                            title: String::from("Could not insert value into settings."),
+                            hint: None,
+                            arg: Some(arg2_token.unwrap()),
+                        });
+                    }
                 }
             };
 

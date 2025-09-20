@@ -9,9 +9,15 @@ use sqlx::query;
 use tracing::{error, warn};
 
 use crate::{
-    SQL, commands::{
+    SQL,
+    commands::{
         Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
-    }, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::{guild_mod_log, message_and_dm, tinyid}
+    },
+    constants::BRAND_BLUE,
+    event_handler::CommandError,
+    lexer::Token,
+    transformers::Transformers,
+    utils::{guild_mod_log, message_and_dm, tinyid},
 };
 use ouroboros_macros::command;
 

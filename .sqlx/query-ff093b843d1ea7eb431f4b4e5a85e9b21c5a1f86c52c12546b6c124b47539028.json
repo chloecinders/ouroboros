@@ -12,6 +12,16 @@
         "ordinal": 1,
         "name": "log_channel",
         "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "log_bot",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 3,
+        "name": "log_mod",
+        "type_info": "Int8"
       }
     ],
     "parameters": {
@@ -19,6 +29,8 @@
     },
     "nullable": [
       false,
+      true,
+      true,
       true
     ]
   },

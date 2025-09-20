@@ -50,7 +50,7 @@ impl GuildSettings {
                         log: SettingsLog {
                             channel_id: record.log_channel.map(|n| n as u64),
                             log_bots: record.log_bot,
-                            mod_channel_id: record.log_mod.map(|n| n as u64)
+                            mod_channel_id: record.log_mod.map(|n| n as u64),
                         },
                     },
                 );

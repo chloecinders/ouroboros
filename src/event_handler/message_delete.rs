@@ -6,7 +6,10 @@ use serenity::all::{
 use tracing::warn;
 
 use crate::{
-    GUILD_SETTINGS, constants::BRAND_RED, event_handler::Handler, utils::{guild_log, snowflake_to_timestamp}
+    GUILD_SETTINGS,
+    constants::BRAND_RED,
+    event_handler::Handler,
+    utils::{guild_log, snowflake_to_timestamp},
 };
 
 pub async fn message_delete(
@@ -76,12 +79,11 @@ pub async fn message_delete(
             for entry in logs.entries {
                 let entry_time = snowflake_to_timestamp(entry.id.get());
 
-                if
-                    (Utc::now() - entry_time).num_seconds().abs() <= 5
+                if (Utc::now() - entry_time).num_seconds().abs() <= 5
                     && let Some(target) = entry.target_id
                     && let Some(Some(channel)) = entry.options.clone().map(|o| o.channel_id)
                     && let Some(msg) = some_msg.clone()
-                    &&target.get() == msg.author.id.get()
+                    && target.get() == msg.author.id.get()
                     && channel.get() == msg.channel_id.get()
                 {
                     actor_id = Some(entry.user_id.get());
@@ -118,7 +120,7 @@ pub async fn message_delete(
     if let Some(moderator) = actor_id {
         description.push_str(&format!("| Actor: <@{moderator}> ({moderator}) "));
     } else {
-        return
+        return;
     }
 
     if let Some(msg) = some_msg {

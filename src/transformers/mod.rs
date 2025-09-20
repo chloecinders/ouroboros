@@ -1,5 +1,6 @@
 pub struct Transformers;
 
+mod bool;
 mod consume;
 mod duration;
 mod guild_channel;
@@ -12,4 +13,3 @@ mod reply_user;
 mod some_string;
 mod string;
 mod user;
-mod bool;

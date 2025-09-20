@@ -3,8 +3,8 @@ use std::sync::Arc;
 use ouroboros_macros::command;
 use serenity::{
     all::{
-        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable,
-        Message, Permissions,
+        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Mentionable, Message,
+        Permissions,
     },
     async_trait,
 };
@@ -139,7 +139,10 @@ impl Command for Unmute {
         let reply = CreateMessage::new()
             .add_embed(
                 CreateEmbed::new()
-                    .description(format!("**{} UNMUTED**\n-# Log ID: `{db_id}`\n```\n{reason}\n```", member.mention()))
+                    .description(format!(
+                        "**{} UNMUTED**\n-# Log ID: `{db_id}`\n```\n{reason}\n```",
+                        member.mention()
+                    ))
                     .color(BRAND_BLUE),
             )
             .reference_message(&msg)
