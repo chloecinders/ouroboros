@@ -13,8 +13,10 @@ pub async fn check_guild_permission(
         return true;
     }
 
+    let guild_cache = ctx.cache.guild(member.guild_id).unwrap();
+
     for role in member.roles.clone() {
-        let Ok(role) = member.guild_id.role(&ctx.http, role).await else {
+        let Some(role) = guild_cache.roles.get(&role) else {
             return false;
         };
 

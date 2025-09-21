@@ -45,6 +45,7 @@ impl Command for DefineLog {
 
     fn get_full(&self) -> &'static str {
         "Defines a channel as a log channel. \
+        If no channel is provided the current channel will be selected. \
         You will be able to choose the specific types of events which will get logged within the selected channel."
     }
 
@@ -120,6 +121,9 @@ impl Command for DefineLog {
                 CreateButton::new("reset")
                     .label("Reset")
                     .style(ButtonStyle::Danger),
+                CreateButton::new("cancel")
+                    .label("Cancel")
+                    .style(ButtonStyle::Secondary),
             ]),
         ];
 
@@ -131,7 +135,8 @@ impl Command for DefineLog {
 
                         `Keep` - set this channel for events that don’t have a channel yet
                         `All` - set this channel for all events, even if they already have one
-                        `Reset` - remove this channel from all events",
+                        `Reset` - remove this channel from all events
+                        `Cancel` - do nothing",
                         channel.id.get()
                     ))
                     .color(BRAND_BLUE)
@@ -256,6 +261,11 @@ impl Command for DefineLog {
 
                     current_values
                 }
+
+                "cancel" => {
+                    channel_ids
+                }
+
                 _ => return Ok(()),
             };
 

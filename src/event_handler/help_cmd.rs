@@ -87,14 +87,6 @@ impl Handler {
                 &format!("\nRequired Permissions:\n`{result}`")
             };
 
-            let mut hint_text = String::from(
-                "-# <name: type>, <> = required, [] = optional, ...[] = all text after last argument",
-            );
-
-            if !perms.is_empty() {
-                hint_text.push_str("\n-# && = AND, || = OR");
-            }
-
             let syntax = {
                 let command_syntax = cmd.get_syntax();
 
@@ -119,12 +111,11 @@ impl Handler {
                 .add_embed(
                     CreateEmbed::new()
                         .description(format!(
-                            "**{}**\n{}\n\n{}{}\n\n{}",
+                            "**{}**\n{}\n\n{}{}",
                             cmd.get_name().to_uppercase(),
                             cmd.get_full(),
                             syntax,
                             perms,
-                            hint_text
                         ))
                         .color(BRAND_BLUE),
                 )
