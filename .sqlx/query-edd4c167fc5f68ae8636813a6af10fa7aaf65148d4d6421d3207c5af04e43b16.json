@@ -1,0 +1,32 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n                guild_id,\n                log_bot,\n                log_channel_ids as \"log_channel_ids?: sqlx::types::Json<HashMap<LogType, u64>>\"\n            FROM guild_settings",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "guild_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "log_bot",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "log_channel_ids?: sqlx::types::Json<HashMap<LogType, u64>>",
+        "type_info": "Jsonb"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "edd4c167fc5f68ae8636813a6af10fa7aaf65148d4d6421d3207c5af04e43b16"
+}

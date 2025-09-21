@@ -20,7 +20,7 @@ use crate::{
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::{guild_mod_log, tinyid},
+    utils::{LogType, guild_log, tinyid},
 };
 
 pub struct Unban;
@@ -33,16 +33,16 @@ impl Unban {
 
 #[async_trait]
 impl Command for Unban {
-    fn get_name(&self) -> String {
-        String::from("unban")
+    fn get_name(&self) -> &'static str {
+        "unban"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Unbans a member from the server")
+    fn get_short(&self) -> &'static str {
+        "Unbans a member from the server"
     }
 
-    fn get_full(&self) -> String {
-        String::from("Unbans a member from the server.")
+    fn get_full(&self) -> &'static str {
+        "Unbans a member from the server."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
@@ -157,8 +157,9 @@ impl Command for Unban {
             warn!("Could not send message; err = {err:?}");
         }
 
-        guild_mod_log(
+        guild_log(
             &ctx.http,
+            LogType::MemberUnban,
             msg.guild_id.unwrap(),
             CreateMessage::new()
                 .add_embed(

@@ -20,16 +20,16 @@ impl ColonThree {
 
 #[async_trait]
 impl Command for ColonThree {
-    fn get_name(&self) -> String {
-        String::from(":3")
+    fn get_name(&self) -> &'static str {
+        ":3"
     }
 
-    fn get_short(&self) -> String {
-        String::from("")
+    fn get_short(&self) -> &'static str {
+        ""
     }
 
-    fn get_full(&self) -> String {
-        String::from(":3")
+    fn get_full(&self) -> &'static str {
+        ":3"
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {

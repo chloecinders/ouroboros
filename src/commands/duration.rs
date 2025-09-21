@@ -22,7 +22,7 @@ use crate::{
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::guild_mod_log,
+    utils::{LogType, guild_log},
 };
 
 pub struct Duration;
@@ -35,21 +35,19 @@ impl Duration {
 
 #[async_trait]
 impl Command for Duration {
-    fn get_name(&self) -> String {
-        String::from("duration")
+    fn get_name(&self) -> &'static str {
+        "duration"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Modifies the duration of a moderation action")
+    fn get_short(&self) -> &'static str {
+        "Modifies the duration of a moderation action"
     }
 
-    fn get_full(&self) -> String {
-        String::from(
-            "Modifies the duration of a moderation action. \
+    fn get_full(&self) -> &'static str {
+        "Modifies the duration of a moderation action. \
         Run the log command for the id. \
         The action must be one that accepts a duration, such as ban or mute. \
-        The new duration is relative to the time the action has taken place.",
-        )
+        The new duration is relative to the time the action has taken place."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
@@ -215,8 +213,9 @@ impl Command for Duration {
             warn!("Could not send message; err = {err:?}");
         }
 
-        guild_mod_log(
+        guild_log(
             &ctx.http,
+            LogType::ActionUpdate,
             msg.guild_id.unwrap(),
             CreateMessage::new().add_embed(
                 CreateEmbed::new()

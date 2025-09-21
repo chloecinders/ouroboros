@@ -1,8 +1,18 @@
 use chrono::Utc;
-use serenity::all::{Context, CreateEmbed, CreateMessage, GuildId, Member, MemberAction::{BanAdd, Kick}, Mentionable, User, UserId, audit_log::Action};
+use serenity::all::{
+    Context, CreateEmbed, CreateMessage, GuildId, Member,
+    MemberAction::{BanAdd, Kick},
+    Mentionable, User, UserId,
+    audit_log::Action,
+};
 use tracing::warn;
 
-use crate::{GUILD_SETTINGS, constants::BRAND_BLUE, event_handler::Handler, utils::{guild_mod_log, snowflake_to_timestamp}};
+use crate::{
+    GUILD_SETTINGS,
+    constants::BRAND_BLUE,
+    event_handler::Handler,
+    utils::{LogType, guild_log, snowflake_to_timestamp},
+};
 
 enum LeaveType {
     User,
@@ -44,22 +54,30 @@ pub async fn guild_member_removal(
                 continue;
             }
 
-            if let Some(target_id) = entry.target_id {
-                if target_id.get() != user.id.get() {
-                    continue;
-                }
+            if let Some(target_id) = entry.target_id && target_id.get() != user.id.get() {
+                continue;
             }
 
             match entry.action {
                 Action::Member(Kick) => {
-                    if let Some(target) = entry.target_id && user.id.get() == target.get() {
-                        leave_type = LeaveType::Kick(entry.user_id, entry.reason.unwrap_or(String::from("No reason provided")));
+                    if let Some(target) = entry.target_id
+                        && user.id.get() == target.get()
+                    {
+                        leave_type = LeaveType::Kick(
+                            entry.user_id,
+                            entry.reason.unwrap_or(String::from("No reason provided")),
+                        );
                     }
                     break;
                 }
                 Action::Member(BanAdd) => {
-                    if let Some(target) = entry.target_id && user.id.get() == target.get() {
-                        leave_type = LeaveType::Ban(entry.user_id, entry.reason.unwrap_or(String::from("No reason provided")));
+                    if let Some(target) = entry.target_id
+                        && user.id.get() == target.get()
+                    {
+                        leave_type = LeaveType::Ban(
+                            entry.user_id,
+                            entry.reason.unwrap_or(String::from("No reason provided")),
+                        );
                     }
                     break;
                 }
@@ -74,8 +92,9 @@ pub async fn guild_member_removal(
                 return;
             }
 
-            guild_mod_log(
+            guild_log(
                 &ctx.http,
+                LogType::MemberKick,
                 guild_id,
                 CreateMessage::new()
                     .add_embed(
@@ -96,8 +115,9 @@ pub async fn guild_member_removal(
                 return;
             }
 
-            guild_mod_log(
+            guild_log(
                 &ctx.http,
+                LogType::MemberBan,
                 guild_id,
                 CreateMessage::new()
                     .add_embed(

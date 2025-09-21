@@ -14,7 +14,7 @@ use crate::{
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::guild_mod_log,
+    utils::{LogType, guild_log},
 };
 use ouroboros_macros::command;
 
@@ -28,20 +28,18 @@ impl Purge {
 
 #[async_trait]
 impl Command for Purge {
-    fn get_name(&self) -> String {
-        String::from("purge")
+    fn get_name(&self) -> &'static str {
+        "purge"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Mass deletes a specific amount of messages")
+    fn get_short(&self) -> &'static str {
+        "Mass deletes a specific amount of messages"
     }
 
-    fn get_full(&self) -> String {
-        String::from(
-            "Mass deletes a specific amount of messages from a channel. \
-            Messages older than 2 weeks are ignored. \
-            Count must be between 2 and 100.",
-        )
+    fn get_full(&self) -> &'static str {
+        "Mass deletes a specific amount of messages from a channel. \
+        Messages older than 2 weeks are ignored. \
+        Count must be between 2 and 100."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
@@ -116,8 +114,9 @@ impl Command for Purge {
             });
         };
 
-        guild_mod_log(
+        guild_log(
             &ctx.http,
+            LogType::MessageDelete,
             msg.guild_id.unwrap(),
             CreateMessage::new()
                 .add_embed(

@@ -40,9 +40,7 @@ impl Config {
     fn get_option_desc(&self, opt: &str) -> &str {
         match opt {
             "log" => "Settings controlling guild event logging",
-            "log.channel_id" => "<Discord Channel> The channel server activity logs get sent in",
             "log.log_bots" => "<Bool> Include bots in server activity logs",
-            "log.mod_channel_id" => "<Discord Channel> The channel mod activity logs get sent in",
             _ => "",
         }
     }
@@ -50,23 +48,21 @@ impl Config {
 
 #[async_trait]
 impl Command for Config {
-    fn get_name(&self) -> String {
-        String::from("config")
+    fn get_name(&self) -> &'static str {
+        "config"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Configures functions of the bot")
+    fn get_short(&self) -> &'static str {
+        "Configures functions of the bot"
     }
 
-    fn get_full(&self) -> String {
-        String::from(
-            "Configures functions of the bot. \
-            Available subcommands: list set get;\n \
-            `list [group]` lists all groups/keys in a group\n \
-            `set <group>.<key> <value>` sets a setting to value\n \
-            `get <group>.<key>` gets the value of a setting \
-            To clear a setting set its value to `none`.",
-        )
+    fn get_full(&self) -> &'static str {
+        "Configures functions of the bot. \
+        Available subcommands: list set get;\n \
+        `list [group]` lists all groups/keys in a group\n \
+        `set <group>.<key> <value>` sets a setting to value\n \
+        `get <group>.<key>` gets the value of a setting \
+        To clear a setting set its value to `none`."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
@@ -182,21 +178,11 @@ impl Command for Config {
             };
 
             let value = match setting.as_str() {
-                "log.channel_id" => settings
-                    .log
-                    .channel_id
-                    .map(|c| format!("<#{c}>"))
-                    .unwrap_or(String::from("None")),
                 "log.log_bots" => settings
                     .log
                     .log_bots
                     .map(|c| format!("{c}"))
                     .unwrap_or(String::from("false")),
-                "log.mod_channel_id" => settings
-                    .log
-                    .mod_channel_id
-                    .map(|c| format!("<#{c}>"))
-                    .unwrap_or(String::from("None")),
                 _ => {
                     return Err(CommandError {
                         title: String::from("Could not find setting"),
@@ -235,17 +221,9 @@ impl Command for Config {
                 UnwrapTransformerFn,
                 sqlx::query::Query<'_, sqlx::Postgres, sqlx::postgres::PgArguments>,
             ) = match setting.as_str() {
-                "log.channel_id" => (
-                    Box::new(Transformers::guild_channel),
-                    sqlx::query("UPDATE guild_settings SET log_channel = $2 WHERE guild_id = $1"),
-                ),
                 "log.log_bots" => (
                     Box::new(Transformers::bool),
                     sqlx::query("UPDATE guild_settings SET log_bot = $2 WHERE guild_id = $1"),
-                ),
-                "log.mod_channel_id" => (
-                    Box::new(Transformers::guild_channel),
-                    sqlx::query("UPDATE guild_settings SET log_mod = $2 WHERE guild_id = $1"),
                 ),
                 _ => {
                     return Err(CommandError {

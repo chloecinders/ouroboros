@@ -25,19 +25,17 @@ impl Update {
 
 #[async_trait]
 impl Command for Update {
-    fn get_name(&self) -> String {
-        String::from("update")
+    fn get_name(&self) -> &'static str {
+        "update"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Updates the bot remotely")
+    fn get_short(&self) -> &'static str {
+        "Updates the bot remotely"
     }
 
-    fn get_full(&self) -> String {
-        String::from(
-            "Updates the Bot using the Github repository in the config. \
-            Warning: This might print debug information in chat! Only run this in a channel with members you trust!",
-        )
+    fn get_full(&self) -> &'static str {
+        "Updates the Bot using the Github repository in the config. \
+        Warning: This might print debug information in chat! Only run this in a channel with members you trust!"
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {

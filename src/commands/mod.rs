@@ -45,6 +45,7 @@ pub enum CommandSyntax {
     Consume(&'static str),
     User(&'static str, bool),
     Member(&'static str, bool),
+    Channel(&'static str, bool),
     String(&'static str, bool),
     Duration(&'static str, bool),
     Reason(&'static str),
@@ -87,6 +88,7 @@ impl CommandSyntax {
             Self::String(name, opt) => (format!("{name}: String"), Some(opt)),
             Self::Duration(name, opt) => (format!("{name}: Duration"), Some(opt)),
             Self::Number(name, opt) => (format!("{name}: Number"), Some(opt)),
+            Self::Channel(name, opt) => (format!("{name}: Channel"), Some(opt)),
         };
 
         if let Some(is_required) = required {
@@ -109,6 +111,7 @@ impl CommandSyntax {
             CommandSyntax::Duration(_, _) => String::from("15m"),
             CommandSyntax::Reason(_) => String::from("user broke a rule"),
             CommandSyntax::Number(_, _) => String::from("5"),
+            CommandSyntax::Channel(_, _) => String::from("#some-channel"),
             CommandSyntax::Or(a, b) => format!("({} || {})", a.get_example(), b.get_example()),
         }
     }
@@ -123,9 +126,9 @@ pub struct CommandPermissions {
 #[async_trait]
 pub trait Command: Send + Sync {
     // Command descriptors
-    fn get_name(&self) -> String;
-    fn get_short(&self) -> String;
-    fn get_full(&self) -> String;
+    fn get_name(&self) -> &'static str;
+    fn get_short(&self) -> &'static str;
+    fn get_full(&self) -> &'static str;
     fn get_syntax(&self) -> Vec<CommandSyntax>;
     fn get_category(&self) -> CommandCategory;
 
@@ -206,3 +209,6 @@ pub use extract_id::ExtractId;
 
 mod cache;
 pub use cache::Cache;
+
+mod define_log;
+pub use define_log::DefineLog;

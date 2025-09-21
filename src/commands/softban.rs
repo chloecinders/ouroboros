@@ -16,7 +16,7 @@ use crate::{
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::{guild_mod_log, message_and_dm, tinyid},
+    utils::{LogType, guild_log, message_and_dm, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -30,19 +30,18 @@ impl Softban {
 
 #[async_trait]
 impl Command for Softban {
-    fn get_name(&self) -> String {
-        String::from("softban")
+    fn get_name(&self) -> &'static str {
+        "softban"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Softbans a member from the server")
+    fn get_short(&self) -> &'static str {
+        "Softbans a member from the server"
     }
 
-    fn get_full(&self) -> String {
-        String::from("
-            Bans and immediately unbans a member from the server and leaves a note in the users log. \
-            Useful for clearing out messages without permanent consequences. \
-            Clears 1 day of messages.")
+    fn get_full(&self) -> &'static str {
+        "Bans and immediately unbans a member from the server and leaves a note in the users log. \
+        Useful for clearing out messages without permanent consequences. \
+        Clears 1 day of messages."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
@@ -154,8 +153,9 @@ impl Command for Softban {
         )
         .await;
 
-        guild_mod_log(
+        guild_log(
             &ctx.http,
+            LogType::MemberSoftban,
             msg.guild_id.unwrap(),
             CreateMessage::new()
                 .add_embed(

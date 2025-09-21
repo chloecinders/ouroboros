@@ -20,7 +20,7 @@ use crate::{
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::{guild_mod_log, tinyid},
+    utils::{LogType, guild_log, tinyid},
 };
 
 pub struct Unmute;
@@ -33,16 +33,16 @@ impl Unmute {
 
 #[async_trait]
 impl Command for Unmute {
-    fn get_name(&self) -> String {
-        String::from("unmute")
+    fn get_name(&self) -> &'static str {
+        "unmute"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Unmutes a member in the server")
+    fn get_short(&self) -> &'static str {
+        "Unmutes a member in the server"
     }
 
-    fn get_full(&self) -> String {
-        String::from("Unmutes a member in the server.")
+    fn get_full(&self) -> &'static str {
+        "Unmutes a member in the server."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
@@ -152,8 +152,9 @@ impl Command for Unmute {
             warn!("Could not send message; err = {err:?}");
         }
 
-        guild_mod_log(
+        guild_log(
             &ctx.http,
+            LogType::MemberUnmute,
             msg.guild_id.unwrap(),
             CreateMessage::new()
                 .add_embed(

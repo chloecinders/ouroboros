@@ -16,7 +16,7 @@ use crate::{
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::{guild_mod_log, message_and_dm, tinyid},
+    utils::{LogType, guild_log, message_and_dm, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -30,16 +30,16 @@ impl Kick {
 
 #[async_trait]
 impl Command for Kick {
-    fn get_name(&self) -> String {
-        String::from("kick")
+    fn get_name(&self) -> &'static str {
+        "kick"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Kicks a member from the server")
+    fn get_short(&self) -> &'static str {
+        "Kicks a member from the server"
     }
 
-    fn get_full(&self) -> String {
-        String::from("Kicks a member from the server and leaves a note in the users log.")
+    fn get_full(&self) -> &'static str {
+        "Kicks a member from the server and leaves a note in the users log."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
@@ -138,8 +138,9 @@ impl Command for Kick {
         )
         .await;
 
-        guild_mod_log(
+        guild_log(
             &ctx.http,
+            LogType::MemberKick,
             msg.guild_id.unwrap(),
             CreateMessage::new()
                 .add_embed(

@@ -22,18 +22,16 @@ impl MsgDbg {
 
 #[async_trait]
 impl Command for MsgDbg {
-    fn get_name(&self) -> String {
-        String::from("msgdbg")
+    fn get_name(&self) -> &'static str {
+        "msgdbg"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Gets message debug information")
+    fn get_short(&self) -> &'static str {
+        "Gets message debug information"
     }
 
-    fn get_full(&self) -> String {
-        String::from(
-            "Reply to a message with this command to return debug information. Will be sent as a file in Discord and directly printed into the stdout.",
-        )
+    fn get_full(&self) -> &'static str {
+        "Reply to a message with this command to return debug information. Will be sent as a file in Discord and directly printed into the stdout."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {

@@ -20,7 +20,7 @@ use crate::{
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::guild_mod_log,
+    utils::{LogType, guild_log},
 };
 
 pub struct Reason;
@@ -33,16 +33,16 @@ impl Reason {
 
 #[async_trait]
 impl Command for Reason {
-    fn get_name(&self) -> String {
-        String::from("reason")
+    fn get_name(&self) -> &'static str {
+        "reason"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Modifies the reason of a moderation action")
+    fn get_short(&self) -> &'static str {
+        "Modifies the reason of a moderation action"
     }
 
-    fn get_full(&self) -> String {
-        String::from("Modifies the reason of a moderation action. Run the log command for the id.")
+    fn get_full(&self) -> &'static str {
+        "Modifies the reason of a moderation action. Run the log command for the id."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
@@ -121,8 +121,9 @@ impl Command for Reason {
             warn!("Could not send message; err = {err:?}");
         }
 
-        guild_mod_log(
+        guild_log(
             &ctx.http,
+            LogType::ActionUpdate,
             msg.guild_id.unwrap(),
             CreateMessage::new().add_embed(
                 CreateEmbed::new()

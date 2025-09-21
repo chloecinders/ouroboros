@@ -3,8 +3,8 @@ pub use permissions::check_guild_permission;
 pub use permissions::is_developer;
 
 mod logging;
+pub use logging::LogType;
 pub use logging::guild_log;
-pub use logging::guild_mod_log;
 pub use logging::snowflake_to_timestamp;
 
 mod random;

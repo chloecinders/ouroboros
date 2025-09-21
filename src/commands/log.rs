@@ -193,18 +193,16 @@ impl Log {
 
 #[async_trait]
 impl Command for Log {
-    fn get_name(&self) -> String {
-        String::from("log")
+    fn get_name(&self) -> &'static str {
+        "log"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Shows actions taken on a member")
+    fn get_short(&self) -> &'static str {
+        "Shows actions taken on a member"
     }
 
-    fn get_full(&self) -> String {
-        String::from(
-            "Shows the moderation actions taken on a member. This includes warns, bans, kicks, etc.",
-        )
+    fn get_full(&self) -> &'static str {
+        "Shows the moderation actions taken on a member. This includes warns, bans, kicks, etc."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {

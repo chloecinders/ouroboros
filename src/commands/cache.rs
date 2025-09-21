@@ -17,7 +17,7 @@ use crate::{
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::guild_mod_log,
+    utils::{LogType, guild_log},
 };
 use ouroboros_macros::command;
 
@@ -31,19 +31,17 @@ impl Cache {
 
 #[async_trait]
 impl Command for Cache {
-    fn get_name(&self) -> String {
-        String::from("cache")
+    fn get_name(&self) -> &'static str {
+        "cache"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Causes clients to cache the target user")
+    fn get_short(&self) -> &'static str {
+        "Causes clients to cache the target user"
     }
 
-    fn get_full(&self) -> String {
-        String::from(
-            "Bans and immediately unbans a user to make clients cache the user. \
-            Does not work on members who are already in the server, as those do not need to be forced into the cache.",
-        )
+    fn get_full(&self) -> &'static str {
+        "Bans and immediately unbans a user to make clients cache the user. \
+        Does not work on members who are already in the server, as those do not need to be forced into the cache."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
@@ -121,8 +119,9 @@ impl Command for Cache {
             warn!("Could not send message; err = {err:?}");
         }
 
-        guild_mod_log(
+        guild_log(
             &ctx.http,
+            LogType::MemberCache,
             msg.guild_id.unwrap(),
             CreateMessage::new().add_embed(
                 CreateEmbed::new()

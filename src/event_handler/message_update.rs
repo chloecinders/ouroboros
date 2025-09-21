@@ -3,7 +3,11 @@ use serenity::all::{
     MessageUpdateEvent,
 };
 
-use crate::{constants::SOFT_YELLOW, event_handler::Handler, utils::guild_log};
+use crate::{
+    constants::SOFT_YELLOW,
+    event_handler::Handler,
+    utils::{LogType, guild_log},
+};
 
 pub async fn message_update(
     _handler: &Handler,
@@ -111,5 +115,5 @@ pub async fn message_update(
         _ => new_msg.guild_id.map(|g| g.get()).unwrap_or(1),
     };
 
-    guild_log(&ctx.http, guild_id.into(), message).await;
+    guild_log(&ctx.http, LogType::MessageEdit, guild_id.into(), message).await;
 }

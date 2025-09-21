@@ -1,62 +1,81 @@
 use chrono::DateTime;
-use serenity::all::{CreateMessage, GuildId, Http};
+use serde::{Deserialize, Serialize};
+use serenity::all::{ChannelId, CreateMessage, GuildId, Http};
 use tracing::warn;
 
 use crate::GUILD_SETTINGS;
 
-pub async fn guild_log(http: &Http, guild: GuildId, msg: CreateMessage) {
-    let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
-    let Ok(guild_settings) = settings.get(guild.get()).await else {
-        warn!("Found guild with no cached settings; Id = {}", guild.get());
-        return;
-    };
+#[derive(Hash, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum LogType {
+    MemberBan,
+    MemberUnban,
+    MemberCache,
+    MemberKick,
+    MemberMute,
+    MemberUnmute,
+    MemberWarn,
+    MemberSoftban,
+    MemberUpdate,
+    ActionUpdate,
+    MessageDelete,
+    MessageEdit,
+}
 
-    if guild_settings.log.channel_id.is_none() {
-        return;
+impl LogType {
+    pub fn title(&self) -> String {
+        String::from(match self {
+            LogType::MemberBan => "Member Ban",
+            LogType::MemberUnban => "Member Unban",
+            LogType::MemberCache => "Member Cache",
+            LogType::MemberKick => "Member Kick",
+            LogType::MemberMute => "Member Mute",
+            LogType::MemberUnmute => "Member Unmute",
+            LogType::MemberWarn => "Member Warn",
+            LogType::MemberSoftban => "Member Softban",
+            LogType::MemberUpdate => "Member Update",
+            LogType::ActionUpdate => "Action Update",
+            LogType::MessageDelete => "Message Delete",
+            LogType::MessageEdit => "Message Edit",
+        })
     }
 
-    let Ok(channel) = http
-        .get_channel(guild_settings.log.channel_id.unwrap_or(1).into())
-        .await
-    else {
-        warn!(
-            "Cannot get log channel; guild = {}, channel = {}",
-            guild.get(),
-            guild_settings.log.channel_id.unwrap_or(1)
-        );
-        return;
-    };
+    pub fn all() -> Vec<LogType> {
+        vec![
+            LogType::MemberBan,
+            LogType::MemberUnban,
+            LogType::MemberCache,
+            LogType::MemberKick,
+            LogType::MemberMute,
+            LogType::MemberUnmute,
+            LogType::MemberWarn,
+            LogType::MemberSoftban,
+            LogType::MemberUpdate,
+            LogType::ActionUpdate,
+            LogType::MessageDelete,
+            LogType::MessageEdit,
+        ]
+    }
 
-    if let Err(err) = channel.id().send_message(http, msg).await {
-        warn!("Cannot not send log message; err = {err:?}");
+    pub async fn channel_id(&self, guild: GuildId) -> Option<ChannelId> {
+        let mut lock = GUILD_SETTINGS.get().unwrap().lock().await;
+        let settings = lock.get(guild.get()).await.ok()?;
+
+        settings
+            .log
+            .log_channel_ids
+            .get(self)
+            .map(|c| ChannelId::new(*c))
     }
 }
 
-pub async fn guild_mod_log(http: &Http, guild: GuildId, msg: CreateMessage) {
-    let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
-    let Ok(guild_settings) = settings.get(guild.get()).await else {
-        warn!("Found guild with no cached settings; Id = {}", guild.get());
+pub async fn guild_log(http: &Http, log_type: LogType, guild: GuildId, msg: CreateMessage) {
+    let Some(channel) = log_type.channel_id(guild).await else {
         return;
     };
 
-    if guild_settings.log.mod_channel_id.is_none() {
-        return;
-    }
-
-    let Ok(channel) = http
-        .get_channel(guild_settings.log.mod_channel_id.unwrap_or(1).into())
-        .await
-    else {
-        warn!(
-            "Cannot get log channel; guild = {}, channel = {}",
-            guild.get(),
-            guild_settings.log.mod_channel_id.unwrap_or(1)
-        );
-        return;
-    };
-
-    if let Err(err) = channel.id().send_message(http, msg).await {
-        warn!("Cannot not send mod log message; err = {err:?}");
+    if let Err(err) = channel.send_message(http, msg).await {
+        warn!("Cannot not send log message; err = {err:?}");
     }
 }
 

@@ -21,18 +21,16 @@ impl ExtractId {
 
 #[async_trait]
 impl Command for ExtractId {
-    fn get_name(&self) -> String {
-        String::from("eid")
+    fn get_name(&self) -> &'static str {
+        "eid"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Extracts an id from a message")
+    fn get_short(&self) -> &'static str {
+        "Extracts an id from a message"
     }
 
-    fn get_full(&self) -> String {
-        String::from(
-            "Checks a replied to message for ids and sends them in separate messages. Useful for people on mobile who don't want to fight with their phone about copying out an id.",
-        )
+    fn get_full(&self) -> &'static str {
+        "Checks a replied to message for ids and sends them in separate messages. Useful for people on mobile who don't want to fight with their phone about copying out an id."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
@@ -59,6 +57,7 @@ impl Command for ExtractId {
                 embed.title.clone(),
                 embed.description.clone(),
                 embed.footer.clone().map(|f| f.text),
+                embed.author.clone().map(|a| a.name),
             ];
             embed.fields.iter().for_each(|f| {
                 embed_locations.push(Some(f.name.clone()));

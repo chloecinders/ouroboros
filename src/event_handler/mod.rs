@@ -11,8 +11,8 @@ use tracing::warn;
 
 use crate::{
     commands::{
-        About, Ban, CBan, Cache, ColonThree, Command, Config, Duration, ExtractId, Kick, Log,
-        MsgDbg, Mute, Ping, Purge, Reason, Say, Softban, Stats, Unban, Unmute, Update, Warn,
+        About, Ban, CBan, Cache, ColonThree, Command, Config, DefineLog, Duration, ExtractId, Kick,
+        Log, MsgDbg, Mute, Ping, Purge, Reason, Say, Softban, Stats, Unban, Unmute, Update, Warn,
     },
     constants::BRAND_RED,
     lexer::Token,
@@ -65,12 +65,12 @@ mod help_cmd;
 
 // events
 mod guild_create;
+mod guild_member_removal;
 mod guild_member_update;
 mod message;
 mod message_delete;
 mod message_update;
 mod shards_ready;
-mod guild_ban_addition;
 
 pub struct Handler {
     prefix: String,
@@ -102,6 +102,7 @@ impl Handler {
             Arc::new(Duration::new()),
             Arc::new(ExtractId::new()),
             Arc::new(Cache::new()),
+            Arc::new(DefineLog::new()),
         ];
 
         Self { prefix, commands }
@@ -193,7 +194,20 @@ impl EventHandler for Handler {
     ) {
         guild_member_update::guild_member_update(self, ctx, old_if_available, new, event).await
     }
-    async fn guild_member_removal(&self, ctx: Context, guild_id: GuildId, user: User, member_data_if_available: Option<Member>) {
-        guild_ban_addition::guild_member_removal(self, ctx, guild_id, user, member_data_if_available).await
+    async fn guild_member_removal(
+        &self,
+        ctx: Context,
+        guild_id: GuildId,
+        user: User,
+        member_data_if_available: Option<Member>,
+    ) {
+        guild_member_removal::guild_member_removal(
+            self,
+            ctx,
+            guild_id,
+            user,
+            member_data_if_available,
+        )
+        .await
     }
 }

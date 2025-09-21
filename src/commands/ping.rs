@@ -25,18 +25,16 @@ impl Ping {
 
 #[async_trait]
 impl Command for Ping {
-    fn get_name(&self) -> String {
-        String::from("ping")
+    fn get_name(&self) -> &'static str {
+        "ping"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Gets the bots current latency")
+    fn get_short(&self) -> &'static str {
+        "Gets the bots current latency"
     }
 
-    fn get_full(&self) -> String {
-        String::from(
-            "Gets the bots HTTP and gateway latency. Useful for checking if the bot is lagging.",
-        )
+    fn get_full(&self) -> &'static str {
+        "Gets the bots HTTP and gateway latency. Useful for checking if the bot is lagging."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {

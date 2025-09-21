@@ -17,7 +17,7 @@ use crate::{
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::{guild_mod_log, message_and_dm, tinyid},
+    utils::{LogType, guild_log, message_and_dm, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -31,23 +31,21 @@ impl CBan {
 
 #[async_trait]
 impl Command for CBan {
-    fn get_name(&self) -> String {
-        String::from("cban")
+    fn get_name(&self) -> &'static str {
+        "cban"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Bans a member from the server and deletes their messages")
+    fn get_short(&self) -> &'static str {
+        "Bans a member from the server and deletes their messages"
     }
 
-    fn get_full(&self) -> String {
-        String::from(
-            "Bans from the server and leaves a note in the users log. \
-            Defaults to permanent if no duration is provided. \
-            Use 0 for the duration to make the ban permanent. \
-            If the duration cannot be resolved it will default to permanent. \
-            Ban expiry is checked every 5 minutes. \
-            Additionally deletes up to 7 days of the target members messages.",
-        )
+    fn get_full(&self) -> &'static str {
+        "Bans from the server and leaves a note in the users log. \
+        Defaults to permanent if no duration is provided. \
+        Use 0 for the duration to make the ban permanent. \
+        If the duration cannot be resolved it will default to permanent. \
+        Ban expiry is checked every 5 minutes. \
+        Additionally deletes up to 7 days of the target members messages."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
@@ -121,7 +119,7 @@ impl Command for CBan {
 
             format!("for {time} {unit}")
         } else {
-            String::from("permanently")
+            String::from("permanent")
         };
 
         let duration = if duration.is_zero() {
@@ -208,8 +206,10 @@ impl Command for CBan {
                 reason
             ),
         ).await;
-        guild_mod_log(
+
+        guild_log(
             &ctx.http,
+            LogType::MemberBan,
             msg.guild_id.unwrap(),
             CreateMessage::new()
                 .add_embed(

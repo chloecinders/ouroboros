@@ -37,6 +37,7 @@ pub async fn run_migrations() {
     create_action_type_201420250826().await;
     add_log_bot_to_guild_settings_220420250829().await;
     add_log_mod_to_guild_settings_021020250918().await;
+    remove_log_mod_and_change_channel_id_to_jsonb_21092025().await;
 }
 
 pub async fn create_actions_223320250818() {
@@ -135,6 +136,24 @@ pub async fn add_log_mod_to_guild_settings_021020250918() {
     {
         panic!(
             "Couldnt run database migration add_log_mod_to_guild_settings_021020250918; Err = {err:?}"
+        );
+    }
+}
+
+pub async fn remove_log_mod_and_change_channel_id_to_jsonb_21092025() {
+    if let Err(err) = query!(
+        r#"
+        ALTER TABLE public.guild_settings
+        DROP COLUMN IF EXISTS log_mod,
+        DROP COLUMN IF EXISTS log_channel,
+        ADD COLUMN IF NOT EXISTS log_channel_ids jsonb
+        "#
+    )
+    .execute(SQL.get().unwrap())
+    .await
+    {
+        panic!(
+            "Couldnt run database migration remove_log_mod_and_change_channel_id_to_jsonb_21092025; Err = {err:?}"
         );
     }
 }

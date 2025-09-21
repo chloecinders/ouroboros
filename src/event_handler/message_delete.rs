@@ -9,7 +9,7 @@ use crate::{
     GUILD_SETTINGS,
     constants::BRAND_RED,
     event_handler::Handler,
-    utils::{guild_log, snowflake_to_timestamp},
+    utils::{LogType, guild_log, snowflake_to_timestamp},
 };
 
 pub async fn message_delete(
@@ -119,9 +119,7 @@ pub async fn message_delete(
 
     if let Some(moderator) = actor_id {
         description.push_str(&format!("| Actor: <@{moderator}> ({moderator}) "));
-    } else {
-        return;
-    }
+    };
 
     if let Some(msg) = some_msg {
         description.push_str(&format!(
@@ -138,6 +136,7 @@ pub async fn message_delete(
 
     guild_log(
         &ctx.http,
+        LogType::MessageDelete,
         guild_id,
         CreateMessage::new()
             .add_embed(embed.description(description))

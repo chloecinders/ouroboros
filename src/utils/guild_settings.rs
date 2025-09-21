@@ -1,14 +1,23 @@
 use std::collections::HashMap;
 
 use serde::Serialize;
-use sqlx::query;
+use sqlx::{prelude::FromRow, query_as, types::Json};
 
-use crate::{SQL, utils::AnyError};
+use crate::{
+    SQL,
+    utils::{AnyError, LogType},
+};
 
 #[derive(Debug, Serialize, Clone, Default)]
 pub struct GuildSettings {
     inner: HashMap<u64, Settings>,
     invalid: bool,
+}
+#[derive(Debug, FromRow, PartialEq, Eq)]
+struct GuildSettingsRow {
+    guild_id: i64,
+    log_bot: Option<bool>,
+    log_channel_ids: Option<Json<HashMap<LogType, u64>>>,
 }
 
 impl GuildSettings {
@@ -37,9 +46,16 @@ impl GuildSettings {
     }
 
     async fn fetch_data(&self) -> Result<HashMap<u64, Settings>, AnyError> {
-        if let Ok(data) = query!("SELECT * FROM guild_settings")
-            .fetch_all(SQL.get().unwrap())
-            .await
+        if let Ok(data) = query_as!(
+            GuildSettingsRow,
+            r#"SELECT
+                guild_id,
+                log_bot,
+                log_channel_ids as "log_channel_ids?: sqlx::types::Json<HashMap<LogType, u64>>"
+            FROM guild_settings"#
+        )
+        .fetch_all(SQL.get().unwrap())
+        .await
         {
             let mut map: HashMap<u64, Settings> = HashMap::new();
 
@@ -48,9 +64,11 @@ impl GuildSettings {
                     record.guild_id as u64,
                     Settings {
                         log: SettingsLog {
-                            channel_id: record.log_channel.map(|n| n as u64),
+                            log_channel_ids: record
+                                .log_channel_ids
+                                .map(|j| j.0)
+                                .unwrap_or_default(),
                             log_bots: record.log_bot,
-                            mod_channel_id: record.log_mod.map(|n| n as u64),
                         },
                     },
                 );
@@ -70,7 +88,6 @@ pub struct Settings {
 
 #[derive(Debug, Serialize, Clone, Default)]
 pub struct SettingsLog {
-    pub channel_id: Option<u64>,
+    pub log_channel_ids: HashMap<LogType, u64>,
     pub log_bots: Option<bool>,
-    pub mod_channel_id: Option<u64>,
 }

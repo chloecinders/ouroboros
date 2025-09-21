@@ -26,16 +26,16 @@ impl Say {
 
 #[async_trait]
 impl Command for Say {
-    fn get_name(&self) -> String {
-        String::from("say")
+    fn get_name(&self) -> &'static str {
+        "say"
     }
 
-    fn get_short(&self) -> String {
-        String::from("")
+    fn get_short(&self) -> &'static str {
+        ""
     }
 
-    fn get_full(&self) -> String {
-        String::from("Says something as the bot")
+    fn get_full(&self) -> &'static str {
+        "Says something as the bot"
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {

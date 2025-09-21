@@ -16,7 +16,7 @@ use crate::{
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::{guild_mod_log, message_and_dm, tinyid},
+    utils::{LogType, guild_log, message_and_dm, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -30,16 +30,16 @@ impl Warn {
 
 #[async_trait]
 impl Command for Warn {
-    fn get_name(&self) -> String {
-        String::from("warn")
+    fn get_name(&self) -> &'static str {
+        "warn"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Warns a member of the server")
+    fn get_short(&self) -> &'static str {
+        "Warns a member of the server"
     }
 
-    fn get_full(&self) -> String {
-        String::from("Warns a member, storing a note in the users log.")
+    fn get_full(&self) -> &'static str {
+        "Warns a member, storing a note in the users log."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
@@ -116,8 +116,9 @@ impl Command for Warn {
         )
         .await;
 
-        guild_mod_log(
+        guild_log(
             &ctx.http,
+            LogType::MemberWarn,
             msg.guild_id.unwrap(),
             CreateMessage::new()
                 .add_embed(

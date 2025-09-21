@@ -17,7 +17,7 @@ use crate::{
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::{guild_mod_log, message_and_dm, tinyid},
+    utils::{LogType, guild_log, message_and_dm, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -31,18 +31,17 @@ impl Mute {
 
 #[async_trait]
 impl Command for Mute {
-    fn get_name(&self) -> String {
-        String::from("mute")
+    fn get_name(&self) -> &'static str {
+        "mute"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Uses the Discord timeout feature on a member")
+    fn get_short(&self) -> &'static str {
+        "Uses the Discord timeout feature on a member"
     }
 
-    fn get_full(&self) -> String {
-        String::from("
-            Uses the Discord timeout feature on a member and leaves a note in the users log. \
-            Has a max duration of 28 days. Duration (including the removal of the timeout) is managed by Discord")
+    fn get_full(&self) -> &'static str {
+        "Uses the Discord timeout feature on a member and leaves a note in the users log. \
+        Has a max duration of 28 days. Duration (including the removal of the timeout) is managed by Discord"
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
@@ -192,8 +191,10 @@ impl Command for Mute {
             ),
         )
         .await;
-        guild_mod_log(
+
+        guild_log(
             &ctx.http,
+            LogType::MemberMute,
             msg.guild_id.unwrap(),
             CreateMessage::new()
                 .add_embed(

@@ -25,16 +25,16 @@ impl Stats {
 
 #[async_trait]
 impl Command for Stats {
-    fn get_name(&self) -> String {
-        String::from("stats")
+    fn get_name(&self) -> &'static str {
+        "stats"
     }
 
-    fn get_short(&self) -> String {
-        String::from("Gets various bot statistics")
+    fn get_short(&self) -> &'static str {
+        "Gets various bot statistics"
     }
 
-    fn get_full(&self) -> String {
-        String::from("Shows various statistics of the bot. Useful for nerds!")
+    fn get_full(&self) -> &'static str {
+        "Shows various statistics of the bot. Useful for nerds!"
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
