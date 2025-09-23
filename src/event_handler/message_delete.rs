@@ -1,37 +1,23 @@
 use chrono::Utc;
 use serenity::all::{
-    Channel, ChannelId, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
-    GuildId, MessageAction, MessageId, audit_log::Action,
+    Channel, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage, Message, MessageAction, audit_log::Action
 };
 use tracing::warn;
 
 use crate::{
     GUILD_SETTINGS,
     constants::BRAND_RED,
-    event_handler::Handler,
+    event_handler::{Handler, MessageDeleteEvent},
     utils::{LogType, guild_log, snowflake_to_timestamp},
 };
 
 pub async fn message_delete(
     _handler: &Handler,
     ctx: Context,
-    channel_id: ChannelId,
-    deleted_message_id: MessageId,
-    _guild_id: Option<GuildId>,
+    event: MessageDeleteEvent,
+    old_if_available: Option<Message>
 ) {
-    let some_msg = {
-        if let Some(msg) = ctx.cache.message(channel_id, deleted_message_id) {
-            if msg.author.id.get() == ctx.cache.current_user().id.get() {
-                return;
-            }
-
-            Some(msg.clone())
-        } else {
-            None
-        }
-    };
-
-    if let Some(msg) = some_msg.clone() {
+    if let Some(msg) = old_if_available.clone() {
         let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
         let guild_id = msg.guild_id.map(|g| g.get()).unwrap_or(0);
 
@@ -44,7 +30,7 @@ pub async fn message_delete(
         };
     }
 
-    let guild_id = match channel_id.to_channel(&ctx.http).await {
+    let guild_id = match event.channel_id.to_channel(&ctx.http).await {
         Ok(Channel::Guild(guild_channel)) => guild_channel.guild_id,
         _ => return,
     };
@@ -69,7 +55,7 @@ pub async fn message_delete(
             if (Utc::now() - entry_time).num_seconds().abs() <= 300
                 && let Some(target) = entry.target_id
                 && let Some(Some(channel)) = entry.options.clone().map(|o| o.channel_id)
-                && let Some(msg) = some_msg.clone()
+                && let Some(msg) = old_if_available.clone()
                 && target.get() == msg.author.id.get()
                 && channel.get() == msg.channel_id.get()
             {
@@ -82,7 +68,7 @@ pub async fn message_delete(
                 if (Utc::now() - entry_time).num_seconds().abs() <= 5
                     && let Some(target) = entry.target_id
                     && let Some(Some(channel)) = entry.options.clone().map(|o| o.channel_id)
-                    && let Some(msg) = some_msg.clone()
+                    && let Some(msg) = old_if_available.clone()
                     && target.get() == msg.author.id.get()
                     && channel.get() == msg.channel_id.get()
                 {
@@ -92,11 +78,11 @@ pub async fn message_delete(
         }
     }
 
-    let mut description = format!("**MESSAGE DELETED**\n-# {0} ", deleted_message_id.get());
+    let mut description = format!("**MESSAGE DELETED**\n-# {0} ", event.message_id.get());
     let mut files = vec![];
     let mut embed = CreateEmbed::new().color(BRAND_RED);
 
-    if let Some(msg) = some_msg.clone() {
+    if let Some(msg) = old_if_available.clone() {
         description.push_str(&format!("| Target: <@{}> ", msg.author.id.get()));
         embed = embed.author(
             CreateEmbedAuthor::new(format!("{}: {}", msg.author.name, msg.author.id.get()))
@@ -115,13 +101,13 @@ pub async fn message_delete(
         }
     }
 
-    description.push_str(&format!("| Channel: <#{0}> ({0}) ", channel_id.get()));
+    description.push_str(&format!("| Channel: <#{0}> ({0}) ", event.channel_id.get()));
 
     if let Some(moderator) = actor_id {
         description.push_str(&format!("| Actor: <@{moderator}> ({moderator}) "));
     };
 
-    if let Some(msg) = some_msg {
+    if let Some(msg) = old_if_available {
         description.push_str(&format!(
             "\n{}",
             if msg.content.is_empty() {

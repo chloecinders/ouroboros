@@ -1,10 +1,11 @@
-use serenity::all::{Context, Message};
+use serenity::all::{Context, CreateAllowedMentions, CreateMessage, Message};
+use tracing::warn;
 
 use crate::{
     commands::{CommandArgument, TransformerError},
     event_handler::{CommandError, Handler},
     lexer::{Token, lex},
-    utils::check_guild_permission,
+    utils::{check_guild_permission, is_developer},
 };
 
 pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
@@ -24,6 +25,24 @@ pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
             .await
         {
             handler.send_error(ctx, msg, contents, err).await;
+        }
+
+        return;
+    } else if command_name == "cachedbg" && is_developer(&msg.author) {
+        let lock = handler.message_cache.lock().await;
+        let mut sizes = lock.get_sizes();
+        let size = sizes.entry(msg.channel_id.get()).or_insert(100);
+        let count = lock.get_channel_len(msg.channel_id.get());
+        let mut inserts = lock.get_inserts();
+        let insert_count = inserts.entry(msg.channel_id.get()).or_insert(0);
+
+        let reply = CreateMessage::new()
+            .content(format!("Size: {}; Count: {}; Inserts: {}", *size, count, *insert_count))
+            .reference_message(&msg)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
+
+        if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
+            warn!("Could not send message; err = {err:?}");
         }
 
         return;

@@ -1,23 +1,20 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use serenity::{
     all::{
-        ChannelId, Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EventHandler, Guild,
-        GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent, User,
+        ChannelId, Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EventHandler, Guild, GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent, User
     },
     async_trait,
 };
-use tracing::warn;
+use tokio::{sync::{Mutex, MutexGuard}, time::sleep};
+use tracing::{info, warn};
 
 use crate::{
-    commands::{
-        About, Ban, CBan, Cache, ColonThree, Command, Config, DefineLog, Duration, ExtractId, Kick,
+    SQL, commands::{
+        About, Ban, CBan, Cache, ColonThree, Command, Config, DefineLog, Duration as DurationCommand, ExtractId, Kick,
         Log, MsgDbg, Mute, Ping, Purge, Reason, Say, Softban, Stats, Unban, Unmute, Update, Warn,
-    },
-    constants::BRAND_RED,
-    lexer::Token,
+    }, constants::BRAND_RED, event_handler::message_cache::MessageCache, lexer::Token
 };
-
 #[derive(Debug)]
 pub struct CommandError {
     pub title: String,
@@ -61,7 +58,15 @@ impl std::fmt::Display for MissingArgumentError {
 
 impl std::error::Error for MissingArgumentError {}
 
+// incredibly annoying, Serenity's event is marked as non-exhaustive with no method to construct it manually!
+struct MessageDeleteEvent {
+    // guild_id: Option<GuildId>, unused
+    channel_id: ChannelId,
+    message_id: MessageId,
+}
+
 mod help_cmd;
+mod message_cache;
 
 // events
 mod guild_create;
@@ -75,6 +80,7 @@ mod shards_ready;
 pub struct Handler {
     prefix: String,
     commands: Vec<Arc<dyn Command>>,
+    message_cache: Arc<Mutex<MessageCache>>
 }
 
 impl Handler {
@@ -99,13 +105,24 @@ impl Handler {
             Arc::new(Config::new()),
             Arc::new(Say::new()),
             Arc::new(About::new()),
-            Arc::new(Duration::new()),
+            Arc::new(DurationCommand::new()),
             Arc::new(ExtractId::new()),
             Arc::new(Cache::new()),
             Arc::new(DefineLog::new()),
         ];
 
-        Self { prefix, commands }
+        let cache = Arc::new(Mutex::new(MessageCache::new()));
+        let cache_clone = Arc::clone(&cache);
+
+        tokio::spawn(async move {
+            loop {
+                sleep(Duration::from_secs(60 * 60 * 60)).await;
+                let lock = cache_clone.lock().await;
+                Self::update_cache_size(lock).await;
+            }
+        });
+
+        Self { prefix, commands, message_cache: cache }
     }
 }
 
@@ -154,37 +171,103 @@ impl Handler {
             warn!("Could not send message; err = {e:?}")
         }
     }
+
+    pub async fn update_cache_size(mut cache: MutexGuard<'_, MessageCache>) {
+        info!("Updating message cache sizes...");
+
+        let inserts = cache.get_inserts();
+        let mut sizes = cache.get_sizes();
+        let actions: HashMap<u64, i16> = HashMap::new();
+
+        for (channel, count) in inserts {
+            let count = count as f32;
+            let size = *sizes.entry(channel).or_insert(100) as f32;
+
+            if count > size * 120.0 {
+                sizes.insert(channel, (size * 120.0).round() as usize);
+            } else if (count) < size * 0.8 {
+                sizes.insert(channel, (size * 0.8).round() as usize);
+            }
+        }
+
+        let rows: Vec<(i64, i64, i16)> = sizes
+            .iter()
+            .map(|(&channel_id, &count)| {
+                let prev_action = actions.get(&channel_id).copied().unwrap_or(0);
+                (channel_id as i64, count as i64, prev_action)
+            })
+            .collect();
+
+        let channel_ids: Vec<i64> = rows.iter().map(|r| r.0).collect();
+        let message_counts: Vec<i64> = rows.iter().map(|r| r.1).collect();
+        let previous_actions: Vec<i16> = rows.iter().map(|r| r.2).collect();
+
+        if let Err(err) = sqlx::query!(
+            r#"
+                INSERT INTO message_cache_store (channel_id, message_count, previous_action)
+                SELECT * FROM UNNEST($1::BIGINT[], $2::BIGINT[], $3::SMALLINT[])
+                ON CONFLICT (channel_id) DO UPDATE
+                SET message_count = EXCLUDED.message_count,
+                    previous_action = EXCLUDED.previous_action
+            "#,
+            &channel_ids,
+            &message_counts,
+            &previous_actions,
+        )
+        .execute(SQL.get().unwrap())
+        .await {
+            warn!("Got error updating message cache store; err = {err:?}");
+        }
+
+        cache.clear_inserts();
+    }
 }
 
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
-        message::message(self, ctx, msg).await
+        {
+            let mut lock = self.message_cache.lock().await;
+            let cloned = msg.clone();
+            lock.store_message(cloned.channel_id.get(), cloned);
+        }
+
+        message::message(self, ctx, msg).await;
     }
+
     async fn message_update(
         &self,
         ctx: Context,
-        old_if_available: Option<Message>,
+        _old_if_available: Option<Message>,
         new: Option<Message>,
         event: MessageUpdateEvent,
     ) {
+        let mut lock = self.message_cache.lock().await;
+        let old_if_available = lock.get_message(event.channel_id.get(), event.id.get()).map(|m| m.clone());
         message_update::message_update(self, ctx, old_if_available, new, event).await
     }
+
     async fn message_delete(
         &self,
         ctx: Context,
         channel_id: ChannelId,
         deleted_message_id: MessageId,
-        guild_id: Option<GuildId>,
+        _guild_id: Option<GuildId>,
     ) {
-        message_delete::message_delete(self, ctx, channel_id, deleted_message_id, guild_id).await
+        let mut lock = self.message_cache.blocking_lock();
+        let event = MessageDeleteEvent { channel_id, message_id: deleted_message_id };
+        let old_if_available = lock.get_message(event.channel_id.get(), event.message_id.get()).map(|m| m.clone());
+        message_delete::message_delete(self, ctx, event, old_if_available).await
     }
+
     async fn guild_create(&self, ctx: Context, guild: Guild, is_new: Option<bool>) {
         guild_create::guild_create(self, ctx, guild, is_new).await
     }
+
     async fn shards_ready(&self, ctx: Context, total_shards: u32) {
         shards_ready::shards_ready(self, ctx, total_shards).await
     }
+
     async fn guild_member_update(
         &self,
         ctx: Context,
@@ -194,6 +277,7 @@ impl EventHandler for Handler {
     ) {
         guild_member_update::guild_member_update(self, ctx, old_if_available, new, event).await
     }
+
     async fn guild_member_removal(
         &self,
         ctx: Context,

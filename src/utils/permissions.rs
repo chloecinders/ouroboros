@@ -7,16 +7,16 @@ pub async fn check_guild_permission(
     member: &Member,
     permission: Permissions,
 ) -> bool {
-    if let Some(g) = member.guild_id.to_guild_cached(&ctx.cache)
-        && g.owner_id.get() == member.user.id.get()
-    {
+    let Some(guild_cached) = member.guild_id.to_guild_cached(&ctx.cache) else {
+        return false;
+    };
+
+    if guild_cached.owner_id.get() == member.user.id.get() {
         return true;
     }
 
-    let guild_cache = ctx.cache.guild(member.guild_id).unwrap();
-
     for role in member.roles.clone() {
-        let Some(role) = guild_cache.roles.get(&role) else {
+        let Some(role) = guild_cached.roles.get(&role) else {
             return false;
         };
 

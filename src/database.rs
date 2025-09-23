@@ -37,7 +37,8 @@ pub async fn run_migrations() {
     create_action_type_201420250826().await;
     add_log_bot_to_guild_settings_220420250829().await;
     add_log_mod_to_guild_settings_021020250918().await;
-    remove_log_mod_and_change_channel_id_to_jsonb_21092025().await;
+    remove_log_mod_and_change_channel_id_to_jsonb_150020250921().await;
+    add_message_cache_store_133120250922().await;
 }
 
 pub async fn create_actions_223320250818() {
@@ -140,7 +141,7 @@ pub async fn add_log_mod_to_guild_settings_021020250918() {
     }
 }
 
-pub async fn remove_log_mod_and_change_channel_id_to_jsonb_21092025() {
+pub async fn remove_log_mod_and_change_channel_id_to_jsonb_150020250921() {
     if let Err(err) = query!(
         r#"
         ALTER TABLE public.guild_settings
@@ -153,7 +154,28 @@ pub async fn remove_log_mod_and_change_channel_id_to_jsonb_21092025() {
     .await
     {
         panic!(
-            "Couldnt run database migration remove_log_mod_and_change_channel_id_to_jsonb_21092025; Err = {err:?}"
+            "Couldnt run database migration remove_log_mod_and_change_channel_id_to_jsonb_150020250921; Err = {err:?}"
+        );
+    }
+}
+
+pub async fn add_message_cache_store_133120250922() {
+    if let Err(err) = query!(
+        r#"
+        CREATE TABLE IF NOT EXISTS public.message_cache_store
+        (
+            channel_id bigint NOT NULL,
+            message_count integer NOT NULL DEFAULT 0,
+            previous_action smallint NOT NULL DEFAULT 0 CHECK (previous_action BETWEEN -1 AND 1),
+            PRIMARY KEY (channel_id)
+        );
+        "#
+    )
+    .execute(SQL.get().unwrap())
+    .await
+    {
+        panic!(
+            "Couldnt run database migration add_message_cache_store_133120250922; Err = {err:?}"
         );
     }
 }
