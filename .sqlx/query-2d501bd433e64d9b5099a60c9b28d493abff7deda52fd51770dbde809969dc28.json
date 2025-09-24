@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO message_cache_store (channel_id, message_count, previous_action)\n                SELECT * FROM UNNEST($1::BIGINT[], $2::BIGINT[], $3::SMALLINT[])\n                ON CONFLICT (channel_id) DO UPDATE\n                SET message_count = EXCLUDED.message_count,\n                    previous_action = EXCLUDED.previous_action\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8Array",
+        "Int8Array",
+        "Int2Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2d501bd433e64d9b5099a60c9b28d493abff7deda52fd51770dbde809969dc28"
+}

@@ -37,7 +37,10 @@ pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
         let insert_count = inserts.entry(msg.channel_id.get()).or_insert(0);
 
         let reply = CreateMessage::new()
-            .content(format!("Size: {}; Count: {}; Inserts: {}", *size, count, *insert_count))
+            .content(format!(
+                "Size: {}; Count: {}; Inserts: {}",
+                *size, count, *insert_count
+            ))
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 

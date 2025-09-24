@@ -10,7 +10,11 @@ pub struct MessageCache {
 
 impl MessageCache {
     pub fn new() -> Self {
-        Self { sizes: HashMap::new(), messages: HashMap::new(), inserts: HashMap::new() }
+        Self {
+            sizes: HashMap::new(),
+            messages: HashMap::new(),
+            inserts: HashMap::new(),
+        }
     }
 
     pub fn assign_count(&mut self, channel: u64, count: usize) {
@@ -18,7 +22,12 @@ impl MessageCache {
     }
 
     pub fn clear_inserts(&mut self) {
-        self.inserts = self.inserts.clone().into_iter().map(|(i, _)| (i, 0 as usize)).collect::<HashMap<_, _>>();
+        self.inserts = self
+            .inserts
+            .clone()
+            .into_keys()
+            .map(|i| (i, 0_usize))
+            .collect::<HashMap<_, _>>();
     }
 
     pub fn store_message(&mut self, channel: u64, message: Message) {
@@ -63,14 +72,17 @@ impl MessageCache {
     }
 
     pub fn get_channel_len(&self, channel: u64) -> usize {
-        self.messages.get(&channel).map(|c| c.len()).unwrap_or_default()
+        self.messages
+            .get(&channel)
+            .map(|c| c.len())
+            .unwrap_or_default()
     }
 }
 
 #[derive(Default)]
 struct MessageQueue {
     items: VecDeque<Message>,
-    index: HashMap<u64, usize>
+    index: HashMap<u64, usize>,
 }
 
 impl MessageQueue {
@@ -96,4 +108,3 @@ impl MessageQueue {
         }
     }
 }
-

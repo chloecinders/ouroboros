@@ -140,7 +140,9 @@ impl Command for Mute {
             });
         }
 
-        let audit_reason = format!("Ouroboros Managed Mute: log id `{db_id}`. Please use Ouroboros to unmute to avoid accidental re-application!");
+        let audit_reason = format!(
+            "Ouroboros Managed Mute: log id `{db_id}`. Please use Ouroboros to unmute to avoid accidental re-application!"
+        );
 
         let edit = if let Some(duration) = duration {
             EditMember::new()

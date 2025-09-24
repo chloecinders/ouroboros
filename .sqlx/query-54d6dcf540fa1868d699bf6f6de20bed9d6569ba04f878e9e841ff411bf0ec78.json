@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE actions SET last_reapplied_at = NOW() WHERE id = ANY($1);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "54d6dcf540fa1868d699bf6f6de20bed9d6569ba04f878e9e841ff411bf0ec78"
+}

@@ -1,4 +1,8 @@
-use std::{collections::{HashMap, hash_map::Entry::Vacant}, sync::Arc, time::Duration};
+use std::{
+    collections::{HashMap, hash_map::Entry::Vacant},
+    sync::Arc,
+    time::Duration,
+};
 
 use serenity::{
     all::{
@@ -262,9 +266,7 @@ impl Command for DefineLog {
                     current_values
                 }
 
-                "cancel" => {
-                    channel_ids
-                }
+                "cancel" => channel_ids,
 
                 _ => return Ok(()),
             };

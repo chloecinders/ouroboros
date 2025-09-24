@@ -54,7 +54,9 @@ pub async fn guild_member_removal(
                 continue;
             }
 
-            if let Some(target_id) = entry.target_id && target_id.get() != user.id.get() {
+            if let Some(target_id) = entry.target_id
+                && target_id.get() != user.id.get()
+            {
                 continue;
             }
 

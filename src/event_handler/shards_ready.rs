@@ -110,7 +110,10 @@ pub async fn check_whitelist(cfg: &Environment, ctx: &Context) {
 }
 
 pub async fn fill_message_cache(handler: &Handler, ctx: &Context) {
-    let existing_data = match query!("SELECT * FROM message_cache_store").fetch_all(SQL.get().unwrap()).await {
+    let existing_data = match query!("SELECT * FROM message_cache_store")
+        .fetch_all(SQL.get().unwrap())
+        .await
+    {
         Ok(r) => r,
         Err(err) => {
             error!("Couldnt fetch latest message cache counts; err = {err:?}");
@@ -125,7 +128,7 @@ pub async fn fill_message_cache(handler: &Handler, ctx: &Context) {
             continue;
         };
 
-        for (id, _) in &cached.channels {
+        for id in cached.channels.keys() {
             lock.assign_count(id.get(), 100);
         }
     }

@@ -2,18 +2,27 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use serenity::{
     all::{
-        ChannelId, Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EventHandler, Guild, GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent, User
+        ChannelId, Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EventHandler, Guild,
+        GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent, User,
     },
     async_trait,
 };
-use tokio::{sync::{Mutex, MutexGuard}, time::sleep};
+use tokio::{
+    sync::{Mutex, MutexGuard},
+    time::sleep,
+};
 use tracing::{info, warn};
 
 use crate::{
-    SQL, commands::{
-        About, Ban, CBan, Cache, ColonThree, Command, Config, DefineLog, Duration as DurationCommand, ExtractId, Kick,
-        Log, MsgDbg, Mute, Ping, Purge, Reason, Say, Softban, Stats, Unban, Unmute, Update, Warn,
-    }, constants::BRAND_RED, event_handler::message_cache::MessageCache, lexer::Token
+    SQL,
+    commands::{
+        About, Ban, CBan, Cache, ColonThree, Command, Config, DefineLog,
+        Duration as DurationCommand, ExtractId, Kick, Log, MsgDbg, Mute, Ping, Purge, Reason, Say,
+        Softban, Stats, Unban, Unmute, Update, Warn,
+    },
+    constants::BRAND_RED,
+    event_handler::message_cache::MessageCache,
+    lexer::Token,
 };
 #[derive(Debug)]
 pub struct CommandError {
@@ -80,7 +89,7 @@ mod shards_ready;
 pub struct Handler {
     prefix: String,
     commands: Vec<Arc<dyn Command>>,
-    message_cache: Arc<Mutex<MessageCache>>
+    message_cache: Arc<Mutex<MessageCache>>,
 }
 
 impl Handler {
@@ -122,7 +131,11 @@ impl Handler {
             }
         });
 
-        Self { prefix, commands, message_cache: cache }
+        Self {
+            prefix,
+            commands,
+            message_cache: cache,
+        }
     }
 }
 
@@ -215,7 +228,8 @@ impl Handler {
             &previous_actions,
         )
         .execute(SQL.get().unwrap())
-        .await {
+        .await
+        {
             warn!("Got error updating message cache store; err = {err:?}");
         }
 
@@ -243,7 +257,9 @@ impl EventHandler for Handler {
         event: MessageUpdateEvent,
     ) {
         let mut lock = self.message_cache.lock().await;
-        let old_if_available = lock.get_message(event.channel_id.get(), event.id.get()).map(|m| m.clone());
+        let old_if_available = lock
+            .get_message(event.channel_id.get(), event.id.get())
+            .cloned();
         message_update::message_update(self, ctx, old_if_available, new, event).await
     }
 
@@ -255,8 +271,13 @@ impl EventHandler for Handler {
         _guild_id: Option<GuildId>,
     ) {
         let mut lock = self.message_cache.blocking_lock();
-        let event = MessageDeleteEvent { channel_id, message_id: deleted_message_id };
-        let old_if_available = lock.get_message(event.channel_id.get(), event.message_id.get()).map(|m| m.clone());
+        let event = MessageDeleteEvent {
+            channel_id,
+            message_id: deleted_message_id,
+        };
+        let old_if_available = lock
+            .get_message(event.channel_id.get(), event.message_id.get())
+            .cloned();
         message_delete::message_delete(self, ctx, event, old_if_available).await
     }
 

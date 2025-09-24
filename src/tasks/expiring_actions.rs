@@ -99,7 +99,9 @@ pub async fn check_expiring_timeouts(cache_http: impl CacheHttp) {
             continue;
         };
 
-        let remaining = entry.expires_at.map(|expires_at| expires_at.and_utc() - now);
+        let remaining = entry
+            .expires_at
+            .map(|expires_at| expires_at.and_utc() - now);
 
         let still_active = remaining.map(|d| d.num_seconds() > 0).unwrap_or(true);
         if !still_active {
@@ -130,7 +132,10 @@ pub async fn check_expiring_timeouts(cache_http: impl CacheHttp) {
             let new_timeout = remaining.unwrap_or_else(|| chrono::Duration::days(27));
             let capped_timeout = std::cmp::min(new_timeout, chrono::Duration::days(27));
 
-            let reason = format!("Ouroboros Managed Mute: log id `{}`. Please use Ouroboros to unmute to avoid accidental re-application!", entry.id);
+            let reason = format!(
+                "Ouroboros Managed Mute: log id `{}`. Please use Ouroboros to unmute to avoid accidental re-application!",
+                entry.id
+            );
             let edit = EditMember::new()
                 .audit_log_reason(reason.as_str())
                 .disable_communication_until_datetime((now + capped_timeout).into());
@@ -144,22 +149,26 @@ pub async fn check_expiring_timeouts(cache_http: impl CacheHttp) {
                 updated.push(entry.id);
                 info!(
                     "reapplied timeout for user {:?} in guild {:?}, now until {:?}",
-                    entry.user_id, entry.guild_id, now + capped_timeout
+                    entry.user_id,
+                    entry.guild_id,
+                    now + capped_timeout
                 );
             }
         }
     }
 
-    if !updated.is_empty() {
-        if let Err(e) = query!(
+    if !updated.is_empty()
+        && let Err(e) = query!(
             r#"UPDATE actions SET last_reapplied_at = NOW() WHERE id = ANY($1);"#,
             &updated
         )
         .execute(SQL.get().unwrap())
         .await
-        {
-            error!("task check_expiring_timeouts couldnt update entries; Err = {:?}", e);
-        }
+    {
+        error!(
+            "task check_expiring_timeouts couldnt update entries; Err = {:?}",
+            e
+        );
     }
 
     info!("task check_expiring_timeouts finished");

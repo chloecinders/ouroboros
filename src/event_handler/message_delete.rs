@@ -1,6 +1,7 @@
 use chrono::Utc;
 use serenity::all::{
-    Channel, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage, Message, MessageAction, audit_log::Action
+    Channel, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage, Message,
+    MessageAction, audit_log::Action,
 };
 use tracing::warn;
 
@@ -15,7 +16,7 @@ pub async fn message_delete(
     _handler: &Handler,
     ctx: Context,
     event: MessageDeleteEvent,
-    old_if_available: Option<Message>
+    old_if_available: Option<Message>,
 ) {
     if let Some(msg) = old_if_available.clone() {
         let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;

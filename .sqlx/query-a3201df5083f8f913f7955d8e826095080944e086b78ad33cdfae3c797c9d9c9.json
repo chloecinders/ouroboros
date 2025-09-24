@@ -1,0 +1,44 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT id, guild_id, user_id, expires_at, last_reapplied_at\n        FROM actions\n        WHERE type = 'timeout'\n          AND active = true;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "guild_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "user_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "expires_at",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 4,
+        "name": "last_reapplied_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "a3201df5083f8f913f7955d8e826095080944e086b78ad33cdfae3c797c9d9c9"
+}
