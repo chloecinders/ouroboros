@@ -62,9 +62,10 @@ impl Command for Mute {
         ctx: Context,
         msg: Message,
         #[transformers::reply_member] member: Member,
-        #[transformers::duration] duration: Duration,
+        #[transformers::maybe_duration] duration: Option<Duration>,
         #[transformers::reply_consume] reason: Option<String>,
     ) -> Result<(), CommandError> {
+        let duration = duration.unwrap_or(Duration::zero());
         let mut reason = reason
             .map(|s| {
                 if s.is_empty() || s.chars().all(char::is_whitespace) {
@@ -82,15 +83,7 @@ impl Command for Mute {
 
         let db_id = tinyid().await;
 
-        if duration > Duration::days(28) {
-            return Err(CommandError {
-                title: String::from("Timeouts have a max duration of 28 days."),
-                hint: None,
-                arg: Some(args.get(1).unwrap().clone()),
-            });
-        }
-
-        let time_string = {
+        let time_string = if !duration.is_zero() {
             let (time, mut unit) = match () {
                 _ if (duration.num_days() as f64 / 365.0).fract() == 0.0
                     && duration.num_days() >= 365 =>
@@ -110,13 +103,7 @@ impl Command for Mute {
                 _ if duration.num_seconds() != 0 => {
                     (duration.num_seconds(), String::from("second"))
                 }
-                _ => {
-                    return Err(CommandError {
-                        title: String::from("Timeout duration can not be zero"),
-                        hint: None,
-                        arg: None,
-                    });
-                }
+                _ => (0, String::new()),
             };
 
             if time > 1 {
@@ -124,9 +111,15 @@ impl Command for Mute {
             }
 
             format!("{time} {unit}")
+        } else {
+            String::from("permanent")
         };
 
-        let duration = Utc::now() + duration;
+        let duration = if duration.is_zero() {
+            None
+        } else {
+            Some(Utc::now() + duration)
+        };
 
         let res = query!(
             "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason, expires_at) VALUES ($1, 'mute', $2, $3, $4, $5, $6)",
@@ -135,7 +128,7 @@ impl Command for Mute {
             member.user.id.get() as i64,
             msg.author.id.get() as i64,
             reason.as_str(),
-            duration.naive_utc()
+            duration.map(|d| d.naive_utc()),
         ).execute(SQL.get().unwrap()).await;
 
         if let Err(err) = res {
@@ -147,9 +140,17 @@ impl Command for Mute {
             });
         }
 
-        let edit = EditMember::new()
-            .audit_log_reason(&reason)
-            .disable_communication_until_datetime(duration.into());
+        let audit_reason = format!("Ouroboros Managed Mute: log id `{db_id}`. Please use Ouroboros to unmute to avoid accidental re-application!");
+
+        let edit = if let Some(duration) = duration {
+            EditMember::new()
+                .audit_log_reason(audit_reason.as_str())
+                .disable_communication_until_datetime(duration.into())
+        } else {
+            EditMember::new()
+                .audit_log_reason(audit_reason.as_str())
+                .disable_communication_until_datetime((Utc::now() + Duration::days(27)).into())
+        };
 
         if let Err(err) = member.guild_id.edit_member(&ctx.http, &member, edit).await {
             warn!("Got error while timinng out; err = {err:?}");
@@ -182,7 +183,7 @@ impl Command for Mute {
                 member.mention()
             ),
             format!(
-                "You have been timed out from {} {}\n```\n{}\n```",
+                "**TIMEOUT**\n-# Server: {} | Duration: {}\n```\n{}\n```",
                 msg.guild(&ctx.cache)
                     .map(|g| g.name.clone())
                     .unwrap_or(String::from("UNKNOWN_GUILD")),

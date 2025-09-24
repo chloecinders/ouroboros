@@ -144,7 +144,7 @@ impl Command for Softban {
                 )
             },
             format!(
-                "You have been kicked from {}\n```\n{}\n```",
+                "**KICKED**\n-# Server: {}\n```\n{}\n```",
                 msg.guild(&ctx.cache)
                     .map(|g| g.name.clone())
                     .unwrap_or(String::from("UNKNOWN_GUILD")),

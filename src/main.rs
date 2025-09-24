@@ -128,6 +128,7 @@ async fn main() {
         loop {
             sleep(Duration::from_secs(60 * 5)).await;
             tasks::check_expiring_bans(&http).await;
+            tasks::check_expiring_timeouts(&http).await;
         }
     });
 

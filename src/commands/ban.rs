@@ -194,7 +194,7 @@ impl Command for Ban {
                 user.mention()
             ),
             format!(
-                "You have been banned from {} {}\n```\n{}\n```",
+                "**BANNED**\n-# Server: {} | Duration: {}\n```\n{}\n```",
                 msg.guild(&ctx.cache)
                     .map(|g| g.name.clone())
                     .unwrap_or(String::from("UNKNOWN_GUILD")),

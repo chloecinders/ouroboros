@@ -39,6 +39,7 @@ pub async fn run_migrations() {
     add_log_mod_to_guild_settings_021020250918().await;
     remove_log_mod_and_change_channel_id_to_jsonb_150020250921().await;
     add_message_cache_store_133120250922().await;
+    add_last_reapplied_at_to_actions_160120250923().await;
 }
 
 pub async fn create_actions_223320250818() {
@@ -176,6 +177,22 @@ pub async fn add_message_cache_store_133120250922() {
     {
         panic!(
             "Couldnt run database migration add_message_cache_store_133120250922; Err = {err:?}"
+        );
+    }
+}
+
+pub async fn add_last_reapplied_at_to_actions_160120250923() {
+    if let Err(err) = query!(
+        r#"
+        ALTER TABLE public.actions
+        ADD COLUMN IF NOT EXISTS last_reapplied_at timestamp with time zone;
+        "#
+    )
+    .execute(SQL.get().unwrap())
+    .await
+    {
+        panic!(
+            "Couldnt run database migration add_last_reapplied_at_to_actions_160120250923; Err = {err:?}"
         );
     }
 }
