@@ -107,7 +107,7 @@ impl Command for Purge {
                 return Err(CommandError {
                     title: String::from("Could not get channel messages"),
                     hint: Some(String::from(
-                        "make sure the bot has enough permissions to view the messages of this channel",
+                        "there is currently a bug where this command fails if the last 100 messages in the channel have messages with components in them. Will be fixed soon sorry!",
                     )),
                     arg: None,
                 });
