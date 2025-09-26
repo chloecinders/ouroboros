@@ -15,7 +15,7 @@ use crate::{
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
-    lexer::Token,
+    lexer::{InferType, Token},
     transformers::Transformers,
     utils::{LogType, guild_log, message_and_dm, tinyid},
 };
@@ -65,6 +65,10 @@ impl Command for Mute {
         #[transformers::maybe_duration] duration: Option<Duration>,
         #[transformers::reply_consume] reason: Option<String>,
     ) -> Result<(), CommandError> {
+        let inferred = args
+            .first()
+            .map(|a| matches!(a.inferred, Some(InferType::Message)))
+            .unwrap_or(false);
         let duration = duration.unwrap_or(Duration::zero());
         let mut reason = reason
             .map(|s| {
@@ -122,7 +126,7 @@ impl Command for Mute {
         };
 
         let res = query!(
-            "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason, expires_at) VALUES ($1, 'mute', $2, $3, $4, $5, $6)",
+            "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason, expires_at, last_reapplied_at) VALUES ($1, 'mute', $2, $3, $4, $5, $6, NOW())",
             db_id,
             msg.guild_id.map(|g| g.get() as i64).unwrap_or(0),
             member.user.id.get() as i64,
@@ -150,7 +154,7 @@ impl Command for Mute {
                 .disable_communication_until_datetime(duration.into())
         } else {
             EditMember::new()
-                .audit_log_reason(audit_reason.as_str())
+                .audit_log_reason(&reason)
                 .disable_communication_until_datetime((Utc::now() + Duration::days(27)).into())
         };
 
@@ -176,6 +180,10 @@ impl Command for Mute {
             });
         }
 
+        if inferred && let Some(reply) = msg.referenced_message.clone() {
+            let _ = reply.delete(&ctx.http).await;
+        }
+
         message_and_dm(
             &ctx,
             &msg,
@@ -192,6 +200,7 @@ impl Command for Mute {
                 time_string,
                 reason
             ),
+            inferred
         )
         .await;
 

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use serenity::{
     all::{
@@ -7,6 +7,7 @@ use serenity::{
     },
     async_trait,
 };
+use tokio::time::sleep;
 use tracing::warn;
 
 use crate::{
@@ -15,7 +16,7 @@ use crate::{
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
-    lexer::Token,
+    lexer::{InferType, Token},
     transformers::Transformers,
     utils::{LogType, guild_log},
 };
@@ -59,6 +60,10 @@ impl Command for Cache {
         msg: Message,
         #[transformers::reply_user] user: User,
     ) -> Result<(), CommandError> {
+        let inferred = args
+            .first()
+            .map(|a| matches!(a.inferred, Some(InferType::Message)))
+            .unwrap_or(false);
         if msg
             .guild_id
             .unwrap()
@@ -115,9 +120,7 @@ impl Command for Cache {
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-        if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
-            warn!("Could not send message; err = {err:?}");
-        }
+        let reply_msg = msg.channel_id.send_message(&ctx.http, reply).await;
 
         guild_log(
             &ctx.http,
@@ -136,6 +139,28 @@ impl Command for Cache {
             ),
         )
         .await;
+
+        let reply_msg = match reply_msg {
+            Ok(m) => m,
+            Err(err) => {
+                warn!("Could not send message; err = {err:?}");
+                return Ok(());
+            }
+        };
+
+        if inferred && let Some(reply) = msg.referenced_message.clone() {
+            let _ = reply.delete(&ctx.http).await;
+        }
+
+        if inferred {
+            let http = ctx.http.clone();
+
+            tokio::spawn(async move {
+                sleep(Duration::from_secs(5)).await;
+                let _ = msg.delete(&http).await;
+                let _ = reply_msg.delete(&http).await;
+            });
+        }
 
         Ok(())
     }

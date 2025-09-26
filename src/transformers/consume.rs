@@ -22,6 +22,7 @@ impl Transformers {
                 length: 0,
                 iteration: 0,
                 quoted: false,
+                inferred: None,
             };
 
             let reason: String = {

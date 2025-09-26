@@ -1,11 +1,11 @@
 use std::{iter::Peekable, vec::IntoIter};
 
-use serenity::all::{Context, Message};
+use serenity::all::{Context, Message, MessageType};
 
 use crate::{
     commands::{CommandArgument, TransformerError, TransformerReturn},
     event_handler::CommandError,
-    lexer::Token,
+    lexer::{InferType, Token},
     transformers::Transformers,
 };
 
@@ -40,6 +40,12 @@ impl Transformers {
                     }));
                 };
 
+                let infer_type = if matches!(reply.kind, MessageType::AutoModAction) {
+                    InferType::SystemMessage
+                } else {
+                    InferType::Message
+                };
+
                 Ok(Token {
                     contents: Some(CommandArgument::Member(member)),
                     raw: String::new(),
@@ -47,6 +53,7 @@ impl Transformers {
                     length: 0,
                     iteration: 0,
                     quoted: false,
+                    inferred: Some(infer_type),
                 })
             } else {
                 return Transformers::member(ctx, msg, args).await;

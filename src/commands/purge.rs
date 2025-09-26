@@ -1,10 +1,11 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use chrono::{Duration, Utc};
 use serenity::{
     all::{Context, CreateEmbed, CreateMessage, GetMessages, Mentionable, Message, Permissions},
     async_trait,
 };
+use tracing::warn;
 
 use crate::{
     commands::{
@@ -12,7 +13,7 @@ use crate::{
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
-    lexer::Token,
+    lexer::{Token, lex},
     transformers::Transformers,
     utils::{LogType, guild_log},
 };
@@ -39,11 +40,14 @@ impl Command for Purge {
     fn get_full(&self) -> &'static str {
         "Mass deletes a specific amount of messages from a channel. \
         Messages older than 2 weeks are ignored. \
-        Count must be between 2 and 100."
+        Count must be between 2 and 100. \
+        Optional filters can be applied after the count: \
+        \n`+user/+u @ouroboros` -> Message Author \
+        \n`+string/+s \"content\"` -> Message Content"
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
-        vec![CommandSyntax::Number("count", true)]
+        vec![CommandSyntax::Number("count", true), CommandSyntax::Filters]
     }
 
     fn get_category(&self) -> CommandCategory {
@@ -56,48 +60,111 @@ impl Command for Purge {
         ctx: Context,
         msg: Message,
         #[transformers::i32] count: i32,
+        #[transformers::consume] filters: String,
     ) -> Result<(), CommandError> {
-        if !(2..=100).contains(&count) {
+        if !(2..=99).contains(&count) {
             return Err(CommandError {
-                title: String::from("Message count must be between 2 and 100"),
+                title: String::from("Message count must be between 2 and 99"),
                 hint: None,
                 arg: Some(args.first().unwrap().clone()),
             });
         }
 
-        let count = count as u8;
+        let mut lex = lex(filters).into_iter().peekable();
+        let mut filters: HashMap<&str, CommandArgument> = HashMap::new();
 
-        let Ok(messages) = msg
+        while let Some(token) = lex.next() {
+            match token.raw.as_str() {
+                "+user" | "+u" => {
+                    if let Ok(Token {
+                        contents: Some(cmd_arg),
+                        ..
+                    }) = Transformers::user(&ctx, &msg, &mut lex).await
+                    {
+                        filters.insert("user", cmd_arg);
+                    }
+                }
+
+                "+s" | "+string" => {
+                    filters.insert(
+                        "string",
+                        CommandArgument::String(lex.next().map(|t| t.raw).unwrap_or_default()),
+                    );
+                }
+
+                _ => {}
+            }
+        }
+
+        let mut messages = match msg
             .channel_id
-            .messages(&ctx.http, GetMessages::new().limit(count))
+            .messages(&ctx.http, GetMessages::new().limit(100))
             .await
-        else {
-            return Err(CommandError {
-                title: String::from("Could not get channel messages"),
-                hint: Some(String::from(
-                    "make sure the bot has enough permissions to view the messages of this channel",
-                )),
-                arg: None,
-            });
+        {
+            Ok(m) => m,
+            Err(err) => {
+                warn!("Got error while fetching messages; err = {err:?}");
+                return Err(CommandError {
+                    title: String::from("Could not get channel messages"),
+                    hint: Some(String::from(
+                        "make sure the bot has enough permissions to view the messages of this channel",
+                    )),
+                    arg: None,
+                });
+            }
         };
 
         let now = Utc::now();
         let two_weeks = Duration::weeks(2);
 
-        let filtered = messages.iter().filter_map(|m| {
-            let diff = (now - *m.timestamp).num_seconds().abs();
+        messages.remove(0);
 
-            if diff <= two_weeks.num_seconds() {
-                Some(m.id)
-            } else {
-                None
-            }
-        });
+        let mut filtered = messages
+            .iter()
+            .filter(|m| {
+                let diff = (now - *m.timestamp).num_seconds().abs();
+
+                if diff <= two_weeks.num_seconds() {
+                    return true;
+                }
+
+                false
+            })
+            .collect::<Vec<_>>();
+
+        if let Some(CommandArgument::User(user)) = filters.get("user") {
+            filtered = filtered
+                .into_iter()
+                .filter(|m| {
+                    if m.author.id.get() == user.id.get() {
+                        return true;
+                    }
+
+                    false
+                })
+                .collect::<Vec<_>>();
+        }
+
+        if let Some(CommandArgument::String(content)) = filters.get("string") {
+            filtered = filtered
+                .into_iter()
+                .filter(|m| {
+                    if m.content.contains(content) {
+                        return true;
+                    }
+
+                    false
+                })
+                .collect::<Vec<_>>();
+        }
 
         let ids = filtered
             .clone()
-            .map(|m| m.get().to_string())
+            .into_iter()
+            .map(|m| m.id.get().to_string())
             .collect::<Vec<_>>();
+
+        let final_count = ids.len();
 
         if msg
             .channel_id
@@ -126,12 +193,14 @@ impl Command for Purge {
                             msg.author.mention(),
                             msg.author.id.get(),
                             msg.channel_id.get(),
-                            count,
+                            final_count,
                             ids.join("\n")
                         ))
                         .color(BRAND_BLUE)
                 )
         ).await;
+
+        let _ = msg.delete(&ctx.http).await;
 
         Ok(())
     }

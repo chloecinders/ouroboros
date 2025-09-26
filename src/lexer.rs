@@ -1,6 +1,12 @@
 use crate::commands::CommandArgument;
 
 #[derive(Debug, Clone)]
+pub enum InferType {
+    Message,
+    SystemMessage,
+}
+
+#[derive(Debug, Clone)]
 pub struct Token {
     pub contents: Option<CommandArgument>,
     pub raw: String,
@@ -8,6 +14,7 @@ pub struct Token {
     pub length: usize,
     pub iteration: usize,
     pub quoted: bool,
+    pub inferred: Option<InferType>,
 }
 
 pub fn lex(input: String) -> Vec<Token> {
@@ -47,6 +54,7 @@ pub fn lex(input: String) -> Vec<Token> {
                     length: current_token.len(),
                     iteration: token_count,
                     quoted: was_quoted,
+                    inferred: None,
                 });
                 token_count += 1;
                 current_token.clear();
@@ -83,6 +91,7 @@ pub fn lex(input: String) -> Vec<Token> {
             position: token_start,
             iteration: token_count,
             quoted: was_quoted,
+            inferred: None,
         });
     }
 

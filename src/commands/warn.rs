@@ -14,7 +14,7 @@ use crate::{
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
-    lexer::Token,
+    lexer::{InferType, Token},
     transformers::Transformers,
     utils::{LogType, guild_log, message_and_dm, tinyid},
 };
@@ -61,6 +61,10 @@ impl Command for Warn {
         #[transformers::reply_member] member: Member,
         #[transformers::reply_consume] reason: Option<String>,
     ) -> Result<(), CommandError> {
+        let inferred = args
+            .first()
+            .map(|a| matches!(a.inferred, Some(InferType::Message)))
+            .unwrap_or(false);
         let mut reason = reason
             .map(|s| {
                 if s.is_empty() || s.chars().all(char::is_whitespace) {
@@ -96,6 +100,10 @@ impl Command for Warn {
             });
         }
 
+        if inferred && let Some(reply) = msg.referenced_message.clone() {
+            let _ = reply.delete(&ctx.http).await;
+        }
+
         message_and_dm(
             &ctx,
             &msg,
@@ -113,6 +121,7 @@ impl Command for Warn {
                     .unwrap_or(String::from("UNKNOWN_GUILD")),
                 reason
             ),
+            inferred,
         )
         .await;
 

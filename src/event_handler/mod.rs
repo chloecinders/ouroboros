@@ -270,7 +270,7 @@ impl EventHandler for Handler {
         deleted_message_id: MessageId,
         _guild_id: Option<GuildId>,
     ) {
-        let mut lock = self.message_cache.blocking_lock();
+        let mut lock = self.message_cache.lock().await;
         let event = MessageDeleteEvent {
             channel_id,
             message_id: deleted_message_id,

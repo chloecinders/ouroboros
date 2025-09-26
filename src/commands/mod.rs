@@ -50,6 +50,7 @@ pub enum CommandSyntax {
     Duration(&'static str, bool),
     Reason(&'static str),
     Number(&'static str, bool),
+    Filters,
     Or(Box<CommandSyntax>, Box<CommandSyntax>),
 }
 
@@ -88,6 +89,7 @@ impl CommandSyntax {
             Self::String(name, opt) => (format!("{name}: String"), Some(opt)),
             Self::Duration(name, opt) => (format!("{name}: Duration"), Some(opt)),
             Self::Number(name, opt) => (format!("{name}: Number"), Some(opt)),
+            Self::Filters => (String::from("...[filters]"), None),
             Self::Channel(name, opt) => (format!("{name}: Channel"), Some(opt)),
         };
 
@@ -112,6 +114,7 @@ impl CommandSyntax {
             CommandSyntax::Reason(_) => String::from("user broke a rule"),
             CommandSyntax::Number(_, _) => String::from("5"),
             CommandSyntax::Channel(_, _) => String::from("#some-channel"),
+            CommandSyntax::Filters => String::from("+user @ouroboros"),
             CommandSyntax::Or(a, b) => format!("({} || {})", a.get_example(), b.get_example()),
         }
     }

@@ -5,7 +5,7 @@ use serenity::all::{Context, Message};
 use crate::{
     commands::{CommandArgument, TransformerError, TransformerReturn},
     event_handler::MissingArgumentError,
-    lexer::Token,
+    lexer::{InferType, Token},
     transformers::Transformers,
 };
 
@@ -19,7 +19,7 @@ impl Transformers {
             if args.peek().is_some() {
                 return Transformers::consume(ctx, msg, args).await;
             } else if let Some(reply) = msg.referenced_message.clone() {
-                let content = if let Some(embed) = reply.embeds.first()
+                let (content, infer_type) = if let Some(embed) = reply.embeds.first()
                     && embed.clone().kind.unwrap_or(String::new()) == "auto_moderation_message"
                 {
                     let reason_type = if let Some(field) =
@@ -38,9 +38,9 @@ impl Transformers {
 
                     let content = embed.clone().description.unwrap_or(msg.content.clone());
 
-                    format!("{reason_type}{content}")
+                    (format!("{reason_type}{content}"), InferType::SystemMessage)
                 } else {
-                    format!("Message: {}", reply.content)
+                    (format!("Message: {}", reply.content), InferType::Message)
                 };
 
                 Ok(Token {
@@ -50,6 +50,7 @@ impl Transformers {
                     length: 0,
                     iteration: 0,
                     quoted: false,
+                    inferred: Some(infer_type),
                 })
             } else {
                 Err(TransformerError::MissingArgumentError(
