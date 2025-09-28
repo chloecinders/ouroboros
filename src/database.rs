@@ -32,9 +32,9 @@ impl std::fmt::Display for ActionType {
 pub async fn run_migrations() {
     info!("Running database migrations");
 
+    create_action_type_201420250826().await;
     create_actions_223320250818().await;
     create_guild_settings_195120250826().await;
-    create_action_type_201420250826().await;
     add_log_bot_to_guild_settings_220420250829().await;
     add_log_mod_to_guild_settings_021020250918().await;
     remove_log_mod_and_change_channel_id_to_jsonb_150020250921().await;
