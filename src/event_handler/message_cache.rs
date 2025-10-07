@@ -88,9 +88,10 @@ struct MessageQueue {
 impl MessageQueue {
     fn insert(&mut self, msg: Message) {
         let id = msg.id.get();
-        self.items.push_front(msg);
-        self.index.insert(id, self.items.len() - 1);
+        self.index.insert(id, self.items.len());
+        self.items.push_back(msg);
     }
+
 
     fn len(&self) -> usize {
         self.items.len()
