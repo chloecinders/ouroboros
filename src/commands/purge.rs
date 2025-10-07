@@ -9,7 +9,7 @@ use tracing::warn;
 
 use crate::{
     commands::{
-        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
@@ -40,7 +40,7 @@ impl Command for Purge {
     fn get_full(&self) -> &'static str {
         "Mass deletes a specific amount of messages from a channel. \
         Messages older than 2 weeks are ignored. \
-        Count must be between 2 and 100. \
+        Count must be between 2 and 99. \
         Optional filters can be applied after the count: \
         \n`+user/+u @ouroboros` -> Message Author \
         \n`+string/+s \"content\"` -> Message Content"
@@ -52,6 +52,10 @@ impl Command for Purge {
 
     fn get_category(&self) -> CommandCategory {
         CommandCategory::Moderation
+    }
+
+    fn get_params(&self) -> Vec<&'static CommandParameter<'static>> {
+        vec![]
     }
 
     #[command]
@@ -75,7 +79,7 @@ impl Command for Purge {
 
         while let Some(token) = lex.next() {
             match token.raw.as_str() {
-                "+user" | "+u" => {
+                "+u" | "+user" => {
                     if let Ok(Token {
                         contents: Some(cmd_arg),
                         ..

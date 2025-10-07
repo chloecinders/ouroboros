@@ -19,7 +19,7 @@ use tracing::warn;
 use crate::{
     GUILD_SETTINGS, SQL,
     commands::{
-        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
@@ -59,6 +59,10 @@ impl Command for DefineLog {
 
     fn get_category(&self) -> CommandCategory {
         CommandCategory::Admin
+    }
+
+    fn get_params(&self) -> Vec<&'static CommandParameter<'static>> {
+        vec![]
     }
 
     #[command]

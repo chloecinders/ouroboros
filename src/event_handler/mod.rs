@@ -16,7 +16,7 @@ use tracing::{info, warn};
 use crate::{
     SQL,
     commands::{
-        About, Ban, CBan, Cache, ColonThree, Command, Config, DefineLog,
+        About, Ban, Cache, ColonThree, Command, Config, DefineLog,
         Duration as DurationCommand, ExtractId, Kick, Log, MsgDbg, Mute, Ping, Purge, Reason, Say,
         Softban, Stats, Unban, Unmute, Update, Warn,
     },
@@ -105,7 +105,6 @@ impl Handler {
             Arc::new(Mute::new()),
             Arc::new(Unban::new()),
             Arc::new(Unmute::new()),
-            Arc::new(CBan::new()),
             Arc::new(Purge::new()),
             Arc::new(MsgDbg::new()),
             Arc::new(ColonThree::new()),
@@ -121,7 +120,7 @@ impl Handler {
         ];
 
         let cache = Arc::new(Mutex::new(MessageCache::new()));
-        let cache_clone = Arc::clone(&cache);
+        let cache_clone = cache.clone();
 
         tokio::spawn(async move {
             loop {
@@ -174,13 +173,16 @@ impl Handler {
         let reply = CreateMessage::new()
             .add_embed(
                 CreateEmbed::new()
-                    .description(error_message)
+                    .description(error_message.clone())
                     .color(BRAND_RED),
             )
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
         if let Err(e) = msg.channel_id.send_message(&ctx.http, reply).await {
+            let _ = msg.channel_id.send_message(&ctx.http, CreateMessage::new().content(
+                format!("{error_message}\n-# Bot does not have embed perms in this channel, ")
+            )).await;
             warn!("Could not send message; err = {e:?}")
         }
     }

@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::{collections::HashMap, time::{Duration, Instant}};
 
 use reqwest::{Client, redirect::Policy};
 use serenity::{
@@ -9,7 +9,7 @@ use tracing::warn;
 
 use crate::{
     ShardManagerContainer,
-    commands::{Command, CommandCategory, CommandSyntax},
+    commands::{Command, CommandArgument, CommandCategory, CommandParameter, CommandSyntax},
     constants::BRAND_BLUE,
     event_handler::CommandError,
     lexer::Token,
@@ -45,11 +45,16 @@ impl Command for Ping {
         CommandCategory::Misc
     }
 
+    fn get_params(&self) -> Vec<&'static CommandParameter<'static>> {
+        vec![]
+    }
+
     async fn run(
         &self,
         ctx: Context,
         msg: DiscordMessage,
         _args: Vec<Token>,
+        _params: HashMap<&str, (bool, CommandArgument)>
     ) -> Result<(), CommandError> {
         let http = {
             let start = Instant::now();

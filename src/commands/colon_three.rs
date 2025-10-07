@@ -4,7 +4,7 @@ use serenity::{
 };
 
 use crate::{
-    commands::{Command, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc},
     event_handler::CommandError,
     lexer::Token,
 };
@@ -38,6 +38,10 @@ impl Command for ColonThree {
 
     fn get_category(&self) -> CommandCategory {
         CommandCategory::Misc
+    }
+
+    fn get_params(&self) -> Vec<&'static CommandParameter<'static>> {
+        vec![]
     }
 
     #[command]

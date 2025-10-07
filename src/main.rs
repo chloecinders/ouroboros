@@ -133,7 +133,7 @@ async fn main() {
     });
 
     if let Err(e) = client.start().await {
-        eprintln!("Client error: {e:?}")
+        error!("Client error: {e:?}")
     }
 }
 

@@ -7,7 +7,7 @@ use serenity::{
 
 use crate::{
     commands::{
-        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc
     },
     event_handler::CommandError,
     lexer::Token,
@@ -44,6 +44,10 @@ impl Command for Say {
 
     fn get_category(&self) -> CommandCategory {
         CommandCategory::Developer
+    }
+
+    fn get_params(&self) -> Vec<&'static CommandParameter<'static>> {
+        vec![]
     }
 
     #[command]

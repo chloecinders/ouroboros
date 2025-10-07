@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serenity::all::{Context, CreateAllowedMentions, CreateMessage, Message};
 use tracing::warn;
 
@@ -5,18 +7,18 @@ use crate::{
     commands::{CommandArgument, TransformerError},
     event_handler::{CommandError, Handler},
     lexer::{Token, lex},
-    utils::{check_guild_permission, is_developer},
+    utils::{check_guild_permission, get_args, is_developer},
 };
 
-pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
+pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
     if !msg.content.starts_with(handler.prefix.as_str()) || msg.guild_id.is_none() {
         return;
     }
 
-    let contents = msg.content.clone();
+    let mut contents = msg.content.clone();
     let strip = contents.strip_prefix(handler.prefix.as_str()).unwrap_or("");
-    let lex = lex(String::from(strip));
-    let mut parts = lex.into_iter().peekable();
+    let tokens = lex(String::from(strip));
+    let mut parts = tokens.into_iter().peekable();
     let command_name = parts.next().map(|s| s.raw).unwrap_or_default();
 
     if command_name == "help" {
@@ -99,6 +101,21 @@ pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
             }
         }
 
+        let mut command_params = HashMap::new();
+
+        if !c.get_params().is_empty() {
+            let params = c.get_params();
+            let res = get_args(&ctx, &msg, strip.to_string(), params).await;
+
+            if let Ok(params) = res {
+                command_params = params.0;
+                contents = format!("{}{}", handler.prefix, params.1.clone());
+                msg.content = contents.clone();
+                parts = lex(params.1).into_iter().peekable();
+                parts.next();
+            }
+        }
+
         let mut transformers = c.get_transformers().into_iter();
         let mut args: Vec<Token> = vec![];
 
@@ -157,7 +174,7 @@ pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
             }
         }
 
-        let res = c.run(ctx.clone(), msg.clone(), args).await;
+        let res = c.run(ctx.clone(), msg.clone(), args, command_params).await;
 
         if let Err(err) = res {
             handler.send_error(ctx, msg, contents, err).await;

@@ -1,4 +1,4 @@
-use std::{time::Duration, vec};
+use std::{collections::HashMap, time::Duration, vec};
 
 use chrono::Utc;
 use serenity::{
@@ -15,7 +15,7 @@ use tracing::warn;
 use crate::{
     SQL,
     commands::{
-        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc
     },
     constants::BRAND_BLUE,
     database::ActionType,
@@ -216,7 +216,11 @@ impl Command for Log {
         CommandCategory::Moderation
     }
 
-    async fn run(&self, ctx: Context, msg: Message, args: Vec<Token>) -> Result<(), CommandError> {
+    fn get_params(&self) -> Vec<&'static CommandParameter<'static>> {
+        vec![]
+    }
+
+    async fn run(&self, ctx: Context, msg: Message, args: Vec<Token>, _params: HashMap<&str, (bool, CommandArgument)>) -> Result<(), CommandError> {
         let mut args_iter = args.clone().into_iter().peekable();
         let Ok(token) = Transformers::user(&ctx, &msg, &mut args_iter).await else {
             match Transformers::string(&ctx, &msg, &mut args.into_iter().peekable()).await {
@@ -585,7 +589,7 @@ impl Command for Log {
         }
     }
 
-    fn get_transformers(&self) -> Vec<TransformerFn> {
+    fn get_transformers(&self) -> Vec<TransformerFnArc> {
         vec![]
     }
 

@@ -7,7 +7,7 @@ use tracing::warn;
 
 use crate::{
     BOT_CONFIG,
-    commands::{Command, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn},
+    commands::{Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc},
     event_handler::CommandError,
     lexer::Token,
     utils::is_developer,
@@ -44,6 +44,10 @@ impl Command for Update {
 
     fn get_category(&self) -> CommandCategory {
         CommandCategory::Developer
+    }
+
+    fn get_params(&self) -> Vec<&'static CommandParameter<'static>> {
+        vec![]
     }
 
     #[command]

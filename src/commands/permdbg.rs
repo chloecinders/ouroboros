@@ -1,5 +1,5 @@
 use serenity::{
-    all::{Context, CreateAttachment, CreateMessage, Message},
+    all::{Context, CreateAttachment, CreateMessage, Message, Permissions},
     async_trait,
 };
 use tracing::warn;
@@ -7,31 +7,31 @@ use tracing::warn;
 use crate::{
     commands::{Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc},
     event_handler::CommandError,
-    lexer::{Token, lex},
+    lexer::Token,
     utils::is_developer,
 };
 use ouroboros_macros::command;
 
-pub struct MsgDbg;
+pub struct PermDbg;
 
-impl MsgDbg {
+impl PermDbg {
     pub fn new() -> Self {
         Self {}
     }
 }
 
 #[async_trait]
-impl Command for MsgDbg {
+impl Command for PermDbg {
     fn get_name(&self) -> &'static str {
-        "msgdbg"
+        "permdbg"
     }
 
     fn get_short(&self) -> &'static str {
-        "Gets message debug information"
+        "Gets permission debug information"
     }
 
     fn get_full(&self) -> &'static str {
-        "Reply to a message with this command to return debug information. Will be sent as a file in Discord and directly printed into the stdout."
+        "Send this message in a channel to check the bots permissions of the channel."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {
@@ -49,26 +49,12 @@ impl Command for MsgDbg {
     #[command]
     async fn run(&self, ctx: Context, msg: Message) -> Result<(), CommandError> {
         if is_developer(&msg.author) {
-            let Some(reply) = msg.referenced_message.clone() else {
-                warn!("no reply found");
-                return Ok(());
-            };
+            let channel = msg.channel(&ctx.http).await.unwrap().guild().unwrap();
 
-            let r = CreateMessage::new().add_file(CreateAttachment::bytes(
-                format!(
-                    "{:?}\n{reply:#?}",
-                    lex(reply.content.clone())
-                        .into_iter()
-                        .map(|t| t.raw)
-                        .collect::<Vec<_>>()
-                )
-                .as_bytes(),
-                "msg.rs",
-            ));
+            let guild_perms: Vec<Permissions> = vec![];
+            let channel_perms: Vec<Permissions> = vec![];
 
-            dbg!(reply);
-
-            let _ = msg.channel_id.send_message(&ctx.http, r).await;
+            todo!() // WIP
         }
 
         Ok(())

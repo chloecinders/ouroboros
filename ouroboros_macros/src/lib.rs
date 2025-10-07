@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{Attribute, FnArg, ItemFn, Pat, PatType, parse_macro_input};
+use syn::{Attribute, FnArg, Generics, ItemFn, Pat, PatType, WhereClause, parse_macro_input};
 
 #[proc_macro_attribute]
 pub fn command(_attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -133,20 +133,25 @@ pub fn command(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let fn_name = &sig.ident;
     let fn_async = &sig.asyncness;
     let fn_output = &sig.output;
-    let fn_generics = &sig.generics;
-    let fn_where = &sig.generics.where_clause;
+    let fn_generics: Generics = syn::parse_quote! {<'life0, 'life1, 'async_trait>};
+    let fn_where: WhereClause = syn::parse_quote! {
+        where
+            'life0: 'async_trait,
+            'life1: 'async_trait,
+            Self: 'async_trait
+    };
 
     let stmts = &block.stmts;
 
     let expanded = quote! {
-        #vis #fn_async fn #fn_name #fn_generics (&'life0 self, ctx: Context, msg: Message, args: Vec<Token>) #fn_output #fn_where {
+        #vis #fn_async fn #fn_name #fn_generics (&'life0 self, ctx: Context, msg: Message, args: Vec<Token>, params: std::collections::HashMap<&'life1 str, (bool, CommandArgument)>) #fn_output #fn_where {
             let mut args_iter = args.clone().into_iter();
             #(#arg_bindings)*
 
             #(#stmts)*
         }
 
-        fn get_transformers(&self) -> Vec<TransformerFn> {
+        fn get_transformers(&self) -> Vec<TransformerFnArc> {
             vec![ #(#transformer_fns),* ]
         }
     };

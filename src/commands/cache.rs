@@ -12,7 +12,7 @@ use tracing::warn;
 
 use crate::{
     commands::{
-        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
@@ -51,6 +51,10 @@ impl Command for Cache {
 
     fn get_category(&self) -> CommandCategory {
         CommandCategory::Utilities
+    }
+
+    fn get_params(&self) -> Vec<&'static CommandParameter<'static>> {
+        vec![]
     }
 
     #[command]

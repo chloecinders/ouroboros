@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serenity::{
     all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Message},
     async_trait,
@@ -5,7 +7,7 @@ use serenity::{
 use tracing::warn;
 
 use crate::{
-    commands::{Command, CommandCategory, CommandSyntax},
+    commands::{Command, CommandArgument, CommandCategory, CommandParameter, CommandSyntax},
     constants::BRAND_BLUE,
     event_handler::CommandError,
     lexer::Token,
@@ -41,7 +43,11 @@ impl Command for ExtractId {
         CommandCategory::Utilities
     }
 
-    async fn run(&self, ctx: Context, msg: Message, _args: Vec<Token>) -> Result<(), CommandError> {
+    fn get_params(&self) -> Vec<&'static CommandParameter<'static>> {
+        vec![]
+    }
+
+    async fn run(&self, ctx: Context, msg: Message, _args: Vec<Token>, _params: HashMap<&str, (bool, CommandArgument)>) -> Result<(), CommandError> {
         let Some(reply) = &msg.referenced_message else {
             return Err(CommandError {
                 title: String::from("You must reply to a message to use this command"),

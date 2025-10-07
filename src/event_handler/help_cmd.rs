@@ -107,13 +107,26 @@ impl Handler {
                 )
             };
 
+            let params = {
+                if cmd.get_params().is_empty() {
+                    String::new()
+                } else {
+                    let params = cmd.get_params().iter().map(
+                        |p| format!("`+{}/+{}` -> {}", p.short, p.name, p.desc)
+                    ).collect::<Vec<_>>();
+
+                    format!("\n\nOptional Parameters:\n{}", params.join("\n"))
+                }
+            };
+
             let reply = CreateMessage::new()
                 .add_embed(
                     CreateEmbed::new()
                         .description(format!(
-                            "**{}**\n{}\n\n{}{}",
+                            "**{}**\n{}{}\n\n{}{}",
                             cmd.get_name().to_uppercase(),
                             cmd.get_full(),
+                            params,
                             syntax,
                             perms,
                         ))

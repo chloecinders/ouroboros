@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{fmt::Debug, iter::Peekable, pin::Pin, sync::Arc, vec::IntoIter};
+use std::{collections::HashMap, fmt::Debug, iter::Peekable, pin::Pin, sync::Arc, vec::IntoIter};
 
 use crate::{
     event_handler::{CommandError, MissingArgumentError},
@@ -18,15 +18,14 @@ pub enum TransformerError {
 
 pub type TransformerReturn<'a> =
     Pin<Box<dyn Future<Output = Result<Token, TransformerError>> + Send + 'a>>;
-type TransformerFn = Arc<
-    dyn for<'a> Fn(
-            &'a Context,
-            &'a Message,
-            &'a mut Peekable<IntoIter<Token>>,
-        ) -> TransformerReturn<'a>
-        + Send
-        + Sync,
->;
+pub type TransformerFn = dyn for<'a> Fn(
+        &'a Context,
+        &'a Message,
+        &'a mut Peekable<IntoIter<Token>>,
+    ) -> TransformerReturn<'a>
+    + Send
+    + Sync;
+pub type TransformerFnArc = Arc<TransformerFn>;
 
 #[derive(Debug, Clone)]
 #[allow(non_camel_case_types)]
@@ -52,6 +51,13 @@ pub enum CommandSyntax {
     Number(&'static str, bool),
     Filters,
     Or(Box<CommandSyntax>, Box<CommandSyntax>),
+}
+
+pub struct CommandParameter<'a> {
+    pub name: &'a str,
+    pub short: &'a str,
+    pub transformer: &'a TransformerFn,
+    pub desc: &'a str
 }
 
 #[derive(PartialEq, Eq, Hash)]
@@ -134,12 +140,13 @@ pub trait Command: Send + Sync {
     fn get_full(&self) -> &'static str;
     fn get_syntax(&self) -> Vec<CommandSyntax>;
     fn get_category(&self) -> CommandCategory;
+    fn get_params(&self) -> Vec<&'static CommandParameter<'static>>;
 
     // Runner
-    async fn run(&self, ctx: Context, msg: Message, args: Vec<Token>) -> Result<(), CommandError>;
+    async fn run(&self, ctx: Context, msg: Message, args: Vec<Token>, params: HashMap<&str, (bool, CommandArgument)>) -> Result<(), CommandError>;
 
     // Run helpers
-    fn get_transformers(&self) -> Vec<TransformerFn> {
+    fn get_transformers(&self) -> Vec<TransformerFnArc> {
         vec![]
     }
     fn get_permissions(&self) -> CommandPermissions {
@@ -177,9 +184,6 @@ pub use unban::Unban;
 mod unmute;
 pub use unmute::Unmute;
 
-mod cban;
-pub use cban::CBan;
-
 mod purge;
 pub use purge::Purge;
 
@@ -215,3 +219,6 @@ pub use cache::Cache;
 
 mod define_log;
 pub use define_log::DefineLog;
+
+mod permdbg;
+pub use permdbg::PermDbg;

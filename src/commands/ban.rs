@@ -11,7 +11,7 @@ use tracing::{error, warn};
 use crate::{
     SQL,
     commands::{
-        Command, CommandArgument, CommandCategory, CommandPermissions, CommandSyntax, TransformerFn,
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
@@ -36,7 +36,7 @@ impl Command for Ban {
     }
 
     fn get_short(&self) -> &'static str {
-        "Bans a member from the server"
+        "Bans a member from the server and deletes their messages"
     }
 
     fn get_full(&self) -> &'static str {
@@ -51,12 +51,20 @@ impl Command for Ban {
         vec![
             CommandSyntax::Member("member", true),
             CommandSyntax::Duration("duration", false),
+            CommandSyntax::Number("days", false),
             CommandSyntax::Reason("reason"),
         ]
     }
 
     fn get_category(&self) -> CommandCategory {
         CommandCategory::Moderation
+    }
+
+    fn get_params(&self) -> Vec<&'static CommandParameter<'static>> {
+        vec![
+            &CommandParameter { name: "clear", short: "c", transformer: &Transformers::i32, desc: "Amount of messages to clear (in days 0-7)" },
+            &CommandParameter { name: "silent", short: "s", transformer: &Transformers::none, desc: "Disables DMing the target with the reason" }
+        ]
     }
 
     #[command]
@@ -76,12 +84,30 @@ impl Command for Ban {
         let mut reason = reason
             .map(|s| {
                 if s.is_empty() || s.chars().all(char::is_whitespace) {
-                    String::from("No reason provided")
+                    String::new()
                 } else {
                     s
                 }
             })
-            .unwrap_or(String::from("No reason provided"));
+            .unwrap_or(String::new());
+
+        if reason.is_empty() {
+            reason = String::from("No reason provided")
+        }
+
+        let days = {
+            if let Some(arg) = params.get("clear") {
+                if !arg.0 {
+                    0
+                } else if let CommandArgument::i32(days) = arg.1 {
+                    days.clamp(0, 7) as u8
+                } else {
+                    1
+                }
+            } else {
+                1
+            }
+        };
 
         if reason.len() > 500 {
             reason.truncate(500);
@@ -117,7 +143,7 @@ impl Command for Ban {
                 unit += "s";
             }
 
-            format!("{time} {unit}")
+            format!("for {time} {unit}")
         } else {
             String::from("permanent")
         };
@@ -165,7 +191,7 @@ impl Command for Ban {
         if let Err(err) = msg
             .guild_id
             .unwrap()
-            .ban_with_reason(&ctx.http, &user, 0, &reason)
+            .ban_with_reason(&ctx.http, &user, days, &reason)
             .await
         {
             warn!("Got error while banning; err = {err:?}");
@@ -193,12 +219,18 @@ impl Command for Ban {
             let _ = reply.delete(&ctx.http).await;
         }
 
+        let mut clear_msg = String::new();
+
+        if days != 0 {
+            clear_msg = format!(" | Cleared {days} days of messages");
+        }
+
         message_and_dm(
             &ctx,
             &msg,
             &user,
             |a| format!(
-                "**{} BANNED**\n-# Log ID: `{db_id}` | Duration: {time_string}{a}\n```\n{reason}\n```",
+                "**{} BANNED**\n-# Log ID: `{db_id}` | Duration: {time_string}{clear_msg}{a}\n```\n{reason}\n```",
                 user.mention()
             ),
             format!(
@@ -209,7 +241,8 @@ impl Command for Ban {
                 time_string,
                 reason
             ),
-            inferred
+            inferred,
+            params.get("silent").is_some()
         ).await;
 
         guild_log(
@@ -220,7 +253,7 @@ impl Command for Ban {
                 .add_embed(
                     CreateEmbed::new()
                         .description(format!(
-                            "**MEMBER BANNED**\n-# Log ID: `{db_id}` | Actor: {} `{}` | Target: {} `{}` | Duration: {time_string}\n```\n{reason}\n```",
+                            "**MEMBER BANNED**\n-# Log ID: `{db_id}` | Actor: {} `{}` | Target: {} `{}` | Duration: {time_string}{clear_msg}\n```\n{reason}\n```",
                             msg.author.mention(),
                             msg.author.id.get(),
                             user.mention(),
