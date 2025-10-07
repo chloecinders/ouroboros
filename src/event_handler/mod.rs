@@ -185,7 +185,7 @@ impl Handler {
                 .send_message(
                     &ctx.http,
                     CreateMessage::new().content(format!(
-                        "{error_message}\n-# Bot does not have embed perms in this channel, "
+                        "{error_message}\n-# Bot does not have embed perms in this channel."
                     )),
                 )
                 .await;

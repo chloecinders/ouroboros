@@ -241,12 +241,12 @@ impl Handler {
             Ok(m) => m,
             Err(e) => {
                 warn!("Could not send message; err = {e:?}");
+
                 return Err(CommandError {
                     title: String::from("Could not send message"),
                     hint: None,
                     arg: None,
                 });
-                return Ok(());
             }
         };
 
