@@ -61,7 +61,7 @@ pub async fn message_and_dm(
     }
 }
 
-pub async fn get_args<'a>(
+pub async fn get_params<'a>(
     context: &Context,
     msg: &Message,
     contents: String,
@@ -87,28 +87,30 @@ pub async fn get_args<'a>(
         for param in params.iter() {
             if param.name == arg_name || param.short == arg_name {
                 let cloned = lex.clone();
-                let contents_arg = (*param.transformer)(context, msg, &mut lex.clone())
+                let contents_arg = (*param.transformer)(context, msg, &mut lex)
                     .await
                     .map(|t| t.contents.unwrap_or(CommandArgument::None))
                     .unwrap_or(CommandArgument::None);
 
-                let last_cloned = cloned.clone().last();
-                let last_consumed = cloned
-                    .zip(lex.clone())
-                    .find(|(a, b)| a.position == b.position)
-                    .map(|(a, _)| a)
-                    .or(last_cloned);
+                let mut last_consumed = None;
+
+                for token in cloned.rev() {
+                    if token.position == lex.peek().map(|t| t.position).unwrap_or(0) {
+                        break;
+                    }
+
+                    last_consumed = Some(token);
+                }
 
                 found_args.insert(param.name, (positive, contents_arg));
-                let last_position = last_consumed
-                    .clone()
-                    .map(|t| t.position)
-                    .unwrap_or(token.position);
+                let last_position = last_consumed.clone().map(|t| t.position).unwrap_or(token.position);
                 let last_length = last_consumed.map(|t| t.length).unwrap_or(token.length);
                 to_remove.push((token.position, last_position + last_length));
             }
         }
     }
+
+    println!("{to_remove:?}");
 
     to_remove.sort_by_key(|r| r.0);
     let mut stripped = String::new();

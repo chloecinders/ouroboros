@@ -7,7 +7,7 @@ use crate::{
     commands::{CommandArgument, TransformerError},
     event_handler::{CommandError, Handler},
     lexer::{Token, lex},
-    utils::{check_guild_permission, get_args, is_developer},
+    utils::{check_guild_permission, get_params, is_developer},
 };
 
 pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
@@ -105,7 +105,7 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
 
         if !c.get_params().is_empty() {
             let params = c.get_params();
-            let res = get_args(&ctx, &msg, strip.to_string(), params).await;
+            let res = get_params(&ctx, &msg, strip.to_string(), params).await;
 
             if let Ok(params) = res {
                 command_params = params.0;

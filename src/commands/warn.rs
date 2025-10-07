@@ -55,7 +55,14 @@ impl Command for Warn {
     }
 
     fn get_params(&self) -> Vec<&'static CommandParameter<'static>> {
-        vec![]
+        vec![
+            &CommandParameter {
+                name: "silent",
+                short: "s",
+                transformer: &Transformers::none,
+                desc: "Disables DMing the target with the reason",
+            }
+        ]
     }
 
     #[command]
@@ -127,7 +134,7 @@ impl Command for Warn {
                 reason
             ),
             inferred,
-            false,
+            params.get("silent").is_some(),
         )
         .await;
 
