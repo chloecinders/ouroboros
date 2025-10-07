@@ -4,7 +4,11 @@ use serenity::all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, 
 use tokio::time::sleep;
 use tracing::warn;
 
-use crate::{commands::{CommandArgument, CommandParameter, TransformerError}, constants::BRAND_BLUE, lexer::lex};
+use crate::{
+    commands::{CommandArgument, CommandParameter, TransformerError},
+    constants::BRAND_BLUE,
+    lexer::lex,
+};
 
 pub async fn message_and_dm(
     ctx: &Context,
@@ -13,13 +17,13 @@ pub async fn message_and_dm(
     server_msg: impl Fn(String) -> String,
     dm_msg: String,
     automatically_delete: bool,
-    silent: bool
+    silent: bool,
 ) {
     let mut addition = String::new();
 
     if !silent {
-        let dm =
-            CreateMessage::new().add_embed(CreateEmbed::new().description(dm_msg).color(BRAND_BLUE));
+        let dm = CreateMessage::new()
+            .add_embed(CreateEmbed::new().description(dm_msg).color(BRAND_BLUE));
 
         if dm_user.direct_message(&ctx.http, dm).await.is_err() {
             addition = String::from(" | DM failed");
@@ -61,7 +65,7 @@ pub async fn get_args<'a>(
     context: &Context,
     msg: &Message,
     contents: String,
-    params: Vec<&CommandParameter<'static>>
+    params: Vec<&CommandParameter<'static>>,
 ) -> Result<(HashMap<&'a str, (bool, CommandArgument)>, String), TransformerError> {
     let mut found_args: HashMap<&str, (bool, CommandArgument)> = HashMap::default();
     let mut lex = lex(contents.clone()).into_iter().peekable();
@@ -73,21 +77,33 @@ pub async fn get_args<'a>(
                 Some((false, arg))
             } else if let Some(arg) = token.raw.strip_prefix("+") {
                 Some((true, arg))
-            } else { None }
-        }) else { continue };
+            } else {
+                None
+            }
+        }) else {
+            continue;
+        };
 
         for param in params.iter() {
             if param.name == arg_name || param.short == arg_name {
                 let cloned = lex.clone();
-                let contents_arg = (*param.transformer)(context, msg, &mut lex.clone()).await
+                let contents_arg = (*param.transformer)(context, msg, &mut lex.clone())
+                    .await
                     .map(|t| t.contents.unwrap_or(CommandArgument::None))
                     .unwrap_or(CommandArgument::None);
 
                 let last_cloned = cloned.clone().last();
-                let last_consumed = cloned.zip(lex.clone()).find(|(a, b)| a.position == b.position).map(|(a, _)| a).or(last_cloned);
+                let last_consumed = cloned
+                    .zip(lex.clone())
+                    .find(|(a, b)| a.position == b.position)
+                    .map(|(a, _)| a)
+                    .or(last_cloned);
 
                 found_args.insert(param.name, (positive, contents_arg));
-                let last_position = last_consumed.clone().map(|t| t.position).unwrap_or(token.position);
+                let last_position = last_consumed
+                    .clone()
+                    .map(|t| t.position)
+                    .unwrap_or(token.position);
                 let last_length = last_consumed.map(|t| t.length).unwrap_or(token.length);
                 to_remove.push((token.position, last_position + last_length));
             }
@@ -109,4 +125,3 @@ pub async fn get_args<'a>(
 
     Ok((found_args, stripped.trim().to_string()))
 }
-

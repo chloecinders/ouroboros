@@ -10,7 +10,8 @@ use tracing::{error, warn};
 use crate::{
     GUILD_SETTINGS, SQL,
     commands::{
-        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerError, TransformerFnArc, TransformerReturn
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions,
+        CommandSyntax, TransformerError, TransformerFnArc, TransformerReturn,
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
@@ -80,7 +81,13 @@ impl Command for Config {
         vec![]
     }
 
-    async fn run(&self, ctx: Context, msg: Message, args: Vec<Token>, _params: HashMap<&str, (bool, CommandArgument)>) -> Result<(), CommandError> {
+    async fn run(
+        &self,
+        ctx: Context,
+        msg: Message,
+        args: Vec<Token>,
+        _params: HashMap<&str, (bool, CommandArgument)>,
+    ) -> Result<(), CommandError> {
         let mut args_iter = args.into_iter();
 
         let Some(subcommand_token) = args_iter.next() else {

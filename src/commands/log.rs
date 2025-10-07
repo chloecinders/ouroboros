@@ -15,7 +15,8 @@ use tracing::warn;
 use crate::{
     SQL,
     commands::{
-        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions,
+        CommandSyntax, TransformerFnArc,
     },
     constants::BRAND_BLUE,
     database::ActionType,
@@ -220,7 +221,13 @@ impl Command for Log {
         vec![]
     }
 
-    async fn run(&self, ctx: Context, msg: Message, args: Vec<Token>, _params: HashMap<&str, (bool, CommandArgument)>) -> Result<(), CommandError> {
+    async fn run(
+        &self,
+        ctx: Context,
+        msg: Message,
+        args: Vec<Token>,
+        _params: HashMap<&str, (bool, CommandArgument)>,
+    ) -> Result<(), CommandError> {
         let mut args_iter = args.clone().into_iter().peekable();
         let Ok(token) = Transformers::user(&ctx, &msg, &mut args_iter).await else {
             match Transformers::string(&ctx, &msg, &mut args.into_iter().peekable()).await {
@@ -434,6 +441,11 @@ impl Command for Log {
                     .await
                 {
                     warn!("Could not send message; err = {e:?}");
+                    return Err(CommandError {
+                        title: String::from("Could not send message"),
+                        hint: None,
+                        arg: None,
+                    });
                 }
 
                 continue;

@@ -16,9 +16,9 @@ use tracing::{info, warn};
 use crate::{
     SQL,
     commands::{
-        About, Ban, Cache, ColonThree, Command, Config, DefineLog,
-        Duration as DurationCommand, ExtractId, Kick, Log, MsgDbg, Mute, Ping, Purge, Reason, Say,
-        Softban, Stats, Unban, Unmute, Update, Warn,
+        About, Ban, Cache, ColonThree, Command, Config, DefineLog, Duration as DurationCommand,
+        ExtractId, Kick, Log, MsgDbg, Mute, Ping, Purge, Reason, Say, Softban, Stats, Unban,
+        Unmute, Update, Warn,
     },
     constants::BRAND_RED,
     event_handler::message_cache::MessageCache,
@@ -180,9 +180,15 @@ impl Handler {
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
         if let Err(e) = msg.channel_id.send_message(&ctx.http, reply).await {
-            let _ = msg.channel_id.send_message(&ctx.http, CreateMessage::new().content(
-                format!("{error_message}\n-# Bot does not have embed perms in this channel, ")
-            )).await;
+            let _ = msg
+                .channel_id
+                .send_message(
+                    &ctx.http,
+                    CreateMessage::new().content(format!(
+                        "{error_message}\n-# Bot does not have embed perms in this channel, "
+                    )),
+                )
+                .await;
             warn!("Could not send message; err = {e:?}")
         }
     }

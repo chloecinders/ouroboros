@@ -49,7 +49,13 @@ impl Command for Stats {
         vec![]
     }
 
-    async fn run(&self, ctx: Context, msg: Message, _args: Vec<Token>, _params: HashMap<&str, (bool, CommandArgument)>) -> Result<(), CommandError> {
+    async fn run(
+        &self,
+        ctx: Context,
+        msg: Message,
+        _args: Vec<Token>,
+        _params: HashMap<&str, (bool, CommandArgument)>,
+    ) -> Result<(), CommandError> {
         let guild_count = ctx.cache.guild_count();
 
         let uptime = {
@@ -91,6 +97,11 @@ impl Command for Stats {
 
         if let Err(e) = msg.channel_id.send_message(&ctx.http, reply).await {
             warn!("Could not send message; err = {e:?}");
+            return Err(CommandError {
+                title: String::from("Could not send message"),
+                hint: None,
+                arg: None,
+            });
         }
 
         Ok(())

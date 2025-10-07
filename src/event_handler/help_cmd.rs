@@ -111,9 +111,11 @@ impl Handler {
                 if cmd.get_params().is_empty() {
                     String::new()
                 } else {
-                    let params = cmd.get_params().iter().map(
-                        |p| format!("`+{}/+{}` -> {}", p.short, p.name, p.desc)
-                    ).collect::<Vec<_>>();
+                    let params = cmd
+                        .get_params()
+                        .iter()
+                        .map(|p| format!("`+{}/+{}` -> {}", p.short, p.name, p.desc))
+                        .collect::<Vec<_>>();
 
                     format!("\n\nOptional Parameters:\n{}", params.join("\n"))
                 }
@@ -136,7 +138,12 @@ impl Handler {
                 .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
             if let Err(e) = msg.channel_id.send_message(&ctx.http, reply).await {
-                warn!("Could not send message; err = {e:?}")
+                warn!("Could not send message; err = {e:?}");
+                return Err(CommandError {
+                    title: String::from("Could not send message"),
+                    hint: None,
+                    arg: None,
+                });
             }
 
             return Ok(());
@@ -234,6 +241,11 @@ impl Handler {
             Ok(m) => m,
             Err(e) => {
                 warn!("Could not send message; err = {e:?}");
+                return Err(CommandError {
+                    title: String::from("Could not send message"),
+                    hint: None,
+                    arg: None,
+                });
                 return Ok(());
             }
         };
@@ -271,6 +283,11 @@ impl Handler {
                     .await
                 {
                     warn!("Could not send message; err = {e:?}");
+                    return Err(CommandError {
+                        title: String::from("Could not send message"),
+                        hint: None,
+                        arg: None,
+                    });
                 }
 
                 continue;

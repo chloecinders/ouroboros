@@ -12,7 +12,8 @@ use tracing::warn;
 
 use crate::{
     commands::{
-        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions,
+        CommandSyntax, TransformerFnArc,
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,

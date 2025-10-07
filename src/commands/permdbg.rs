@@ -5,7 +5,10 @@ use serenity::{
 use tracing::warn;
 
 use crate::{
-    commands::{Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc},
+    commands::{
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions,
+        CommandSyntax, TransformerFnArc,
+    },
     event_handler::CommandError,
     lexer::Token,
     utils::is_developer,

@@ -10,7 +10,8 @@ use tracing::{error, warn};
 use crate::{
     SQL,
     commands::{
-        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions,
+        CommandSyntax, TransformerFnArc,
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
@@ -163,7 +164,7 @@ impl Command for Softban {
                 reason
             ),
             inferred,
-            false
+            false,
         )
         .await;
 

@@ -18,5 +18,5 @@ mod error;
 pub use error::AnyError;
 
 mod message;
-pub use message::message_and_dm;
 pub use message::get_args;
+pub use message::message_and_dm;

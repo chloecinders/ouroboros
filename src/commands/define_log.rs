@@ -19,7 +19,8 @@ use tracing::warn;
 use crate::{
     GUILD_SETTINGS, SQL,
     commands::{
-        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions,
+        CommandSyntax, TransformerFnArc,
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
@@ -211,6 +212,11 @@ impl Command for DefineLog {
                     .await
                 {
                     warn!("Could not send message; err = {e:?}");
+                    return Err(CommandError {
+                        title: String::from("Could not send message"),
+                        hint: None,
+                        arg: None,
+                    });
                 }
 
                 continue;

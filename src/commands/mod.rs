@@ -18,11 +18,7 @@ pub enum TransformerError {
 
 pub type TransformerReturn<'a> =
     Pin<Box<dyn Future<Output = Result<Token, TransformerError>> + Send + 'a>>;
-pub type TransformerFn = dyn for<'a> Fn(
-        &'a Context,
-        &'a Message,
-        &'a mut Peekable<IntoIter<Token>>,
-    ) -> TransformerReturn<'a>
+pub type TransformerFn = dyn for<'a> Fn(&'a Context, &'a Message, &'a mut Peekable<IntoIter<Token>>) -> TransformerReturn<'a>
     + Send
     + Sync;
 pub type TransformerFnArc = Arc<TransformerFn>;
@@ -57,7 +53,7 @@ pub struct CommandParameter<'a> {
     pub name: &'a str,
     pub short: &'a str,
     pub transformer: &'a TransformerFn,
-    pub desc: &'a str
+    pub desc: &'a str,
 }
 
 #[derive(PartialEq, Eq, Hash)]
@@ -143,7 +139,13 @@ pub trait Command: Send + Sync {
     fn get_params(&self) -> Vec<&'static CommandParameter<'static>>;
 
     // Runner
-    async fn run(&self, ctx: Context, msg: Message, args: Vec<Token>, params: HashMap<&str, (bool, CommandArgument)>) -> Result<(), CommandError>;
+    async fn run(
+        &self,
+        ctx: Context,
+        msg: Message,
+        args: Vec<Token>,
+        params: HashMap<&str, (bool, CommandArgument)>,
+    ) -> Result<(), CommandError>;
 
     // Run helpers
     fn get_transformers(&self) -> Vec<TransformerFnArc> {

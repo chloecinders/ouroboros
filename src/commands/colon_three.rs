@@ -4,7 +4,10 @@ use serenity::{
 };
 
 use crate::{
-    commands::{Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc},
+    commands::{
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions,
+        CommandSyntax, TransformerFnArc,
+    },
     event_handler::CommandError,
     lexer::Token,
 };

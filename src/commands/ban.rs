@@ -11,7 +11,8 @@ use tracing::{error, warn};
 use crate::{
     SQL,
     commands::{
-        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerFnArc
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions,
+        CommandSyntax, TransformerFnArc,
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
@@ -62,8 +63,18 @@ impl Command for Ban {
 
     fn get_params(&self) -> Vec<&'static CommandParameter<'static>> {
         vec![
-            &CommandParameter { name: "clear", short: "c", transformer: &Transformers::i32, desc: "Amount of messages to clear (in days 0-7)" },
-            &CommandParameter { name: "silent", short: "s", transformer: &Transformers::none, desc: "Disables DMing the target with the reason" }
+            &CommandParameter {
+                name: "clear",
+                short: "c",
+                transformer: &Transformers::i32,
+                desc: "Amount of messages to clear (in days 0-7)",
+            },
+            &CommandParameter {
+                name: "silent",
+                short: "s",
+                transformer: &Transformers::none,
+                desc: "Disables DMing the target with the reason",
+            },
         ]
     }
 

@@ -1,4 +1,7 @@
-use std::{collections::HashMap, time::{Duration, Instant}};
+use std::{
+    collections::HashMap,
+    time::{Duration, Instant},
+};
 
 use reqwest::{Client, redirect::Policy};
 use serenity::{
@@ -54,7 +57,7 @@ impl Command for Ping {
         ctx: Context,
         msg: DiscordMessage,
         _args: Vec<Token>,
-        _params: HashMap<&str, (bool, CommandArgument)>
+        _params: HashMap<&str, (bool, CommandArgument)>,
     ) -> Result<(), CommandError> {
         let http = {
             let start = Instant::now();
@@ -97,6 +100,11 @@ impl Command for Ping {
 
         if let Err(e) = msg.channel_id.send_message(&ctx.http, message).await {
             warn!("Could not send message; err = {e:?}");
+            return Err(CommandError {
+                title: String::from("Could not send message"),
+                hint: None,
+                arg: None,
+            });
         }
 
         Ok(())

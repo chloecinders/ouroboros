@@ -47,7 +47,13 @@ impl Command for ExtractId {
         vec![]
     }
 
-    async fn run(&self, ctx: Context, msg: Message, _args: Vec<Token>, _params: HashMap<&str, (bool, CommandArgument)>) -> Result<(), CommandError> {
+    async fn run(
+        &self,
+        ctx: Context,
+        msg: Message,
+        _args: Vec<Token>,
+        _params: HashMap<&str, (bool, CommandArgument)>,
+    ) -> Result<(), CommandError> {
         let Some(reply) = &msg.referenced_message else {
             return Err(CommandError {
                 title: String::from("You must reply to a message to use this command"),
