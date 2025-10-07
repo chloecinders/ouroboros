@@ -155,6 +155,7 @@ impl Command for Reason {
                 Permissions::MODERATE_MEMBERS,
                 Permissions::BAN_MEMBERS,
             ],
+            bot: CommandPermissions::baseline(),
         }
     }
 }

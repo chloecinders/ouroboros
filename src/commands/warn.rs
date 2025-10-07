@@ -163,6 +163,7 @@ impl Command for Warn {
         CommandPermissions {
             required: vec![Permissions::MANAGE_NICKNAMES],
             one_of: vec![],
+            bot: CommandPermissions::baseline(),
         }
     }
 }

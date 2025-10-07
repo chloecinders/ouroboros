@@ -346,6 +346,7 @@ impl Command for Config {
         CommandPermissions {
             required: vec![Permissions::ADMINISTRATOR],
             one_of: vec![],
+            bot: CommandPermissions::baseline(),
         }
     }
 }

@@ -16,9 +16,7 @@ use tracing::{info, warn};
 use crate::{
     SQL,
     commands::{
-        About, Ban, Cache, ColonThree, Command, Config, DefineLog, Duration as DurationCommand,
-        ExtractId, Kick, Log, MsgDbg, Mute, Ping, Purge, Reason, Say, Softban, Stats, Unban,
-        Unmute, Update, Warn,
+        About, Ban, Cache, ColonThree, Command, Config, DefineLog, Duration as DurationCommand, ExtractId, Kick, Log, MsgDbg, Mute, PermDbg, Ping, Purge, Reason, Say, Softban, Stats, Unban, Unmute, Update, Warn
     },
     constants::BRAND_RED,
     event_handler::message_cache::MessageCache,
@@ -117,6 +115,7 @@ impl Handler {
             Arc::new(ExtractId::new()),
             Arc::new(Cache::new()),
             Arc::new(DefineLog::new()),
+            Arc::new(PermDbg::new()),
         ];
 
         let cache = Arc::new(Mutex::new(MessageCache::new()));

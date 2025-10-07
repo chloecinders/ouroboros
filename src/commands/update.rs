@@ -8,7 +8,7 @@ use tracing::warn;
 use crate::{
     BOT_CONFIG,
     commands::{
-        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions,
+        Command, CommandArgument, CommandCategory, CommandParameter,
         CommandSyntax, TransformerFnArc,
     },
     event_handler::CommandError,
@@ -353,13 +353,6 @@ impl Command for Update {
         }
 
         Ok(())
-    }
-
-    fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions {
-            required: vec![],
-            one_of: vec![],
-        }
     }
 }
 

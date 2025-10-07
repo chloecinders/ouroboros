@@ -110,8 +110,6 @@ pub async fn get_params<'a>(
         }
     }
 
-    println!("{to_remove:?}");
-
     to_remove.sort_by_key(|r| r.0);
     let mut stripped = String::new();
     let mut last_end = 0;

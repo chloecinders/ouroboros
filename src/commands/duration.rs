@@ -247,6 +247,7 @@ impl Command for Duration {
                 Permissions::MODERATE_MEMBERS,
                 Permissions::BAN_MEMBERS,
             ],
+            bot: CommandPermissions::baseline(),
         }
     }
 }

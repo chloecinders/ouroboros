@@ -71,11 +71,4 @@ impl Command for Say {
 
         Ok(())
     }
-
-    fn get_permissions(&self) -> CommandPermissions {
-        CommandPermissions {
-            required: vec![],
-            one_of: vec![],
-        }
-    }
 }

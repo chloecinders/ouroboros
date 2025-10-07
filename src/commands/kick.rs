@@ -178,6 +178,7 @@ impl Command for Kick {
         CommandPermissions {
             required: vec![Permissions::KICK_MEMBERS],
             one_of: vec![],
+            bot: [CommandPermissions::baseline().as_slice(), CommandPermissions::moderation().as_slice()].concat(),
         }
     }
 }

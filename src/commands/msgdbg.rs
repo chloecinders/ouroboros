@@ -81,6 +81,7 @@ impl Command for MsgDbg {
         CommandPermissions {
             required: vec![],
             one_of: vec![],
+            bot: CommandPermissions::baseline(),
         }
     }
 }

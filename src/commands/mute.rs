@@ -235,6 +235,7 @@ impl Command for Mute {
         CommandPermissions {
             required: vec![Permissions::MODERATE_MEMBERS],
             one_of: vec![],
+            bot: CommandPermissions::baseline(),
         }
     }
 }

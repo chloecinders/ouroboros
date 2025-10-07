@@ -214,6 +214,7 @@ impl Command for Purge {
         CommandPermissions {
             required: vec![Permissions::MANAGE_MESSAGES],
             one_of: vec![],
+            bot: [CommandPermissions::baseline().as_slice(), CommandPermissions::moderation().as_slice()].concat(),
         }
     }
 }

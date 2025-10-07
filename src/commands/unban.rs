@@ -212,6 +212,7 @@ impl Command for Unban {
         CommandPermissions {
             required: vec![Permissions::BAN_MEMBERS],
             one_of: vec![],
+            bot: [CommandPermissions::baseline().as_slice(), CommandPermissions::moderation().as_slice()].concat(),
         }
     }
 }

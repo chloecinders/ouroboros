@@ -126,6 +126,32 @@ impl CommandSyntax {
 pub struct CommandPermissions {
     pub required: Vec<Permissions>,
     pub one_of: Vec<Permissions>,
+    pub bot: Vec<Permissions>,
+}
+
+impl CommandPermissions {
+    pub fn baseline() -> Vec<Permissions> {
+        vec![
+            Permissions::VIEW_CHANNEL,
+            Permissions::SEND_MESSAGES,
+            Permissions::SEND_MESSAGES_IN_THREADS,
+            Permissions::READ_MESSAGE_HISTORY,
+            Permissions::ATTACH_FILES,
+            Permissions::EMBED_LINKS,
+            Permissions::ADD_REACTIONS,
+        ]
+    }
+
+    pub fn moderation() -> Vec<Permissions> {
+        vec![
+            Permissions::KICK_MEMBERS,
+            Permissions::MODERATE_MEMBERS,
+            Permissions::BAN_MEMBERS,
+            Permissions::MANAGE_MESSAGES,
+            Permissions::MANAGE_NICKNAMES,
+            Permissions::MODERATE_MEMBERS
+        ]
+    }
 }
 
 #[async_trait]
@@ -152,7 +178,10 @@ pub trait Command: Send + Sync {
         vec![]
     }
     fn get_permissions(&self) -> CommandPermissions {
-        Default::default()
+        CommandPermissions {
+            bot: CommandPermissions::baseline(),
+            ..Default::default()
+        }
     }
 }
 

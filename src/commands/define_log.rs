@@ -352,6 +352,7 @@ impl Command for DefineLog {
         CommandPermissions {
             required: vec![Permissions::ADMINISTRATOR],
             one_of: vec![],
+            bot: CommandPermissions::baseline(),
         }
     }
 }
