@@ -123,7 +123,7 @@ impl Handler {
 
         tokio::spawn(async move {
             loop {
-                sleep(Duration::from_secs(60 * 60 * 60)).await;
+                sleep(Duration::from_secs(86400)).await;
                 let lock = cache_clone.lock().await;
                 Self::update_cache_size(lock).await;
             }
@@ -203,9 +203,9 @@ impl Handler {
             let count = count as f32;
             let size = *sizes.entry(channel).or_insert(100) as f32;
 
-            if count > size * 120.0 {
-                sizes.insert(channel, (size * 120.0).round() as usize);
-            } else if (count) < size * 0.8 {
+            if count > size * 0.75 {
+                sizes.insert(channel, (size * 1.2).round() as usize);
+            } else if (count) < size * 0.5 {
                 sizes.insert(channel, (size * 0.8).round() as usize);
             }
         }
