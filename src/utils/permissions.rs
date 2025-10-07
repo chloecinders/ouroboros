@@ -4,7 +4,7 @@ use serenity::all::{Context, Guild, GuildChannel, Member, PermissionOverwriteTyp
 
 use crate::BOT_CONFIG;
 
-pub async fn check_guild_permission(
+pub fn check_guild_permission(
     ctx: &Context,
     member: &Member,
     permission: Permissions,
@@ -25,6 +25,35 @@ pub async fn check_guild_permission(
         if role.has_permission(permission) || role.has_permission(Permissions::ADMINISTRATOR) {
             return true;
         }
+    }
+
+    false
+}
+
+pub fn check_channel_permission(
+    ctx: &Context,
+    channel: GuildChannel,
+    member: &Member,
+    permission: Permissions,
+) -> bool {
+    let Some(guild_cached) = member.guild_id.to_guild_cached(&ctx.cache) else {
+        return false;
+    };
+
+    if guild_cached.owner_id.get() == member.user.id.get() {
+        return true;
+    }
+
+    let channel_perms = permissions_for_channel(ctx, channel, member);
+
+    if let Some((_, granted)) = channel_perms.iter().find(|p| p.0.administrator()) {
+        if *granted {
+            return true;
+        }
+    }
+
+    if let Some((_, granted)) = channel_perms.iter().find(|p| *p.0 == permission) {
+        return *granted;
     }
 
     false

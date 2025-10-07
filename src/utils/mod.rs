@@ -2,6 +2,7 @@ mod permissions;
 pub use permissions::check_guild_permission;
 pub use permissions::is_developer;
 pub use permissions::permissions_for_channel;
+pub use permissions::check_channel_permission;
 
 mod logging;
 pub use logging::LogType;

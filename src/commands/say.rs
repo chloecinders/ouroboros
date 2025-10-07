@@ -7,7 +7,7 @@ use serenity::{
 
 use crate::{
     commands::{
-        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions,
+        Command, CommandArgument, CommandCategory, CommandParameter,
         CommandSyntax, TransformerFnArc,
     },
     event_handler::CommandError,
