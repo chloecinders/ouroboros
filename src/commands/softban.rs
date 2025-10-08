@@ -57,7 +57,20 @@ impl Command for Softban {
     }
 
     fn get_params(&self) -> Vec<&'static CommandParameter<'static>> {
-        vec![]
+        vec![
+            &CommandParameter {
+                name: "clear",
+                short: "c",
+                transformer: &Transformers::i32,
+                desc: "Amount of messages to clear (in days 0-7)",
+            },
+            &CommandParameter {
+                name: "silent",
+                short: "s",
+                transformer: &Transformers::none,
+                desc: "Disables DMing the target with the reason",
+            },
+        ]
     }
 
     #[command]
@@ -81,6 +94,20 @@ impl Command for Softban {
                 }
             })
             .unwrap_or(String::from("No reason provided"));
+
+        let days = {
+            if let Some(arg) = params.get("clear") {
+                if !arg.0 {
+                    0
+                } else if let CommandArgument::i32(days) = arg.1 {
+                    days.clamp(0, 7) as u8
+                } else {
+                    1
+                }
+            } else {
+                1
+            }
+        };
 
         if reason.len() > 500 {
             reason.truncate(500);
@@ -107,7 +134,7 @@ impl Command for Softban {
             });
         }
 
-        if let Err(err) = member.ban_with_reason(&ctx.http, 1, &reason).await {
+        if let Err(err) = member.ban_with_reason(&ctx.http, days, &reason).await {
             warn!("Got error while softbanning; err = {err:?}");
 
             if query!("DELETE FROM actions WHERE id = $1", db_id)
@@ -146,13 +173,19 @@ impl Command for Softban {
             let _ = reply.delete(&ctx.http).await;
         }
 
+        let mut clear_msg = String::new();
+
+        if days != 0 {
+            clear_msg = format!(" | Cleared {days} days of messages");
+        }
+
         message_and_dm(
             &ctx,
             &msg,
             &member.user,
             |a| {
                 format!(
-                    "**{} SOFTBANNED**\n-# Log ID: `{db_id}`{a}\n```\n{reason}\n```",
+                    "**{} SOFTBANNED**\n-# Log ID: `{db_id}`{clear_msg}{a}\n```\n{reason}\n```",
                     member.mention()
                 )
             },
@@ -164,7 +197,7 @@ impl Command for Softban {
                 reason
             ),
             inferred,
-            false,
+            params.contains_key("silent"),
         )
         .await;
 
@@ -193,7 +226,11 @@ impl Command for Softban {
         CommandPermissions {
             required: vec![Permissions::KICK_MEMBERS],
             one_of: vec![],
-            bot: [CommandPermissions::baseline().as_slice(), CommandPermissions::moderation().as_slice()].concat(),
+            bot: [
+                CommandPermissions::baseline().as_slice(),
+                CommandPermissions::moderation().as_slice(),
+            ]
+            .concat(),
         }
     }
 }

@@ -5,6 +5,7 @@ mod consume;
 mod duration;
 mod guild_channel;
 mod i32;
+mod many_users;
 mod maybe_duration;
 mod member;
 mod none;

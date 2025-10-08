@@ -92,7 +92,6 @@ impl MessageQueue {
         self.items.push_back(msg);
     }
 
-
     fn len(&self) -> usize {
         self.items.len()
     }

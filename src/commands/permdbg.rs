@@ -63,26 +63,42 @@ impl Command for PermDbg {
             };
 
             let current_user_id = cache.current_user().id;
-            let member = guild.member(&http, current_user_id).await.unwrap().into_owned();
+            let member = guild
+                .member(&http, current_user_id)
+                .await
+                .unwrap()
+                .into_owned();
 
             let permissions = permissions_for_channel(&ctx, channel, &member);
 
-            let mut perms = permissions.iter()
+            let mut perms = permissions
+                .iter()
                 .map(|p| (p.0.bits(), p))
                 .collect::<Vec<_>>();
 
             perms.sort_by_key(|k| k.0);
 
-            let strings = perms.into_iter().map(|(_, p)| {
-                format!(
-                    "`{} (1<<{}) {}`",
-                    if p.0.to_string().is_empty() { String::from("UNKNOWN") } else { p.0.to_string() },
-                    p.0.bits().trailing_zeros(),
-                    if *p.1 { "[x]" } else { "[ ]" })
-            }).collect::<Vec<_>>();
+            let strings = perms
+                .into_iter()
+                .map(|(_, p)| {
+                    format!(
+                        "`{} (1<<{}) {}`",
+                        if p.0.to_string().is_empty() {
+                            String::from("UNKNOWN")
+                        } else {
+                            p.0.to_string()
+                        },
+                        p.0.bits().trailing_zeros(),
+                        if *p.1 { "[x]" } else { "[ ]" }
+                    )
+                })
+                .collect::<Vec<_>>();
 
             let reply = CreateMessage::new()
-                .content(format!("Current Channel Permissions:\n{}", strings.join(", ")))
+                .content(format!(
+                    "Current Channel Permissions:\n{}",
+                    strings.join(", ")
+                ))
                 .reference_message(&msg)
                 .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 

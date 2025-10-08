@@ -55,7 +55,12 @@ impl Command for Kick {
     }
 
     fn get_params(&self) -> Vec<&'static CommandParameter<'static>> {
-        vec![]
+        vec![&CommandParameter {
+            name: "silent",
+            short: "s",
+            transformer: &Transformers::none,
+            desc: "Disables DMing the target with the reason",
+        }]
     }
 
     #[command]
@@ -149,7 +154,7 @@ impl Command for Kick {
                 reason
             ),
             inferred,
-            false,
+            params.contains_key("silent"),
         )
         .await;
 
@@ -178,7 +183,11 @@ impl Command for Kick {
         CommandPermissions {
             required: vec![Permissions::KICK_MEMBERS],
             one_of: vec![],
-            bot: [CommandPermissions::baseline().as_slice(), CommandPermissions::moderation().as_slice()].concat(),
+            bot: [
+                CommandPermissions::baseline().as_slice(),
+                CommandPermissions::moderation().as_slice(),
+            ]
+            .concat(),
         }
     }
 }

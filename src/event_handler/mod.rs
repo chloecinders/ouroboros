@@ -16,7 +16,9 @@ use tracing::{info, warn};
 use crate::{
     SQL,
     commands::{
-        About, Ban, Cache, ColonThree, Command, Config, DefineLog, Duration as DurationCommand, ExtractId, Kick, Log, MsgDbg, Mute, PermDbg, Ping, Purge, Reason, Say, Softban, Stats, Unban, Unmute, Update, Warn
+        About, Ban, Cache, ColonThree, Command, Config, DefineLog, Duration as DurationCommand,
+        ExtractId, Kick, Log, MsgDbg, Mute, PermDbg, Ping, Purge, Reason, Say, Softban, Stats,
+        Unban, Unmute, Update, Warn,
     },
     constants::BRAND_RED,
     event_handler::message_cache::MessageCache,
@@ -123,7 +125,7 @@ impl Handler {
 
         tokio::spawn(async move {
             loop {
-                sleep(Duration::from_secs(86400)).await;
+                sleep(Duration::from_secs(43200)).await;
                 let lock = cache_clone.lock().await;
                 Self::update_cache_size(lock).await;
             }
@@ -203,9 +205,9 @@ impl Handler {
             let count = count as f32;
             let size = *sizes.entry(channel).or_insert(100) as f32;
 
-            if count > size * 0.75 {
+            if count > size * 0.4 {
                 sizes.insert(channel, (size * 1.2).round() as usize);
-            } else if (count) < size * 0.5 {
+            } else if (count) < size * 0.20 {
                 sizes.insert(channel, (size * 0.8).round() as usize);
             }
         }

@@ -207,7 +207,11 @@ impl Command for Unmute {
         CommandPermissions {
             required: vec![Permissions::MODERATE_MEMBERS],
             one_of: vec![],
-            bot: [CommandPermissions::baseline().as_slice(), CommandPermissions::moderation().as_slice()].concat(),
+            bot: [
+                CommandPermissions::baseline().as_slice(),
+                CommandPermissions::moderation().as_slice(),
+            ]
+            .concat(),
         }
     }
 }

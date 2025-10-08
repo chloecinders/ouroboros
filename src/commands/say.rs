@@ -7,8 +7,8 @@ use serenity::{
 
 use crate::{
     commands::{
-        Command, CommandArgument, CommandCategory, CommandParameter,
-        CommandSyntax, TransformerFnArc,
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandSyntax,
+        TransformerFnArc,
     },
     event_handler::CommandError,
     lexer::Token,

@@ -58,7 +58,12 @@ impl Command for Mute {
     }
 
     fn get_params(&self) -> Vec<&'static CommandParameter<'static>> {
-        vec![]
+        vec![&CommandParameter {
+            name: "silent",
+            short: "s",
+            transformer: &Transformers::none,
+            desc: "Disables DMing the target with the reason",
+        }]
     }
 
     #[command]
@@ -155,11 +160,11 @@ impl Command for Mute {
 
         let edit = if let Some(duration) = duration {
             EditMember::new()
-                .audit_log_reason(audit_reason.as_str())
+                .audit_log_reason(&reason)
                 .disable_communication_until_datetime(duration.into())
         } else {
             EditMember::new()
-                .audit_log_reason(&reason)
+                .audit_log_reason(audit_reason.as_str())
                 .disable_communication_until_datetime((Utc::now() + Duration::days(27)).into())
         };
 
@@ -206,7 +211,7 @@ impl Command for Mute {
                 reason
             ),
             inferred,
-            false
+            params.contains_key("silent")
         )
         .await;
 

@@ -73,13 +73,8 @@ pub async fn get_params<'a>(
 
     while let Some(token) = lex.next() {
         let Some((positive, arg_name)) = ({
-            if let Some(arg) = token.raw.strip_prefix("-") {
-                Some((false, arg))
-            } else if let Some(arg) = token.raw.strip_prefix("+") {
-                Some((true, arg))
-            } else {
-                None
-            }
+            token.raw.strip_prefix("-").map(|a| (false, a))
+                .or(token.raw.strip_prefix("+").map(|a| (true, a)))
         }) else {
             continue;
         };
@@ -103,7 +98,10 @@ pub async fn get_params<'a>(
                 }
 
                 found_args.insert(param.name, (positive, contents_arg));
-                let last_position = last_consumed.clone().map(|t| t.position).unwrap_or(token.position);
+                let last_position = last_consumed
+                    .clone()
+                    .map(|t| t.position)
+                    .unwrap_or(token.position);
                 let last_length = last_consumed.map(|t| t.length).unwrap_or(token.length);
                 to_remove.push((token.position, last_position + last_length));
             }

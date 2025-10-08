@@ -28,6 +28,7 @@ pub type TransformerFnArc = Arc<TransformerFn>;
 pub enum CommandArgument {
     String(String),
     User(User),
+    // ManyUsers(Vec<User>),
     Member(Member),
     Duration(chrono::Duration),
     None,
@@ -149,7 +150,7 @@ impl CommandPermissions {
             Permissions::BAN_MEMBERS,
             Permissions::MANAGE_MESSAGES,
             Permissions::MANAGE_NICKNAMES,
-            Permissions::MODERATE_MEMBERS
+            Permissions::MODERATE_MEMBERS,
         ]
     }
 }

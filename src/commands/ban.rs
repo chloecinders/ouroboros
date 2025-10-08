@@ -100,7 +100,7 @@ impl Command for Ban {
                     s
                 }
             })
-            .unwrap_or(String::new());
+            .unwrap_or_default();
 
         if reason.is_empty() {
             reason = String::from("No reason provided")
@@ -253,7 +253,7 @@ impl Command for Ban {
                 reason
             ),
             inferred,
-            params.get("silent").is_some()
+            params.contains_key("silent")
         ).await;
 
         guild_log(
@@ -281,7 +281,11 @@ impl Command for Ban {
         CommandPermissions {
             required: vec![Permissions::BAN_MEMBERS],
             one_of: vec![],
-            bot: [CommandPermissions::baseline().as_slice(), CommandPermissions::moderation().as_slice()].concat(),
+            bot: [
+                CommandPermissions::baseline().as_slice(),
+                CommandPermissions::moderation().as_slice(),
+            ]
+            .concat(),
         }
     }
 }

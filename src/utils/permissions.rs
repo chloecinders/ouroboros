@@ -1,14 +1,12 @@
 use std::collections::HashMap;
 
-use serenity::all::{Context, Guild, GuildChannel, Member, PermissionOverwriteType, Permissions, User};
+use serenity::all::{
+    Context, Guild, GuildChannel, Member, PermissionOverwriteType, Permissions, User,
+};
 
 use crate::BOT_CONFIG;
 
-pub fn check_guild_permission(
-    ctx: &Context,
-    member: &Member,
-    permission: Permissions,
-) -> bool {
+pub fn check_guild_permission(ctx: &Context, member: &Member, permission: Permissions) -> bool {
     let Some(guild_cached) = member.guild_id.to_guild_cached(&ctx.cache) else {
         return false;
     };
@@ -46,10 +44,8 @@ pub fn check_channel_permission(
 
     let channel_perms = permissions_for_channel(ctx, channel, member);
 
-    if let Some((_, granted)) = channel_perms.iter().find(|p| p.0.administrator()) {
-        if *granted {
-            return true;
-        }
+    if let Some((_, granted)) = channel_perms.iter().find(|p| p.0.administrator()) && *granted {
+        return true;
     }
 
     if let Some((_, granted)) = channel_perms.iter().find(|p| *p.0 == permission) {
@@ -61,11 +57,18 @@ pub fn check_channel_permission(
 
 pub fn permissions_for_guild(guild: Guild, member: &Member) -> HashMap<Permissions, bool> {
     let everyone = guild.roles.iter().find(|r| r.1.position == 0).unwrap();
-    let mut roles = member.roles.iter().map(|r| guild.roles.get(r).unwrap()).collect::<Vec<_>>();
+    let mut roles = member
+        .roles
+        .iter()
+        .map(|r| guild.roles.get(r).unwrap())
+        .collect::<Vec<_>>();
     roles.push(everyone.1);
     roles.sort();
 
-    let mut base = Permissions::all().into_iter().map(|p| (p, false)).collect::<HashMap<_,_>>();
+    let mut base = Permissions::all()
+        .into_iter()
+        .map(|p| (p, false))
+        .collect::<HashMap<_, _>>();
 
     for role in roles {
         role.permissions.into_iter().for_each(|p| {
@@ -76,22 +79,39 @@ pub fn permissions_for_guild(guild: Guild, member: &Member) -> HashMap<Permissio
     base
 }
 
-pub fn permissions_for_channel(ctx: &Context, channel: GuildChannel, member: &Member) -> HashMap<Permissions, bool> {
+pub fn permissions_for_channel(
+    ctx: &Context,
+    channel: GuildChannel,
+    member: &Member,
+) -> HashMap<Permissions, bool> {
     let Some(guild) = channel.guild(&ctx.cache) else {
-        return Permissions::all().into_iter().map(|p| (p, false)).collect::<HashMap<_,_>>()
+        return Permissions::all()
+            .into_iter()
+            .map(|p| (p, false))
+            .collect::<HashMap<_, _>>();
     };
     let mut permissions = permissions_for_guild(guild.to_owned(), member);
     let everyone = guild.roles.iter().find(|r| r.1.position == 0).unwrap();
-    let mut roles = member.roles.iter().map(|r| guild.roles.get(r).unwrap()).collect::<Vec<_>>();
+    let mut roles = member
+        .roles
+        .iter()
+        .map(|r| guild.roles.get(r).unwrap())
+        .collect::<Vec<_>>();
     roles.push(everyone.1);
     roles.sort();
 
     let overwrites = channel.permission_overwrites;
 
     for role in roles {
-        if let Some(overwrite) = overwrites.iter().find(
-            |p| if let PermissionOverwriteType::Role(id) = p.kind && id == role.id { true } else { false })
-        {
+        if let Some(overwrite) = overwrites.iter().find(|p| {
+            if let PermissionOverwriteType::Role(id) = p.kind
+                && id == role.id
+            {
+                true
+            } else {
+                false
+            }
+        }) {
             for perm in overwrite.allow {
                 *permissions.entry(perm).or_insert(false) = true;
             }
@@ -102,9 +122,15 @@ pub fn permissions_for_channel(ctx: &Context, channel: GuildChannel, member: &Me
         }
     }
 
-    if let Some(overwrite) = overwrites.iter().find(
-        |p| if let PermissionOverwriteType::Member(id) = p.kind && id == ctx.cache.current_user().id { true } else { false })
-    {
+    if let Some(overwrite) = overwrites.iter().find(|p| {
+        if let PermissionOverwriteType::Member(id) = p.kind
+            && id == ctx.cache.current_user().id
+        {
+            true
+        } else {
+            false
+        }
+    }) {
         for perm in overwrite.allow {
             *permissions.entry(perm).or_insert(false) = true;
         }
@@ -114,7 +140,7 @@ pub fn permissions_for_channel(ctx: &Context, channel: GuildChannel, member: &Me
         }
     }
 
-   permissions
+    permissions
 }
 
 pub fn is_developer(user: &User) -> bool {
