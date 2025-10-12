@@ -45,7 +45,8 @@ impl Command for Ban {
         Defaults to permanent if no duration is provided. \
         Use 0 for the duration to make the ban permanent. \
         If the duration cannot be resolved it will default to permanent. \
-        Ban expiry is checked every 5 minutes."
+        Ban expiry is checked every 5 minutes. \
+        Clears one day of messages by default."
     }
 
     fn get_syntax(&self) -> Vec<CommandSyntax> {

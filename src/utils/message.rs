@@ -61,7 +61,7 @@ pub async fn message_and_dm(
     }
 }
 
-pub async fn get_params<'a>(
+pub async fn extract_command_parameters<'a>(
     context: &Context,
     msg: &Message,
     contents: String,
@@ -87,14 +87,24 @@ pub async fn get_params<'a>(
                     .map(|t| t.contents.unwrap_or(CommandArgument::None))
                     .unwrap_or(CommandArgument::None);
 
-                let mut last_consumed = None;
+                if lex.len() == cloned.len() {
+                    to_remove.push((token.position, token.position + token.length));
+                    found_args.insert(param.name, (positive, contents_arg));
+                    continue;
+                }
 
-                for token in cloned.rev() {
-                    if token.position == lex.peek().map(|t| t.position).unwrap_or(0) {
+                let mut last_consumed = None;
+                let mut cloned_iter = cloned.rev().into_iter();
+                let pos_to_search = lex.peek().map(|t| t.position).unwrap_or(0);
+
+                while let Some(token) = cloned_iter.next() {
+                    let curr_pos = token.position;
+                    last_consumed = Some(token);
+
+                    if curr_pos == pos_to_search {
+                        last_consumed = Some(cloned_iter.next().or(last_consumed).unwrap());
                         break;
                     }
-
-                    last_consumed = Some(token);
                 }
 
                 found_args.insert(param.name, (positive, contents_arg));
