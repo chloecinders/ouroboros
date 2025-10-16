@@ -69,11 +69,17 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
 
         let channel = channel_id.to_channel(&http).await.unwrap().guild().unwrap();
         let guild = guild_id.to_guild_cached(&cache).unwrap().clone();
-        let member = guild
+        let member = match guild
             .member(&http, current_user_id)
-            .await
-            .unwrap()
-            .into_owned();
+            .await {
+                Ok(m) => m,
+                Err(err) => {
+                    warn!("Couldnt get current bot member object; err = {err:?}");
+                    return;
+                }
+        };
+
+        let member = member.into_owned();
 
         for perm in permissions.bot.iter() {
             if !check_channel_permission(&ctx, channel.clone(), &member, *perm) {

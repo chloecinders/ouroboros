@@ -186,71 +186,35 @@ pub trait Command: Send + Sync {
     }
 }
 
-mod ping;
-pub use ping::Ping;
+mod admin;
+pub use admin::Config;
+pub use admin::DefineLog;
 
-mod stats;
-pub use stats::Stats;
+mod developer;
+pub use developer::MsgDbg;
+pub use developer::Update;
+pub use developer::PermDbg;
+pub use developer::Say;
 
-mod warn;
-pub use warn::Warn;
+mod misc;
+pub use misc::About;
+pub use misc::ColonThree;
+pub use misc::Ping;
+pub use misc::Stats;
 
-mod log;
-pub use log::Log;
+mod moderation;
+pub use moderation::Warn;
+pub use moderation::Kick;
+pub use moderation::Softban;
+pub use moderation::Ban;
+pub use moderation::Mute;
+pub use moderation::Unban;
+pub use moderation::Unmute;
+pub use moderation::Purge;
+pub use moderation::Reason;
+pub use moderation::Duration;
+pub use moderation::Log;
 
-mod kick;
-pub use kick::Kick;
-
-mod softban;
-pub use softban::Softban;
-
-mod ban;
-pub use ban::Ban;
-
-mod mute;
-pub use mute::Mute;
-
-mod unban;
-pub use unban::Unban;
-
-mod unmute;
-pub use unmute::Unmute;
-
-mod purge;
-pub use purge::Purge;
-
-mod msgdbg;
-pub use msgdbg::MsgDbg;
-
-mod colon_three;
-pub use colon_three::ColonThree;
-
-mod reason;
-pub use reason::Reason;
-
-mod update;
-pub use update::Update;
-
-mod config;
-pub use config::Config;
-
-mod say;
-pub use say::Say;
-
-mod about;
-pub use about::About;
-
-mod duration;
-pub use duration::Duration;
-
-mod extract_id;
-pub use extract_id::ExtractId;
-
-mod cache;
-pub use cache::Cache;
-
-mod define_log;
-pub use define_log::DefineLog;
-
-mod permdbg;
-pub use permdbg::PermDbg;
+mod utilities;
+pub use utilities::ExtractId;
+pub use utilities::Cache;
