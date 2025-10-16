@@ -1,6 +1,6 @@
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
-use serenity::all::{ChannelId, CreateMessage, GuildId, Http};
+use serenity::all::{CacheHttp, ChannelId, CreateMessage, GuildId};
 use tracing::warn;
 
 use crate::GUILD_SETTINGS;
@@ -69,7 +69,7 @@ impl LogType {
     }
 }
 
-pub async fn guild_log(http: &Http, log_type: LogType, guild: GuildId, msg: CreateMessage) {
+pub async fn guild_log(http: impl CacheHttp, log_type: LogType, guild: GuildId, msg: CreateMessage) {
     let Some(channel) = log_type.channel_id(guild).await else {
         return;
     };

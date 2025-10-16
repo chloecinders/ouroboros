@@ -111,7 +111,7 @@ impl Command for Warn {
         }
 
         if inferred && let Some(reply) = msg.referenced_message.clone() {
-            let _ = reply.delete(&ctx.http).await;
+            let _ = reply.delete(&ctx).await;
         }
 
         message_and_dm(
@@ -137,7 +137,7 @@ impl Command for Warn {
         .await;
 
         guild_log(
-            &ctx.http,
+            &ctx,
             LogType::MemberWarn,
             msg.guild_id.unwrap(),
             CreateMessage::new()

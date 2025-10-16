@@ -134,7 +134,7 @@ impl Command for Softban {
             });
         }
 
-        if let Err(err) = member.ban_with_reason(&ctx.http, days, &reason).await {
+        if let Err(err) = member.ban_with_reason(&ctx, days, &reason).await {
             warn!("Got error while softbanning; err = {err:?}");
 
             if query!("DELETE FROM actions WHERE id = $1", db_id)
@@ -156,7 +156,7 @@ impl Command for Softban {
             });
         }
 
-        if let Err(err) = member.unban(&ctx.http).await {
+        if let Err(err) = member.unban(&ctx).await {
             warn!("Got error while softunbanning; err = {err:?}");
 
             // leave the entry in the db since they have still faced the consequences
@@ -170,7 +170,7 @@ impl Command for Softban {
         }
 
         if inferred && let Some(reply) = msg.referenced_message.clone() {
-            let _ = reply.delete(&ctx.http).await;
+            let _ = reply.delete(&ctx).await;
         }
 
         let mut clear_msg = String::new();
@@ -202,7 +202,7 @@ impl Command for Softban {
         .await;
 
         guild_log(
-            &ctx.http,
+            &ctx,
             LogType::MemberSoftban,
             msg.guild_id.unwrap(),
             CreateMessage::new()

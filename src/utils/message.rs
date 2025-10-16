@@ -25,7 +25,7 @@ pub async fn message_and_dm(
         let dm = CreateMessage::new()
             .add_embed(CreateEmbed::new().description(dm_msg).color(BRAND_BLUE));
 
-        if dm_user.direct_message(&ctx.http, dm).await.is_err() {
+        if dm_user.direct_message(&ctx, dm).await.is_err() {
             addition = String::from(" | DM failed");
         }
     } else {
@@ -41,7 +41,7 @@ pub async fn message_and_dm(
         .reference_message(command_msg)
         .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-    let msg = match command_msg.channel_id.send_message(&ctx.http, reply).await {
+    let msg = match command_msg.channel_id.send_message(&ctx, reply).await {
         Ok(m) => m,
         Err(err) => {
             warn!("Could not send message; err = {err:?}");
@@ -50,13 +50,13 @@ pub async fn message_and_dm(
     };
 
     if automatically_delete {
-        let http = ctx.http.clone();
+        let ctx = ctx.clone();
         let cmd_msg = command_msg.clone();
 
         tokio::spawn(async move {
             sleep(Duration::from_secs(5)).await;
-            let _ = msg.delete(&http).await;
-            let _ = cmd_msg.delete(&http).await;
+            let _ = msg.delete(&ctx).await;
+            let _ = cmd_msg.delete(&ctx).await;
         });
     }
 }

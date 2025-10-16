@@ -49,7 +49,7 @@ impl Command for ColonThree {
 
     #[command]
     async fn run(&self, ctx: Context, msg: Message) -> Result<(), CommandError> {
-        let _ = msg.reply(&ctx.http, ":3").await;
+        let _ = msg.reply(&ctx, ":3").await;
         Ok(())
     }
 

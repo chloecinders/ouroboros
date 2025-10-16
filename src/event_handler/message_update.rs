@@ -23,7 +23,7 @@ pub async fn message_update(
     let mut new_msg = match new {
         Some(m) if m.author.id != ctx.cache.current_user().id => m,
         Some(_) => return,
-        None => match event.channel_id.message(&ctx.http, event.id).await {
+        None => match event.channel_id.message(&ctx, event.id).await {
             Ok(m) if m.author.id != ctx.cache.current_user().id => m,
             _ => return,
         },
@@ -110,10 +110,10 @@ pub async fn message_update(
         message = message.add_file(f);
     }
 
-    let guild_id = match new_msg.channel_id.to_channel(&ctx.http).await {
+    let guild_id = match new_msg.channel_id.to_channel(&ctx).await {
         Ok(Channel::Guild(g)) => g.guild_id.get(),
         _ => new_msg.guild_id.map(|g| g.get()).unwrap_or(1),
     };
 
-    guild_log(&ctx.http, LogType::MessageEdit, guild_id.into(), message).await;
+    guild_log(&ctx, LogType::MessageEdit, guild_id.into(), message).await;
 }

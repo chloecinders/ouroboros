@@ -168,7 +168,7 @@ impl Command for Mute {
                 .disable_communication_until_datetime((Utc::now() + Duration::days(27)).into())
         };
 
-        if let Err(err) = member.guild_id.edit_member(&ctx.http, &member, edit).await {
+        if let Err(err) = member.guild_id.edit_member(&ctx, &member, edit).await {
             warn!("Got error while timinng out; err = {err:?}");
 
             if query!("DELETE FROM actions WHERE id = $1", db_id)
@@ -191,7 +191,7 @@ impl Command for Mute {
         }
 
         if inferred && let Some(reply) = msg.referenced_message.clone() {
-            let _ = reply.delete(&ctx.http).await;
+            let _ = reply.delete(&ctx).await;
         }
 
         message_and_dm(
@@ -216,7 +216,7 @@ impl Command for Mute {
         .await;
 
         guild_log(
-            &ctx.http,
+            &ctx,
             LogType::MemberMute,
             msg.guild_id.unwrap(),
             CreateMessage::new()

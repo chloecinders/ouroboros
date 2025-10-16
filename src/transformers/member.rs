@@ -45,7 +45,7 @@ impl Transformers {
                 let Ok(users) = msg
                     .guild_id
                     .unwrap_or_else(|| unreachable!())
-                    .members(&ctx.http, None, None)
+                    .members(&ctx, None, None)
                     .await
                 else {
                     return Err(TransformerError::CommandError(CommandError {
@@ -73,7 +73,7 @@ impl Transformers {
                 if let Ok(member) = msg
                     .guild_id
                     .unwrap_or_else(|| unreachable!())
-                    .member(&ctx.http, id)
+                    .member(&ctx, id)
                     .await
                 {
                     member.clone()

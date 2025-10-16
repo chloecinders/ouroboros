@@ -30,7 +30,7 @@ impl Transformers {
                 }));
             };
 
-            let Ok(channels) = guild.channels(&ctx.http).await else {
+            let Ok(channels) = guild.channels(&ctx).await else {
                 return Err(TransformerError::CommandError(CommandError {
                     title: String::from("Couldn't get guild channels"),
                     hint: Some(String::from("please try again later.")),

@@ -122,12 +122,12 @@ impl Command for Reason {
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-        if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
+        if let Err(err) = msg.channel_id.send_message(&ctx, reply).await {
             warn!("Could not send message; err = {err:?}");
         }
 
         guild_log(
-            &ctx.http,
+            &ctx,
             LogType::ActionUpdate,
             msg.guild_id.unwrap(),
             CreateMessage::new().add_embed(

@@ -142,7 +142,7 @@ impl Command for Duration {
                 let member_result = msg
                     .guild_id
                     .unwrap()
-                    .member(&ctx.http, data.user_id as u64)
+                    .member(&ctx, data.user_id as u64)
                     .await;
 
                 if member_result.is_err() {
@@ -156,10 +156,10 @@ impl Command for Duration {
                 }
 
                 if let Ok(mut member) = member_result
-                    && (member.enable_communication(&ctx.http).await.is_err()
+                    && (member.enable_communication(&ctx).await.is_err()
                         || member
                             .guild_id
-                            .edit_member(&ctx.http, &member, edit)
+                            .edit_member(&ctx, &member, edit)
                             .await
                             .is_err())
                 {
@@ -214,12 +214,12 @@ impl Command for Duration {
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-        if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
+        if let Err(err) = msg.channel_id.send_message(&ctx, reply).await {
             warn!("Could not send message; err = {err:?}");
         }
 
         guild_log(
-            &ctx.http,
+            &ctx,
             LogType::ActionUpdate,
             msg.guild_id.unwrap(),
             CreateMessage::new().add_embed(

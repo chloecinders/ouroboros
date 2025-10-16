@@ -98,7 +98,7 @@ impl Command for Ping {
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-        if let Err(e) = msg.channel_id.send_message(&ctx.http, message).await {
+        if let Err(e) = msg.channel_id.send_message(&ctx, message).await {
             warn!("Could not send message; err = {e:?}");
             return Err(CommandError {
                 title: String::from("Could not send message"),

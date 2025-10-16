@@ -163,10 +163,10 @@ impl Command for Unban {
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-        let reply_msg = msg.channel_id.send_message(&ctx.http, reply).await;
+        let reply_msg = msg.channel_id.send_message(&ctx, reply).await;
 
         guild_log(
-            &ctx.http,
+            &ctx,
             LogType::MemberUnban,
             msg.guild_id.unwrap(),
             CreateMessage::new()
@@ -192,16 +192,14 @@ impl Command for Unban {
         };
 
         if inferred && let Some(reply) = msg.referenced_message.clone() {
-            let _ = reply.delete(&ctx.http).await;
+            let _ = reply.delete(&ctx).await;
         }
 
         if inferred {
-            let http = ctx.http.clone();
-
             tokio::spawn(async move {
                 sleep(Duration::from_secs(5)).await;
-                let _ = msg.delete(&http).await;
-                let _ = reply_msg.delete(&http).await;
+                let _ = msg.delete(&ctx).await;
+                let _ = reply_msg.delete(&ctx).await;
             });
         }
 

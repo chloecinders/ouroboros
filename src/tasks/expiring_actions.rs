@@ -1,12 +1,10 @@
-use std::sync::Arc;
-
-use serenity::all::{CacheHttp, EditMember, Guild, GuildId, Http};
+use serenity::all::{CacheHttp, EditMember, Guild, GuildId};
 use sqlx::query;
 use tracing::{error, info, warn};
 
 use crate::SQL;
 
-pub async fn check_expiring_bans(http: &Arc<Http>) {
+pub async fn check_expiring_bans(ctx: impl CacheHttp) {
     info!("check_expiring_bans asynchronous task running...");
 
     let data = match query!(
@@ -24,7 +22,7 @@ pub async fn check_expiring_bans(http: &Arc<Http>) {
     let mut updated: Vec<String> = vec![];
 
     for entry in data {
-        let Ok(guild) = Guild::get(http, entry.guild_id as u64).await else {
+        let Ok(guild) = Guild::get(&ctx, entry.guild_id as u64).await else {
             warn!(
                 "task check_expiring_bans couldnt fetch guild; Id = {:?}",
                 entry.guild_id
@@ -32,7 +30,7 @@ pub async fn check_expiring_bans(http: &Arc<Http>) {
             continue;
         };
 
-        if guild.unban(http, entry.user_id as u64).await.is_err() {
+        if guild.unban(ctx.http(), entry.user_id as u64).await.is_err() {
             warn!(
                 "task check_expiring_bans couldnt unban user; Guild = {:?} Id = {:?}",
                 entry.guild_id, entry.user_id

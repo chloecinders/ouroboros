@@ -122,7 +122,7 @@ impl Log {
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-        if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
+        if let Err(err) = msg.channel_id.send_message(&ctx, reply).await {
             warn!("Could not send message; err = {err:?}");
         }
 
@@ -291,7 +291,7 @@ impl Command for Log {
                 .reference_message(&msg)
                 .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-            if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
+            if let Err(err) = msg.channel_id.send_message(&ctx, reply).await {
                 warn!("Could not send message; err = {err:?}");
             }
 
@@ -356,7 +356,7 @@ impl Command for Log {
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-        let mut new_msg = match msg.channel_id.send_message(&ctx.http, reply.clone()).await {
+        let mut new_msg = match msg.channel_id.send_message(&ctx, reply.clone()).await {
             Ok(m) => m,
             Err(err) => {
                 warn!("Could not send message; err = {err:?}");
@@ -417,7 +417,7 @@ impl Command for Log {
                     log_buttons = log_buttons.into_iter().map(|b| b.disabled(true)).collect();
                     let _ = new_msg
                         .edit(
-                            &ctx.http,
+                            &ctx,
                             EditMessage::new().components(vec![
                                 CreateActionRow::Buttons(page_buttons),
                                 CreateActionRow::Buttons(log_buttons),
@@ -431,7 +431,7 @@ impl Command for Log {
             if interaction.user.id.get() != msg.author.id.get() {
                 if let Err(e) = interaction
                     .create_response(
-                        &ctx.http,
+                        &ctx,
                         CreateInteractionResponse::Message(
                             CreateInteractionResponseMessage::new()
                                 .content("You are not the author of the original message!")
@@ -457,7 +457,7 @@ impl Command for Log {
                     let response = self.create_chunked_response(chunks.first().unwrap());
                     if interaction
                         .create_response(
-                            &ctx.http,
+                            &ctx,
                             CreateInteractionResponse::UpdateMessage(
                                 CreateInteractionResponseMessage::default()
                                     .add_embed(
@@ -489,7 +489,7 @@ impl Command for Log {
                     };
                     if interaction
                         .create_response(
-                            &ctx.http,
+                            &ctx,
                             CreateInteractionResponse::UpdateMessage(
                                 CreateInteractionResponseMessage::default()
                                     .add_embed(
@@ -517,7 +517,7 @@ impl Command for Log {
                     let none_next = chunks.get(page + 1).is_none();
                     if interaction
                         .create_response(
-                            &ctx.http,
+                            &ctx,
                             CreateInteractionResponse::UpdateMessage(
                                 CreateInteractionResponseMessage::default()
                                     .add_embed(
@@ -544,7 +544,7 @@ impl Command for Log {
                     let response = self.create_chunked_response(chunks.last().unwrap());
                     if interaction
                         .create_response(
-                            &ctx.http,
+                            &ctx,
                             CreateInteractionResponse::UpdateMessage(
                                 CreateInteractionResponseMessage::default()
                                     .add_embed(
@@ -582,7 +582,7 @@ impl Command for Log {
 
                     if interaction
                         .create_response(
-                            &ctx.http,
+                            &ctx,
                             CreateInteractionResponse::Message(
                                 CreateInteractionResponseMessage::new().add_embed(
                                     CreateEmbed::new().description(response).color(BRAND_BLUE),

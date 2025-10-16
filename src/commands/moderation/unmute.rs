@@ -124,7 +124,7 @@ impl Command for Unmute {
             });
         }
 
-        if let Err(err) = member.enable_communication(&ctx.http).await {
+        if let Err(err) = member.enable_communication(&ctx).await {
             warn!("Got error while unmuting; err = {err:?}");
 
             if query!("DELETE FROM actions WHERE id = $1", db_id)
@@ -158,10 +158,10 @@ impl Command for Unmute {
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-        let reply_msg = msg.channel_id.send_message(&ctx.http, reply).await;
+        let reply_msg = msg.channel_id.send_message(&ctx, reply).await;
 
         guild_log(
-            &ctx.http,
+            &ctx,
             LogType::MemberUnmute,
             msg.guild_id.unwrap(),
             CreateMessage::new()
@@ -187,16 +187,14 @@ impl Command for Unmute {
         };
 
         if inferred && let Some(reply) = msg.referenced_message.clone() {
-            let _ = reply.delete(&ctx.http).await;
+            let _ = reply.delete(&ctx).await;
         }
 
         if inferred {
-            let http = ctx.http.clone();
-
             tokio::spawn(async move {
                 sleep(Duration::from_secs(5)).await;
-                let _ = msg.delete(&http).await;
-                let _ = reply_msg.delete(&http).await;
+                let _ = msg.delete(&ctx).await;
+                let _ = reply_msg.delete(&ctx).await;
             });
         }
 

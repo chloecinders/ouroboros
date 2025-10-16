@@ -177,7 +177,7 @@ impl Command for Config {
                 .reference_message(&msg)
                 .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-            if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
+            if let Err(err) = msg.channel_id.send_message(&ctx, reply).await {
                 warn!("Could not send message; err = {err:?}");
             }
 
@@ -211,7 +211,7 @@ impl Command for Config {
                 .reference_message(&msg)
                 .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-            if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
+            if let Err(err) = msg.channel_id.send_message(&ctx, reply).await {
                 warn!("Could not send message; err = {err:?}");
             }
 
@@ -320,7 +320,7 @@ impl Command for Config {
                 .reference_message(&msg)
                 .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-            if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
+            if let Err(err) = msg.channel_id.send_message(&ctx, reply).await {
                 warn!("Could not send message; err = {err:?}");
             }
 

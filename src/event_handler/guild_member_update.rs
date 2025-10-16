@@ -41,7 +41,7 @@ pub async fn guild_member_update(
     let audit_log = event
         .guild_id
         .audit_logs(
-            &ctx.http,
+            &ctx,
             Some(Action::Member(MemberAction::Update)),
             None,
             None,
@@ -189,7 +189,7 @@ pub async fn guild_member_update(
         msg = msg.add_file(CreateAttachment::bytes(avatar.1.unwrap(), "avatar.webp"));
     }
 
-    guild_log(&ctx.http, LogType::MemberUpdate, event.guild_id, msg).await;
+    guild_log(&ctx, LogType::MemberUpdate, event.guild_id, msg).await;
 }
 
 async fn get_member_avatar_image(client: &Client, member: Member) -> Option<image::DynamicImage> {

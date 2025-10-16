@@ -180,11 +180,11 @@ impl Handler {
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-        if let Err(e) = msg.channel_id.send_message(&ctx.http, reply).await {
+        if let Err(e) = msg.channel_id.send_message(&ctx, reply).await {
             let _ = msg
                 .channel_id
                 .send_message(
-                    &ctx.http,
+                    &ctx,
                     CreateMessage::new().content(format!(
                         "{error_message}\n-# Bot does not have embed perms in this channel."
                     )),

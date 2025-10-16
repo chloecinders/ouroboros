@@ -1,6 +1,6 @@
 use reqwest::{Client, Method, Request, Url, header::HeaderValue};
 use serenity::{
-    all::{CacheHttp, Context, Message},
+    all::{Context, Message},
     async_trait,
 };
 use tracing::warn;
@@ -64,7 +64,7 @@ impl Command for Update {
             warn!("Update command disabled! Please set a repository in the config!");
             let _ = msg
                 .reply(
-                    &ctx.http(),
+                    &ctx,
                     "Update command disabled! Please set a repository in the config",
                 )
                 .await;
@@ -100,7 +100,7 @@ impl Command for Update {
                     "Error getting actions, make sure to set a Github token with enough permissions if your repository is private; err = {e:?}"
                 );
                 warn!(err);
-                let _ = msg.reply(&ctx.http(), err).await;
+                let _ = msg.reply(&ctx, err).await;
                 return Ok(());
             }
         };
@@ -110,7 +110,7 @@ impl Command for Update {
                 "Error getting actions, make sure to set a Github token with enough permissions if your repository is private; res = {res:?}"
             );
             warn!(err);
-            let _ = msg.reply(&ctx.http(), err).await;
+            let _ = msg.reply(&ctx, err).await;
             return Ok(());
         }
 
@@ -119,7 +119,7 @@ impl Command for Update {
             Err(err) => {
                 let err = format!("Error deserializing actions response; err = {err:?}");
                 warn!(err);
-                let _ = msg.reply(&ctx.http(), err).await;
+                let _ = msg.reply(&ctx, err).await;
                 return Ok(());
             }
         };
@@ -131,7 +131,7 @@ impl Command for Update {
                     run.id
                 );
                 warn!(err);
-                let _ = msg.reply(&ctx.http(), err).await;
+                let _ = msg.reply(&ctx, err).await;
                 return Ok(());
             }
 
@@ -158,7 +158,7 @@ impl Command for Update {
                 Err(e) => {
                     let err = format!("Error fetching artifacts; err = {e:?}");
                     warn!(err);
-                    let _ = msg.reply(&ctx.http(), err).await;
+                    let _ = msg.reply(&ctx, err).await;
                     return Ok(());
                 }
             };
@@ -166,7 +166,7 @@ impl Command for Update {
             if res.status() != 200 {
                 let err = format!("Error fetching artifacts; res = {res:?}");
                 warn!(err);
-                let _ = msg.reply(&ctx.http(), err).await;
+                let _ = msg.reply(&ctx, err).await;
                 return Ok(());
             }
 
@@ -175,7 +175,7 @@ impl Command for Update {
                 Err(err) => {
                     let err = format!("Error deserializing artifacts response; err = {err:?}");
                     warn!(err);
-                    let _ = msg.reply(&ctx.http(), err).await;
+                    let _ = msg.reply(&ctx, err).await;
                     return Ok(());
                 }
             };
@@ -198,7 +198,7 @@ impl Command for Update {
                 let err =
                     "No artifact found. Check if the latest action produced the correct artifacts";
                 warn!(err);
-                let _ = msg.reply(&ctx.http(), err).await;
+                let _ = msg.reply(&ctx, err).await;
                 return Ok(());
             };
 
@@ -227,7 +227,7 @@ impl Command for Update {
                 Err(e) => {
                     let err = format!("Error fetching artifact file; err = {e:?}");
                     warn!(err);
-                    let _ = msg.reply(&ctx.http(), err).await;
+                    let _ = msg.reply(&ctx, err).await;
                     return Ok(());
                 }
             };
@@ -235,14 +235,14 @@ impl Command for Update {
             if res.status() != 200 {
                 let err = format!("Error fetching artifact file; res = {res:?}");
                 warn!(err);
-                let _ = msg.reply(&ctx.http(), err).await;
+                let _ = msg.reply(&ctx, err).await;
                 return Ok(());
             }
 
             let Ok(bytes) = res.bytes().await else {
                 let err = String::from("Error fetching artifact file;");
                 warn!(err);
-                let _ = msg.reply(&ctx.http(), err).await;
+                let _ = msg.reply(&ctx, err).await;
                 return Ok(());
             };
 
@@ -279,14 +279,14 @@ impl Command for Update {
                     Err(err) => {
                         let err = format!("Failed unzipping artifact zip; err = {err:?}");
                         warn!(err);
-                        let _ = msg.reply(&ctx.http(), err).await;
+                        let _ = msg.reply(&ctx, err).await;
                         return Ok(());
                     }
                 },
                 Err(err) => {
                     let err = format!("Failed unzipping artifact zip; err = {err:?}");
                     warn!(err);
-                    let _ = msg.reply(&ctx.http(), err).await;
+                    let _ = msg.reply(&ctx, err).await;
                     return Ok(());
                 }
             };
@@ -294,7 +294,7 @@ impl Command for Update {
             if let Err(err) = tokio::fs::write(filename.clone(), &extracted_bytes).await {
                 let err = format!("Failed writing artifact file; err = {err:?}");
                 warn!(err);
-                let _ = msg.reply(&ctx.http(), err).await;
+                let _ = msg.reply(&ctx, err).await;
                 return Ok(());
             }
 
@@ -342,7 +342,7 @@ impl Command for Update {
                         Err(e) => {
                             let err = format!("Could not run downloaded version; err = {e:?}");
                             warn!(err);
-                            let _ = msg.reply(&ctx.http(), err).await;
+                            let _ = msg.reply(&ctx, err).await;
                             return Ok(());
                         }
                     };

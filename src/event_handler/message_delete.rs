@@ -31,14 +31,14 @@ pub async fn message_delete(
         };
     }
 
-    let guild_id = match event.channel_id.to_channel(&ctx.http).await {
+    let guild_id = match event.channel_id.to_channel(&ctx).await {
         Ok(Channel::Guild(guild_channel)) => guild_channel.guild_id,
         _ => return,
     };
 
     let audit_log = guild_id
         .audit_logs(
-            &ctx.http,
+            &ctx,
             Some(Action::Message(MessageAction::Delete)),
             None,
             None,
@@ -122,7 +122,7 @@ pub async fn message_delete(
     }
 
     guild_log(
-        &ctx.http,
+        &ctx,
         LogType::MessageDelete,
         guild_id,
         CreateMessage::new()

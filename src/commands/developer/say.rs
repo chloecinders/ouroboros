@@ -59,14 +59,14 @@ impl Command for Say {
         #[transformers::consume] say: String,
     ) -> Result<(), CommandError> {
         if is_developer(&msg.author) {
-            let _ = msg.delete(&ctx.http).await;
+            let _ = msg.delete(&ctx).await;
             let mut response = CreateMessage::new().content(say);
 
             if let Some(reply) = msg.referenced_message {
                 response = response.reference_message(&*reply);
             }
 
-            let _ = msg.channel_id.send_message(&ctx.http, response).await;
+            let _ = msg.channel_id.send_message(&ctx, response).await;
         }
 
         Ok(())

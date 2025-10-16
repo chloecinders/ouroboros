@@ -72,7 +72,7 @@ impl Command for Cache {
         if msg
             .guild_id
             .unwrap()
-            .member(&ctx.http, user.id)
+            .member(&ctx, user.id)
             .await
             .is_ok()
         {
@@ -86,7 +86,7 @@ impl Command for Cache {
         if let Err(err) = msg
             .guild_id
             .unwrap()
-            .ban_with_reason(&ctx.http, &user, 0, "Forced into client cache")
+            .ban_with_reason(&ctx, &user, 0, "Forced into client cache")
             .await
         {
             warn!("Got error while banning; err = {err:?}");
@@ -100,7 +100,7 @@ impl Command for Cache {
             });
         }
 
-        if let Err(err) = msg.guild_id.unwrap().unban(&ctx.http, &user).await {
+        if let Err(err) = msg.guild_id.unwrap().unban(&ctx, &user).await {
             warn!("Got error while unbanning; err = {err:?}");
 
             return Err(CommandError {
@@ -125,10 +125,10 @@ impl Command for Cache {
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-        let reply_msg = msg.channel_id.send_message(&ctx.http, reply).await;
+        let reply_msg = msg.channel_id.send_message(&ctx, reply).await;
 
         guild_log(
-            &ctx.http,
+            &ctx,
             LogType::MemberCache,
             msg.guild_id.unwrap(),
             CreateMessage::new().add_embed(
@@ -154,16 +154,14 @@ impl Command for Cache {
         };
 
         if inferred && let Some(reply) = msg.referenced_message.clone() {
-            let _ = reply.delete(&ctx.http).await;
+            let _ = reply.delete(&ctx).await;
         }
 
         if inferred {
-            let http = ctx.http.clone();
-
             tokio::spawn(async move {
                 sleep(Duration::from_secs(5)).await;
-                let _ = msg.delete(&http).await;
-                let _ = reply_msg.delete(&http).await;
+                let _ = msg.delete(&ctx).await;
+                let _ = reply_msg.delete(&ctx).await;
             });
         }
 

@@ -203,7 +203,7 @@ impl Command for Ban {
         if let Err(err) = msg
             .guild_id
             .unwrap()
-            .ban_with_reason(&ctx.http, &user, days, &reason)
+            .ban_with_reason(&ctx, &user, days, &reason)
             .await
         {
             warn!("Got error while banning; err = {err:?}");
@@ -228,7 +228,7 @@ impl Command for Ban {
         }
 
         if inferred && let Some(reply) = msg.referenced_message.clone() {
-            let _ = reply.delete(&ctx.http).await;
+            let _ = reply.delete(&ctx).await;
         }
 
         let mut clear_msg = String::new();
@@ -258,7 +258,7 @@ impl Command for Ban {
         ).await;
 
         guild_log(
-            &ctx.http,
+            &ctx,
             LogType::MemberBan,
             msg.guild_id.unwrap(),
             CreateMessage::new()

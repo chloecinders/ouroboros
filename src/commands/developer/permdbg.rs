@@ -53,10 +53,9 @@ impl Command for PermDbg {
     async fn run(&self, ctx: Context, msg: Message) -> Result<(), CommandError> {
         if is_developer(&msg.author) {
             let channel_id = msg.channel_id;
-            let http = ctx.http.clone();
             let cache = ctx.cache.clone();
 
-            let channel = channel_id.to_channel(&http).await.unwrap().guild().unwrap();
+            let channel = channel_id.to_channel(&ctx).await.unwrap().guild().unwrap();
             let guild = {
                 let cache_ref = cache.clone();
                 channel.guild(&cache_ref).unwrap().clone()
@@ -64,7 +63,7 @@ impl Command for PermDbg {
 
             let current_user_id = cache.current_user().id;
             let member = guild
-                .member(&http, current_user_id)
+                .member(&ctx, current_user_id)
                 .await
                 .unwrap()
                 .into_owned();
@@ -102,7 +101,7 @@ impl Command for PermDbg {
                 .reference_message(&msg)
                 .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-            if let Err(e) = msg.channel_id.send_message(&ctx.http, reply).await {
+            if let Err(e) = msg.channel_id.send_message(&ctx, reply).await {
                 warn!("{e:?}");
             }
         }

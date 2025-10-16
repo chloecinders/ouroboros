@@ -40,7 +40,7 @@ pub async fn guild_member_removal(
     }
 
     let audit_log = guild_id
-        .audit_logs(&ctx.http, None, None, None, Some(5))
+        .audit_logs(&ctx, None, None, None, Some(5))
         .await
         .ok();
 
@@ -95,7 +95,7 @@ pub async fn guild_member_removal(
             }
 
             guild_log(
-                &ctx.http,
+                &ctx,
                 LogType::MemberKick,
                 guild_id,
                 CreateMessage::new()
@@ -118,7 +118,7 @@ pub async fn guild_member_removal(
             }
 
             guild_log(
-                &ctx.http,
+                &ctx,
                 LogType::MemberBan,
                 guild_id,
                 CreateMessage::new()

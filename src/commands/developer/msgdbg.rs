@@ -71,7 +71,7 @@ impl Command for MsgDbg {
 
             dbg!(reply);
 
-            let _ = msg.channel_id.send_message(&ctx.http, r).await;
+            let _ = msg.channel_id.send_message(&ctx, r).await;
         }
 
         Ok(())

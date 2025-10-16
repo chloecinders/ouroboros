@@ -97,7 +97,7 @@ impl Command for ExtractId {
                 .reference_message(&msg)
                 .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-            if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
+            if let Err(err) = msg.channel_id.send_message(&ctx, reply).await {
                 warn!("Could not send message; err = {err:?}");
             }
         } else {
@@ -109,14 +109,14 @@ impl Command for ExtractId {
                 .reference_message(&msg)
                 .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-            if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
+            if let Err(err) = msg.channel_id.send_message(&ctx, reply).await {
                 warn!("Could not send message; err = {err:?}");
             }
 
             for id in iter.take(4) {
                 let reply = CreateMessage::new().content(id);
 
-                if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
+                if let Err(err) = msg.channel_id.send_message(&ctx, reply).await {
                     warn!("Could not send message; err = {err:?}");
                 }
             }

@@ -28,7 +28,7 @@ impl Transformers {
                 let Ok(member) = msg
                     .guild_id
                     .unwrap()
-                    .member(&ctx.http, reply.author.clone())
+                    .member(&ctx, reply.author.clone())
                     .await
                 else {
                     return Err(TransformerError::CommandError(CommandError {

@@ -46,7 +46,7 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-        if let Err(err) = msg.channel_id.send_message(&ctx.http, reply).await {
+        if let Err(err) = msg.channel_id.send_message(&ctx, reply).await {
             warn!("Could not send message; err = {err:?}");
         }
 
@@ -122,7 +122,7 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
         }
 
         if !permissions.required.is_empty() || !permissions.one_of.is_empty() {
-            let Ok(member) = msg.member(&ctx.http).await else {
+            let Ok(member) = msg.member(&ctx).await else {
                 handler.send_error(ctx, msg, contents, CommandError {
                     title: String::from("You do not have permissions to execute this command."),
                     hint: Some(String::from("consider begging for more permissions at your local Discord administrator!")),

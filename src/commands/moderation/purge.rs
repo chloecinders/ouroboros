@@ -103,7 +103,7 @@ impl Command for Purge {
 
         let mut messages = match msg
             .channel_id
-            .messages(&ctx.http, GetMessages::new().limit(100))
+            .messages(&ctx, GetMessages::new().limit(100))
             .await
         {
             Ok(m) => m,
@@ -173,7 +173,7 @@ impl Command for Purge {
 
         if msg
             .channel_id
-            .delete_messages(&ctx.http, filtered)
+            .delete_messages(&ctx, filtered)
             .await
             .is_err()
         {
@@ -187,7 +187,7 @@ impl Command for Purge {
         };
 
         guild_log(
-            &ctx.http,
+            &ctx,
             LogType::MessageDelete,
             msg.guild_id.unwrap(),
             CreateMessage::new()
@@ -205,7 +205,7 @@ impl Command for Purge {
                 )
         ).await;
 
-        let _ = msg.delete(&ctx.http).await;
+        let _ = msg.delete(&ctx).await;
 
         Ok(())
     }

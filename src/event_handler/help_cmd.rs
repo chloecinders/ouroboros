@@ -137,7 +137,7 @@ impl Handler {
                 .reference_message(&msg)
                 .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-            if let Err(e) = msg.channel_id.send_message(&ctx.http, reply).await {
+            if let Err(e) = msg.channel_id.send_message(&ctx, reply).await {
                 warn!("Could not send message; err = {e:?}");
                 return Err(CommandError {
                     title: String::from("Could not send message"),
@@ -237,7 +237,7 @@ impl Handler {
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-        let mut new_msg = match msg.channel_id.send_message(&ctx.http, reply).await {
+        let mut new_msg = match msg.channel_id.send_message(&ctx, reply).await {
             Ok(m) => m,
             Err(e) => {
                 warn!("Could not send message; err = {e:?}");
@@ -261,7 +261,7 @@ impl Handler {
                     page_buttons = page_buttons.into_iter().map(|b| b.disabled(true)).collect();
                     let _ = new_msg
                         .edit(
-                            &ctx.http,
+                            &ctx,
                             EditMessage::new()
                                 .components(vec![CreateActionRow::Buttons(page_buttons)]),
                         )
@@ -273,7 +273,7 @@ impl Handler {
             if interaction.user.id != msg.author.id {
                 if let Err(e) = interaction
                     .create_response(
-                        &ctx.http,
+                        &ctx,
                         CreateInteractionResponse::Message(
                             CreateInteractionResponseMessage::new()
                                 .content("You are not the author of the original message!")
@@ -299,7 +299,7 @@ impl Handler {
                     let response = get_page_body(current_page);
                     if interaction
                         .create_response(
-                            &ctx.http,
+                            &ctx,
                             CreateInteractionResponse::UpdateMessage(
                                 CreateInteractionResponseMessage::default()
                                     .add_embed(
@@ -333,7 +333,7 @@ impl Handler {
                     };
                     if interaction
                         .create_response(
-                            &ctx.http,
+                            &ctx,
                             CreateInteractionResponse::UpdateMessage(
                                 CreateInteractionResponseMessage::default()
                                     .add_embed(
@@ -363,7 +363,7 @@ impl Handler {
                     let none_next = command_pages.get(current_page + 1).is_none();
                     if interaction
                         .create_response(
-                            &ctx.http,
+                            &ctx,
                             CreateInteractionResponse::UpdateMessage(
                                 CreateInteractionResponseMessage::default()
                                     .add_embed(
@@ -392,7 +392,7 @@ impl Handler {
                     let response = get_page_body(current_page);
                     if interaction
                         .create_response(
-                            &ctx.http,
+                            &ctx,
                             CreateInteractionResponse::UpdateMessage(
                                 CreateInteractionResponseMessage::default()
                                     .add_embed(

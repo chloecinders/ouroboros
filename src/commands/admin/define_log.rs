@@ -154,7 +154,7 @@ impl Command for DefineLog {
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-        let mut new_msg = match msg.channel_id.send_message(&ctx.http, reply).await {
+        let mut new_msg = match msg.channel_id.send_message(&ctx, reply).await {
             Ok(m) => m,
             Err(err) => {
                 warn!("Could not send message; err = {err:?}");
@@ -172,7 +172,7 @@ impl Command for DefineLog {
                 None => {
                     let _ = new_msg
                         .edit(
-                            &ctx.http,
+                            &ctx,
                             EditMessage::new().components(vec![
                                 CreateActionRow::SelectMenu(
                                     CreateSelectMenu::new(
@@ -202,7 +202,7 @@ impl Command for DefineLog {
             if interaction.user.id != msg.author.id {
                 if let Err(e) = interaction
                     .create_response(
-                        &ctx.http,
+                        &ctx,
                         CreateInteractionResponse::Message(
                             CreateInteractionResponseMessage::new()
                                 .content("You are not the author of the original message!")
@@ -284,7 +284,7 @@ impl Command for DefineLog {
             // Not handling any reponse errors from this point since we can't really do anything with the errors anyway
             let _ = new_msg
                 .edit(
-                    &ctx.http,
+                    &ctx,
                     EditMessage::new().components(vec![
                         CreateActionRow::SelectMenu(
                             CreateSelectMenu::new(
@@ -332,7 +332,7 @@ impl Command for DefineLog {
 
             let _ = interaction
                 .create_response(
-                    &ctx.http,
+                    &ctx,
                     CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new()
                             .content("Successfully updated the log channel ids!")
@@ -341,8 +341,8 @@ impl Command for DefineLog {
                 )
                 .await;
 
-            let _ = msg.delete(&ctx.http).await;
-            let _ = new_msg.delete(&ctx.http).await;
+            let _ = msg.delete(&ctx).await;
+            let _ = new_msg.delete(&ctx).await;
 
             return Ok(());
         }
