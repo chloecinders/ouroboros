@@ -62,21 +62,46 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
         let permissions = c.get_permissions();
 
         let channel_id = msg.channel_id;
-        let guild_id = msg.guild_id.unwrap();
+        let guild_id = match msg.guild_id {
+            Some(id) => id,
+            None => {
+                warn!("Message has no guild_id");
+                return;
+            }
+        };
+
         let http = ctx.http.clone();
         let cache = ctx.cache.clone();
         let current_user_id = cache.current_user().id;
 
-        let channel = channel_id.to_channel(&http).await.unwrap().guild().unwrap();
-        let guild = guild_id.to_guild_cached(&cache).unwrap().clone();
-        let member = match guild
-            .member(&http, current_user_id)
-            .await {
-                Ok(m) => m,
-                Err(err) => {
-                    warn!("Couldnt get current bot member object; err = {err:?}");
+        let channel = match channel_id.to_channel(&http).await {
+            Ok(c) => match c.guild() {
+                Some(g) => g,
+                None => {
+                    warn!("Channel is not a guild channel");
                     return;
                 }
+            },
+            Err(err) => {
+                warn!("Failed to get channel; err = {err:?}");
+                return;
+            }
+        };
+
+        let guild = match guild_id.to_guild_cached(&cache) {
+            Some(g) => g.clone(),
+            None => {
+                warn!("Failed to get guild from cache");
+                return;
+            }
+        };
+
+        let member = match guild.member(&http, current_user_id).await {
+            Ok(m) => m,
+            Err(err) => {
+                warn!("Couldnt get current bot member object; err = {err:?}");
+                return;
+            }
         };
 
         let member = member.into_owned();
