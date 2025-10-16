@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use serenity::all::{
     Context, Guild, GuildChannel, Member, PermissionOverwriteType, Permissions, User,
 };
+use tracing::warn;
 
 use crate::BOT_CONFIG;
 
@@ -28,17 +29,26 @@ pub fn check_guild_permission(ctx: &Context, member: &Member, permission: Permis
     false
 }
 
-pub fn check_channel_permission(
+pub async fn check_channel_permission(
     ctx: &Context,
     channel: GuildChannel,
     member: &Member,
     permission: Permissions,
 ) -> bool {
-    let Some(guild_cached) = member.guild_id.to_guild_cached(&ctx.cache) else {
-        return false;
+    let maybe_guild = member.guild_id.to_guild_cached(&ctx.cache).map(|g| g.to_owned());
+    let guild = if let Some(g) = maybe_guild {
+        g.into()
+    } else {
+        match ctx.http.get_guild(member.guild_id).await {
+            Ok(g) => g,
+            Err(err) => {
+                warn!("Failed to get current guild; err = {err:?}");
+                return false;
+            }
+        }
     };
 
-    if guild_cached.owner_id.get() == member.user.id.get() {
+    if guild.owner_id.get() == member.user.id.get() {
         return true;
     }
 

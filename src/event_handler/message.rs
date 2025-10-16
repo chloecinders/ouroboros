@@ -62,13 +62,7 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
         let permissions = c.get_permissions();
 
         let channel_id = msg.channel_id;
-        let guild_id = match msg.guild_id {
-            Some(id) => id,
-            None => {
-                warn!("Message has no guild_id");
-                return;
-            }
-        };
+        let guild_id = msg.guild_id.unwrap();
 
         let http = ctx.http.clone();
         let cache = ctx.cache.clone();
@@ -88,11 +82,16 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
             }
         };
 
-        let guild = match guild_id.to_guild_cached(&cache) {
-            Some(g) => g.clone(),
-            None => {
-                warn!("Failed to get guild from cache");
-                return;
+        let maybe_guild = guild_id.to_guild_cached(&cache).map(|g| g.to_owned());
+        let guild = if let Some(g) = maybe_guild {
+            g.into()
+        } else {
+            match http.get_guild(guild_id).await {
+                Ok(g) => g,
+                Err(err) => {
+                    warn!("Failed to get current guild; err = {err:?}");
+                    return;
+                }
             }
         };
 
@@ -104,10 +103,8 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
             }
         };
 
-        let member = member.into_owned();
-
         for perm in permissions.bot.iter() {
-            if !check_channel_permission(&ctx, channel.clone(), &member, *perm) {
+            if !check_channel_permission(&ctx, channel.clone(), &member, *perm).await {
                 handler
                     .send_error(
                         ctx,
