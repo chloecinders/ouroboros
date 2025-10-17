@@ -68,7 +68,7 @@ impl Command for PermDbg {
                 .unwrap()
                 .into_owned();
 
-            let permissions = permissions_for_channel(&ctx, channel, &member);
+            let permissions = permissions_for_channel(&ctx, &channel, &member);
 
             let mut perms = permissions
                 .iter()

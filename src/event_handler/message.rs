@@ -63,39 +63,11 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
 
         let channel_id = msg.channel_id;
         let guild_id = msg.guild_id.unwrap();
+        let current_user_id = ctx.cache.current_user().id;
 
-        let http = ctx.http.clone();
-        let cache = ctx.cache.clone();
-        let current_user_id = cache.current_user().id;
+        let channel = channel_id.to_channel(&ctx).await.unwrap().guild().unwrap();
 
-        let channel = match channel_id.to_channel(&http).await {
-            Ok(c) => match c.guild() {
-                Some(g) => g,
-                None => {
-                    warn!("Channel is not a guild channel");
-                    return;
-                }
-            },
-            Err(err) => {
-                warn!("Failed to get channel; err = {err:?}");
-                return;
-            }
-        };
-
-        let maybe_guild = guild_id.to_guild_cached(&cache).map(|g| g.to_owned());
-        let guild = if let Some(g) = maybe_guild {
-            g.into()
-        } else {
-            match http.get_guild(guild_id).await {
-                Ok(g) => g,
-                Err(err) => {
-                    warn!("Failed to get current guild; err = {err:?}");
-                    return;
-                }
-            }
-        };
-
-        let member = match guild.member(&http, current_user_id).await {
+        let member = match guild_id.member(&ctx, current_user_id).await {
             Ok(m) => m,
             Err(err) => {
                 warn!("Couldnt get current bot member object; err = {err:?}");
@@ -104,7 +76,7 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
         };
 
         for perm in permissions.bot.iter() {
-            if !check_channel_permission(&ctx, channel.clone(), &member, *perm).await {
+            if !check_channel_permission(&ctx, &channel, &member, *perm).await {
                 handler
                     .send_error(
                         ctx,

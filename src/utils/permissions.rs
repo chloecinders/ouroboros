@@ -31,20 +31,15 @@ pub fn check_guild_permission(ctx: &Context, member: &Member, permission: Permis
 
 pub async fn check_channel_permission(
     ctx: &Context,
-    channel: GuildChannel,
+    channel: &GuildChannel,
     member: &Member,
     permission: Permissions,
 ) -> bool {
-    let maybe_guild = member.guild_id.to_guild_cached(&ctx.cache).map(|g| g.to_owned());
-    let guild = if let Some(g) = maybe_guild {
-        g.into()
-    } else {
-        match ctx.http.get_guild(member.guild_id).await {
-            Ok(g) => g,
-            Err(err) => {
-                warn!("Failed to get current guild; err = {err:?}");
-                return false;
-            }
+    let guild = match member.guild_id.to_partial_guild(&ctx).await {
+        Ok(g) => g,
+        Err(err) => {
+            warn!("Couldn't get PartialGuild from GuildId; err = {err:?}");
+            return false;
         }
     };
 
@@ -91,7 +86,7 @@ pub fn permissions_for_guild(guild: Guild, member: &Member) -> HashMap<Permissio
 
 pub fn permissions_for_channel(
     ctx: &Context,
-    channel: GuildChannel,
+    channel: &GuildChannel,
     member: &Member,
 ) -> HashMap<Permissions, bool> {
     let Some(guild) = channel.guild(&ctx.cache) else {
@@ -110,7 +105,7 @@ pub fn permissions_for_channel(
     roles.push(everyone.1);
     roles.sort();
 
-    let overwrites = channel.permission_overwrites;
+    let overwrites = channel.permission_overwrites.clone();
 
     for role in roles {
         if let Some(overwrite) = overwrites.iter().find(|p| {
