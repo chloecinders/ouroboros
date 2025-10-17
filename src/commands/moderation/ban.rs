@@ -166,13 +166,28 @@ impl Command for Ban {
             Some((Utc::now() + duration).naive_utc())
         };
 
-        let res = query!(
+        let disable_past = query!(
             "UPDATE actions SET active = false WHERE guild_id = $1 AND user_id = $2 AND type = 'ban'",
             msg.guild_id.map(|g| g.get() as i64).unwrap_or(0),
             user.id.get() as i64,
-        ).execute(SQL.get().unwrap()).await;
+        ).execute(SQL.get().unwrap());
 
-        if let Err(err) = res {
+        let insert_ban = query!(
+            "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason, expires_at) VALUES ($1, 'ban', $2, $3, $4, $5, $6)",
+            db_id,
+            msg.guild_id.map(|g| g.get() as i64).unwrap_or(0),
+            user.id.get() as i64,
+            msg.author.id.get() as i64,
+            reason.as_str(),
+            duration
+        ).execute(SQL.get().unwrap());
+
+        let (res1, res2) = tokio::join!(
+            disable_past,
+            insert_ban
+        );
+
+        if let Err(err) = res1 {
             warn!("Got error while banning; err = {err:?}");
             return Err(CommandError {
                 title: String::from("Could not ban member"),
@@ -181,17 +196,7 @@ impl Command for Ban {
             });
         }
 
-        let res = query!(
-            "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason, expires_at) VALUES ($1, 'ban', $2, $3, $4, $5, $6)",
-            db_id,
-            msg.guild_id.map(|g| g.get() as i64).unwrap_or(0),
-            user.id.get() as i64,
-            msg.author.id.get() as i64,
-            reason.as_str(),
-            duration
-        ).execute(SQL.get().unwrap()).await;
-
-        if let Err(err) = res {
+        if let Err(err) = res2 {
             warn!("Got error while banning; err = {err:?}");
             return Err(CommandError {
                 title: String::from("Could not ban member"),
@@ -227,17 +232,22 @@ impl Command for Ban {
             });
         }
 
-        if inferred && let Some(reply) = msg.referenced_message.clone() {
-            let _ = reply.delete(&ctx).await;
-        }
-
         let mut clear_msg = String::new();
 
         if days != 0 {
             clear_msg = format!(" | Cleared {days} days of messages");
         }
 
-        message_and_dm(
+        let ctx_clone = ctx.clone();
+        let msg_clone = msg.clone();
+
+        let delete_user_msg = async move {
+            if inferred && let Some(reply) = msg_clone.referenced_message.clone() {
+                let _ = reply.delete(ctx_clone.clone()).await;
+            }
+        };
+
+        let send_dm = message_and_dm(
             &ctx,
             &msg,
             &user,
@@ -255,9 +265,9 @@ impl Command for Ban {
             ),
             inferred,
             params.contains_key("silent")
-        ).await;
+        );
 
-        guild_log(
+        let send_log = guild_log(
             &ctx,
             LogType::MemberBan,
             msg.guild_id.unwrap(),
@@ -273,7 +283,13 @@ impl Command for Ban {
                         ))
                         .color(BRAND_BLUE)
                 )
-        ).await;
+        );
+
+        tokio::join!(
+            delete_user_msg,
+            send_dm,
+            send_log
+        );
 
         Ok(())
     }

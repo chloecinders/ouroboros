@@ -69,7 +69,12 @@ impl LogType {
     }
 }
 
-pub async fn guild_log(http: impl CacheHttp, log_type: LogType, guild: GuildId, msg: CreateMessage) {
+pub async fn guild_log(
+    http: impl CacheHttp,
+    log_type: LogType,
+    guild: GuildId,
+    msg: CreateMessage,
+) {
     let Some(channel) = log_type.channel_id(guild).await else {
         return;
     };

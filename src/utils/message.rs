@@ -73,7 +73,10 @@ pub async fn extract_command_parameters<'a>(
 
     while let Some(token) = lex.next() {
         let Some((positive, arg_name)) = ({
-            token.raw.strip_prefix("-").map(|a| (false, a))
+            token
+                .raw
+                .strip_prefix("-")
+                .map(|a| (false, a))
                 .or(token.raw.strip_prefix("+").map(|a| (true, a)))
         }) else {
             continue;

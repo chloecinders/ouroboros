@@ -192,9 +192,9 @@ pub use admin::DefineLog;
 
 mod developer;
 pub use developer::MsgDbg;
-pub use developer::Update;
 pub use developer::PermDbg;
 pub use developer::Say;
+pub use developer::Update;
 
 mod misc;
 pub use misc::About;
@@ -203,18 +203,18 @@ pub use misc::Ping;
 pub use misc::Stats;
 
 mod moderation;
-pub use moderation::Warn;
-pub use moderation::Kick;
-pub use moderation::Softban;
 pub use moderation::Ban;
+pub use moderation::Duration;
+pub use moderation::Kick;
+pub use moderation::Log;
 pub use moderation::Mute;
-pub use moderation::Unban;
-pub use moderation::Unmute;
 pub use moderation::Purge;
 pub use moderation::Reason;
-pub use moderation::Duration;
-pub use moderation::Log;
+pub use moderation::Softban;
+pub use moderation::Unban;
+pub use moderation::Unmute;
+pub use moderation::Warn;
 
 mod utilities;
-pub use utilities::ExtractId;
 pub use utilities::Cache;
+pub use utilities::ExtractId;

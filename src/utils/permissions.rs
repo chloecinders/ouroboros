@@ -49,7 +49,9 @@ pub async fn check_channel_permission(
 
     let channel_perms = permissions_for_channel(ctx, channel, member);
 
-    if let Some((_, granted)) = channel_perms.iter().find(|p| p.0.administrator()) && *granted {
+    if let Some((_, granted)) = channel_perms.iter().find(|p| p.0.administrator())
+        && *granted
+    {
         return true;
     }
 

@@ -7,7 +7,9 @@ use crate::{
     commands::{CommandArgument, TransformerError},
     event_handler::{CommandError, Handler},
     lexer::{Token, lex},
-    utils::{check_channel_permission, check_guild_permission, extract_command_parameters, is_developer},
+    utils::{
+        check_channel_permission, check_guild_permission, extract_command_parameters, is_developer,
+    },
 };
 
 pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {

@@ -69,13 +69,7 @@ impl Command for Cache {
             .first()
             .map(|a| matches!(a.inferred, Some(InferType::Message)))
             .unwrap_or(false);
-        if msg
-            .guild_id
-            .unwrap()
-            .member(&ctx, user.id)
-            .await
-            .is_ok()
-        {
+        if msg.guild_id.unwrap().member(&ctx, user.id).await.is_ok() {
             return Err(CommandError {
                 title: String::from("User was found in the server"),
                 hint: None,
