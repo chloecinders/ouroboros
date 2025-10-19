@@ -1,5 +1,5 @@
 use serenity::{
-    all::{Context, CreateAllowedMentions, CreateMessage, Message},
+    all::{Context, CreateAllowedMentions, CreateMessage, Message, Permissions},
     async_trait,
 };
 use tracing::warn;
@@ -68,30 +68,26 @@ impl Command for PermDbg {
                 .unwrap()
                 .into_owned();
 
-            let permissions = permissions_for_channel(&ctx, &channel, &member);
+            let permissions = permissions_for_channel(&ctx, &channel, &member).await;
 
-            let mut perms = permissions
-                .iter()
-                .map(|p| (p.0.bits(), p))
-                .collect::<Vec<_>>();
+        let mut perms = Permissions::all()
+            .iter()
+            .map(|flag| (flag.bits(), flag, permissions.contains(flag)))
+            .collect::<Vec<_>>();
 
-            perms.sort_by_key(|k| k.0);
+        perms.sort_by_key(|k| k.0);
 
-            let strings = perms
-                .into_iter()
-                .map(|(_, p)| {
-                    format!(
-                        "`{} (1<<{}) {}`",
-                        if p.0.to_string().is_empty() {
-                            String::from("UNKNOWN")
-                        } else {
-                            p.0.to_string()
-                        },
-                        p.0.bits().trailing_zeros(),
-                        if *p.1 { "[x]" } else { "[ ]" }
-                    )
-                })
-                .collect::<Vec<_>>();
+        let strings = perms
+            .into_iter()
+            .map(|(_, flag, is_set)| {
+                format!(
+                    "`{} (1<<{}) {}`",
+                    if flag.to_string().is_empty() { String::from("UNKNOWN") } else { flag.to_string() },
+                    flag.bits().trailing_zeros(),
+                    if is_set { "[x]" } else { "[ ]" }
+                )
+            })
+            .collect::<Vec<_>>();
 
             let reply = CreateMessage::new()
                 .content(format!(

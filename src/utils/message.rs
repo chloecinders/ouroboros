@@ -55,8 +55,10 @@ pub async fn message_and_dm(
 
         tokio::spawn(async move {
             sleep(Duration::from_secs(5)).await;
-            let _ = msg.delete(&ctx).await;
-            let _ = cmd_msg.delete(&ctx).await;
+            tokio::join!(
+                msg.delete(&ctx),
+                cmd_msg.delete(&ctx)
+            )
         });
     }
 }

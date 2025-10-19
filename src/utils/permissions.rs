@@ -1,12 +1,11 @@
-use std::collections::HashMap;
-
 use serenity::all::{
-    Context, Guild, GuildChannel, Member, PermissionOverwriteType, Permissions, User,
+    Context, GuildChannel, Member, PartialGuild, PermissionOverwriteType, Permissions, User
 };
 use tracing::warn;
 
 use crate::BOT_CONFIG;
 
+/// Checks if a member has a permission in the guild. Ingnores channel overrides.
 pub fn check_guild_permission(ctx: &Context, member: &Member, permission: Permissions) -> bool {
     let Some(guild_cached) = member.guild_id.to_guild_cached(&ctx.cache) else {
         return false;
@@ -29,40 +28,35 @@ pub fn check_guild_permission(ctx: &Context, member: &Member, permission: Permis
     false
 }
 
+/// Checks if a member has a permission in a guilds channel. Respects channel overrides.
 pub async fn check_channel_permission(
     ctx: &Context,
     channel: &GuildChannel,
     member: &Member,
     permission: Permissions,
 ) -> bool {
-    let guild = match member.guild_id.to_partial_guild(&ctx).await {
-        Ok(g) => g,
+    match member.guild_id.to_partial_guild(&ctx).await {
+        Ok(guild) => {
+            if guild.owner_id.get() == member.user.id.get() {
+                return true;
+            }
+        },
         Err(err) => {
             warn!("Couldn't get PartialGuild from GuildId; err = {err:?}");
-            return false;
         }
     };
 
-    if guild.owner_id.get() == member.user.id.get() {
+    #[allow(deprecated)] // Serenity has no equivalent not-deprecated function...
+    if let Ok(perms) = member.permissions(&ctx.cache) && perms.contains(Permissions::ADMINISTRATOR) {
         return true;
     }
 
-    let channel_perms = permissions_for_channel(ctx, channel, member);
-
-    if let Some((_, granted)) = channel_perms.iter().find(|p| p.0.administrator())
-        && *granted
-    {
-        return true;
-    }
-
-    if let Some((_, granted)) = channel_perms.iter().find(|p| *p.0 == permission) {
-        return *granted;
-    }
-
-    false
+    let channel_perms = permissions_for_channel(ctx, channel, member).await;
+    channel_perms.contains(Permissions::ADMINISTRATOR) || channel_perms.contains(permission) // another admin check since the above can fail
 }
 
-pub fn permissions_for_guild(guild: Guild, member: &Member) -> HashMap<Permissions, bool> {
+/// Gets all the permissions of a member in a guild.
+pub fn permissions_for_guild(guild: PartialGuild, member: &Member) -> Permissions {
     let everyone = guild.roles.iter().find(|r| r.1.position == 0).unwrap();
     let mut roles = member
         .roles
@@ -72,30 +66,29 @@ pub fn permissions_for_guild(guild: Guild, member: &Member) -> HashMap<Permissio
     roles.push(everyone.1);
     roles.sort();
 
-    let mut base = Permissions::all()
-        .into_iter()
-        .map(|p| (p, false))
-        .collect::<HashMap<_, _>>();
+    let mut base = Permissions::empty();
 
     for role in roles {
         role.permissions.into_iter().for_each(|p| {
-            *base.entry(p).or_insert(false) = true;
+            base.insert(p);
         });
     }
 
     base
 }
 
-pub fn permissions_for_channel(
+/// Gets all the permissions of a member in a guild channel, including channel overrides.
+pub async fn permissions_for_channel(
     ctx: &Context,
     channel: &GuildChannel,
     member: &Member,
-) -> HashMap<Permissions, bool> {
-    let Some(guild) = channel.guild(&ctx.cache) else {
-        return Permissions::all()
-            .into_iter()
-            .map(|p| (p, false))
-            .collect::<HashMap<_, _>>();
+) -> Permissions {
+    let guild = match channel.guild_id.to_partial_guild(&ctx).await {
+        Ok(g) => g,
+        Err(err) => {
+            warn!("Couldn't get PartialGuild during permissions check; err = {err:?}");
+            return Permissions::empty();
+        }
     };
     let mut permissions = permissions_for_guild(guild.to_owned(), member);
     let everyone = guild.roles.iter().find(|r| r.1.position == 0).unwrap();
@@ -120,11 +113,11 @@ pub fn permissions_for_channel(
             }
         }) {
             for perm in overwrite.allow {
-                *permissions.entry(perm).or_insert(false) = true;
+                permissions.insert(perm);
             }
 
             for perm in overwrite.deny {
-                *permissions.entry(perm).or_insert(false) = false;
+                permissions.remove(perm);
             }
         }
     }
@@ -139,17 +132,18 @@ pub fn permissions_for_channel(
         }
     }) {
         for perm in overwrite.allow {
-            *permissions.entry(perm).or_insert(false) = true;
+            permissions.insert(perm);
         }
 
         for perm in overwrite.deny {
-            *permissions.entry(perm).or_insert(false) = false;
+            permissions.remove(perm);
         }
     }
 
     permissions
 }
 
+/// Checks if a user is a developer using the BOT_CONFIG.
 pub fn is_developer(user: &User) -> bool {
     let cfg = BOT_CONFIG.get().unwrap();
     cfg.dev_ids
