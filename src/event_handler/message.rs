@@ -108,7 +108,7 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
             };
 
             for permission in permissions.required {
-                if !check_guild_permission(&ctx, &member, permission) {
+                if !check_guild_permission(&ctx, &member, permission).await {
                     handler.send_error(ctx, msg, contents, CommandError {
                         title: String::from("You do not have permissions to execute this command."),
                         hint: Some(format!("guild required permission check fail: {permission}")),
@@ -121,7 +121,7 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
             let mut pass = true;
 
             for permission in permissions.one_of {
-                if !check_guild_permission(&ctx, &member, permission) {
+                if !check_guild_permission(&ctx, &member, permission).await {
                     pass = false;
                     break;
                 }

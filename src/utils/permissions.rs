@@ -6,17 +6,21 @@ use tracing::warn;
 use crate::BOT_CONFIG;
 
 /// Checks if a member has a permission in the guild. Ingnores channel overrides.
-pub fn check_guild_permission(ctx: &Context, member: &Member, permission: Permissions) -> bool {
-    let Some(guild_cached) = member.guild_id.to_guild_cached(&ctx.cache) else {
-        return false;
+pub async fn check_guild_permission(ctx: &Context, member: &Member, permission: Permissions) -> bool {
+    let guild = match member.guild_id.to_partial_guild(&ctx).await {
+        Ok(guild) => guild,
+        Err(err) => {
+            warn!("Couldn't get PartialGuild from GuildId; err = {err:?}");
+            return false;
+        }
     };
 
-    if guild_cached.owner_id.get() == member.user.id.get() {
+    if guild.owner_id.get() == member.user.id.get() {
         return true;
     }
 
     for role in member.roles.clone() {
-        let Some(role) = guild_cached.roles.get(&role) else {
+        let Some(role) = guild.roles.get(&role) else {
             return false;
         };
 
