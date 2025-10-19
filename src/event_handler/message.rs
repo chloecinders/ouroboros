@@ -63,43 +63,45 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
     if let Some(c) = command {
         let permissions = c.get_permissions();
 
-        let channel_id = msg.channel_id;
-        let guild_id = msg.guild_id.unwrap();
-        let current_user_id = ctx.cache.current_user().id;
+        // Self user permission check commented out till i figure out what is actually causing the issues
 
-        let channel = channel_id.to_channel(&ctx).await.unwrap().guild().unwrap();
+        // let channel_id = msg.channel_id;
+        // let guild_id = msg.guild_id.unwrap();
+        // let current_user_id = ctx.cache.current_user().id;
 
-        let member = match guild_id.member(&ctx, current_user_id).await {
-            Ok(m) => m,
-            Err(err) => {
-                warn!("Couldnt get current bot member object; err = {err:?}");
-                return;
-            }
-        };
+        // let channel = channel_id.to_channel(&ctx).await.unwrap().guild().unwrap();
 
-        for perm in permissions.bot.iter() {
-            if !check_channel_permission(&ctx, &channel, &member, *perm).await {
-                handler
-                    .send_error(
-                        ctx,
-                        msg,
-                        contents,
-                        CommandError {
-                            title: format!("I do not have a required permission to execute this command. Missing permission: {perm}"),
-                            hint: Some(String::from("Please contact an administrator!")),
-                            arg: None,
-                        },
-                    )
-                    .await;
-                return;
-            }
-        }
+        // let member = match guild_id.member(&ctx, current_user_id).await {
+        //     Ok(m) => m,
+        //     Err(err) => {
+        //         warn!("Couldnt get current bot member object; err = {err:?}");
+        //         return;
+        //     }
+        // };
+
+        // for perm in permissions.bot.iter() {
+        //     if !check_channel_permission(&ctx, &channel, &member, *perm).await {
+        //         handler
+        //             .send_error(
+        //                 ctx,
+        //                 msg,
+        //                 contents,
+        //                 CommandError {
+        //                     title: format!("I do not have a required permission to execute this command."),
+        //                     hint: Some(format!("missing permission: {perm}")),
+        //                     arg: None,
+        //                 },
+        //             )
+        //             .await;
+        //         return;
+        //     }
+        // }
 
         if !permissions.required.is_empty() || !permissions.one_of.is_empty() {
             let Ok(member) = msg.member(&ctx).await else {
                 handler.send_error(ctx, msg, contents, CommandError {
                     title: String::from("You do not have permissions to execute this command."),
-                    hint: Some(String::from("consider begging for more permissions at your local Discord administrator!")),
+                    hint: Some(String::from("could not get user member object")),
                     arg: None
                 }).await;
                 return;
@@ -109,7 +111,7 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
                 if !check_guild_permission(&ctx, &member, permission) {
                     handler.send_error(ctx, msg, contents, CommandError {
                         title: String::from("You do not have permissions to execute this command."),
-                        hint: Some(String::from("consider begging for more permissions at your local Discord administrator!")),
+                        hint: Some(format!("guild required permission check fail: {permission}")),
                         arg: None
                     }).await;
                     return;
@@ -128,7 +130,7 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
             if !pass {
                 handler.send_error(ctx, msg, contents, CommandError {
                     title: String::from("You do not have permissions to execute this command."),
-                    hint: Some(String::from("consider begging for more permissions at your local Discord administrator!")),
+                    hint: Some(format!("guild one of permission check fail")),
                     arg: None
                 }).await;
                 return;
