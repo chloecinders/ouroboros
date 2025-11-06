@@ -2,8 +2,7 @@ use std::sync::Arc;
 
 use chrono::{Duration, Utc};
 use serenity::{
-    all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, Permissions},
-    async_trait,
+    all::{Context, CreateEmbed, CreateMessage, GuildId, Mentionable, Message, Permissions}, async_trait
 };
 use sqlx::query;
 use tracing::{error, warn};
@@ -247,6 +246,13 @@ impl Command for Ban {
             }
         };
 
+        let guild_name = {
+            match msg.guild_id.unwrap_or(GuildId::new(1)).to_partial_guild(&ctx).await {
+                Ok(p) => p.name.clone(),
+                Err(_) => String::from("UNKNOWN_GUILD")
+            }
+        };
+
         let send_dm = message_and_dm(
             &ctx,
             &msg,
@@ -257,9 +263,7 @@ impl Command for Ban {
             ),
             format!(
                 "**BANNED**\n-# Server: {} | Duration: {}\n```\n{}\n```",
-                msg.guild(&ctx.cache)
-                    .map(|g| g.name.clone())
-                    .unwrap_or(String::from("UNKNOWN_GUILD")),
+                guild_name,
                 time_string,
                 reason
             ),

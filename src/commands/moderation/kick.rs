@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use serenity::{
-    all::{Context, CreateEmbed, CreateMessage, Mentionable, Message, Permissions},
+    all::{Context, CreateEmbed, CreateMessage, GuildId, Mentionable, Message, Permissions},
     async_trait,
 };
 use sqlx::query;
@@ -136,6 +136,13 @@ impl Command for Kick {
             let _ = reply.delete(&ctx).await;
         }
 
+        let guild_name = {
+            match msg.guild_id.unwrap_or(GuildId::new(1)).to_partial_guild(&ctx).await {
+                Ok(p) => p.name.clone(),
+                Err(_) => String::from("UNKNOWN_GUILD")
+            }
+        };
+
         message_and_dm(
             &ctx,
             &msg,
@@ -148,9 +155,7 @@ impl Command for Kick {
             },
             format!(
                 "**KICKED**\n-# Server: {}\n```\n{}\n```",
-                msg.guild(&ctx.cache)
-                    .map(|g| g.name.clone())
-                    .unwrap_or(String::from("UNKNOWN_GUILD")),
+                guild_name,
                 reason
             ),
             inferred,

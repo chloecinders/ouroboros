@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use chrono::{Duration, Utc};
 use serenity::{
-    all::{Context, CreateEmbed, CreateMessage, EditMember, Mentionable, Message, Permissions},
-    async_trait,
+    all::{Context, CreateEmbed, CreateMessage, EditMember, GuildId, Mentionable, Message, Permissions},
+    async_trait
 };
 use sqlx::query;
 use tracing::{error, warn};
@@ -194,6 +194,13 @@ impl Command for Mute {
             let _ = reply.delete(&ctx).await;
         }
 
+        let guild_name = {
+            match msg.guild_id.unwrap_or(GuildId::new(1)).to_partial_guild(&ctx).await {
+                Ok(p) => p.name.clone(),
+                Err(_) => String::from("UNKNOWN_GUILD")
+            }
+        };
+
         message_and_dm(
             &ctx,
             &msg,
@@ -204,9 +211,7 @@ impl Command for Mute {
             ),
             format!(
                 "**TIMEOUT**\n-# Server: {} | Duration: {}\n```\n{}\n```",
-                msg.guild(&ctx.cache)
-                    .map(|g| g.name.clone())
-                    .unwrap_or(String::from("UNKNOWN_GUILD")),
+                guild_name,
                 time_string,
                 reason
             ),

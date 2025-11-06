@@ -1,6 +1,6 @@
 use std::{collections::HashMap, time::Duration};
 
-use serenity::all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Message, User};
+use serenity::all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EditMessage, Message, User};
 use tokio::time::sleep;
 use tracing::warn;
 
@@ -19,18 +19,11 @@ pub async fn message_and_dm(
     automatically_delete: bool,
     silent: bool,
 ) {
-    let mut addition = String::new();
-
-    if !silent {
-        let dm = CreateMessage::new()
-            .add_embed(CreateEmbed::new().description(dm_msg).color(BRAND_BLUE));
-
-        if dm_user.direct_message(&ctx, dm).await.is_err() {
-            addition = String::from(" | DM failed");
-        }
+    let mut addition = if silent {
+        String::from(" | silent")
     } else {
-        addition = String::from(" | silent")
-    }
+        String::new()
+    };
 
     let embed = CreateEmbed::new()
         .description(server_msg(addition))
@@ -48,6 +41,25 @@ pub async fn message_and_dm(
             return;
         }
     };
+
+    let dm = CreateMessage::new()
+        .add_embed(CreateEmbed::new().description(dm_msg).color(BRAND_BLUE));
+
+    if dm_user.direct_message(&ctx, dm).await.is_err() {
+        addition = String::from(" | DM failed");
+        let desc = server_msg(addition);
+        let mut msg_clone = msg.clone();
+        let ctx_clone = ctx.clone();
+
+        tokio::spawn(
+            async move {
+                msg_clone.edit(
+                    &ctx_clone,
+                    EditMessage::new().embed(CreateEmbed::new().description(desc).color(BRAND_BLUE))
+                ).await
+            }
+        );
+    }
 
     if automatically_delete {
         let ctx = ctx.clone();
