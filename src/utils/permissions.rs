@@ -6,15 +6,7 @@ use tracing::warn;
 use crate::BOT_CONFIG;
 
 /// Checks if a member has a permission in the guild. Ingnores channel overrides.
-pub async fn check_guild_permission(ctx: &Context, member: &Member, permission: Permissions) -> bool {
-    let guild = match member.guild_id.to_partial_guild(&ctx).await {
-        Ok(guild) => guild,
-        Err(err) => {
-            warn!("Couldn't get PartialGuild from GuildId; err = {err:?}");
-            return false;
-        }
-    };
-
+pub async fn check_guild_permission(ctx: &Context, guild: &PartialGuild, member: &Member, permission: Permissions) -> bool {
     if guild.owner_id.get() == member.user.id.get() {
         return true;
     }
@@ -35,20 +27,14 @@ pub async fn check_guild_permission(ctx: &Context, member: &Member, permission: 
 /// Checks if a member has a permission in a guilds channel. Respects channel overrides.
 pub async fn check_channel_permission(
     ctx: &Context,
+    guild: &PartialGuild,
     channel: &GuildChannel,
     member: &Member,
     permission: Permissions,
 ) -> bool {
-    match member.guild_id.to_partial_guild(&ctx).await {
-        Ok(guild) => {
-            if guild.owner_id.get() == member.user.id.get() {
-                return true;
-            }
-        },
-        Err(err) => {
-            warn!("Couldn't get PartialGuild from GuildId; err = {err:?}");
-        }
-    };
+    if guild.owner_id.get() == member.user.id.get() {
+        return true
+    }
 
     #[allow(deprecated)] // Serenity has no equivalent not-deprecated function...
     if let Ok(perms) = member.permissions(&ctx.cache) && perms.contains(Permissions::ADMINISTRATOR) {

@@ -61,6 +61,11 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
         .find(|c| c.get_name() == command_name.to_lowercase());
 
     if let Some(c) = command {
+        {
+            let typing_http = ctx.http.clone();
+            tokio::spawn(msg.channel_id.broadcast_typing(typing_http));
+        }
+
         let permissions = c.get_permissions();
 
         // Self user permission check commented out till i figure out what is actually causing the issues
@@ -107,8 +112,17 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
                 return;
             };
 
+            let Ok(guild) = member.guild_id.to_partial_guild(&ctx).await else {
+                handler.send_error(ctx, msg, contents, CommandError {
+                    title: String::from("You do not have permissions to execute this command."),
+                    hint: Some(String::from("could not get guild object")),
+                    arg: None
+                }).await;
+                return;
+            };
+
             for permission in permissions.required {
-                if !check_guild_permission(&ctx, &member, permission).await {
+                if !check_guild_permission(&ctx, &guild, &member, permission).await {
                     handler.send_error(ctx, msg, contents, CommandError {
                         title: String::from("You do not have permissions to execute this command."),
                         hint: Some(format!("guild required permission check fail: {permission}")),
@@ -121,7 +135,7 @@ pub async fn message(handler: &Handler, ctx: Context, mut msg: Message) {
             let mut pass = true;
 
             for permission in permissions.one_of {
-                if !check_guild_permission(&ctx, &member, permission).await {
+                if !check_guild_permission(&ctx, &guild, &member, permission).await {
                     pass = false;
                     break;
                 }

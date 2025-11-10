@@ -252,7 +252,7 @@ impl EventHandler for Handler {
         {
             let mut lock = self.message_cache.lock().await;
             let cloned = msg.clone();
-            lock.store_message(cloned.channel_id.get(), cloned);
+            lock.insert_message(cloned.channel_id.get(), cloned);
         }
 
         message::message(self, ctx, msg).await;
@@ -267,7 +267,7 @@ impl EventHandler for Handler {
     ) {
         let mut lock = self.message_cache.lock().await;
         let old_if_available = lock
-            .get_message(event.channel_id.get(), event.id.get())
+            .get(event.channel_id.get(), event.id.get())
             .cloned();
         message_update::message_update(self, ctx, old_if_available, new, event).await
     }
@@ -285,7 +285,7 @@ impl EventHandler for Handler {
             message_id: deleted_message_id,
         };
         let old_if_available = lock
-            .get_message(event.channel_id.get(), event.message_id.get())
+            .get(event.channel_id.get(), event.message_id.get())
             .cloned();
         message_delete::message_delete(self, ctx, event, old_if_available).await
     }

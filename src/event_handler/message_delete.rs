@@ -1,6 +1,6 @@
 use chrono::Utc;
 use serenity::all::{
-    Channel, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage, Message,
+    Channel, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
     MessageAction, audit_log::Action,
 };
 use tracing::warn;
@@ -8,7 +8,7 @@ use tracing::warn;
 use crate::{
     GUILD_SETTINGS,
     constants::BRAND_RED,
-    event_handler::{Handler, MessageDeleteEvent},
+    event_handler::{Handler, MessageDeleteEvent, message_cache::PartialMessage},
     utils::{LogType, guild_log, snowflake_to_timestamp},
 };
 
@@ -16,8 +16,16 @@ pub async fn message_delete(
     _handler: &Handler,
     ctx: Context,
     event: MessageDeleteEvent,
-    old_if_available: Option<Message>,
+    old_if_available: Option<PartialMessage>,
 ) {
+    let old_if_available = {
+        if let Some(partial) = old_if_available && let Some(msg) = partial.to_message(&ctx).await {
+            Some(msg)
+        } else {
+            None
+        }
+    };
+
     if let Some(msg) = old_if_available.clone() {
         let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
         let guild_id = msg.guild_id.map(|g| g.get()).unwrap_or(0);

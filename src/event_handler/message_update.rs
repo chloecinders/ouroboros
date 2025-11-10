@@ -5,14 +5,14 @@ use serenity::all::{
 
 use crate::{
     constants::SOFT_YELLOW,
-    event_handler::Handler,
+    event_handler::{Handler, message_cache::PartialMessage},
     utils::{LogType, guild_log},
 };
 
 pub async fn message_update(
     _handler: &Handler,
     ctx: Context,
-    old_if_available: Option<Message>,
+    old_if_available: Option<PartialMessage>,
     new: Option<Message>,
     event: MessageUpdateEvent,
 ) {
