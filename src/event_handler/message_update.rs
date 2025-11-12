@@ -33,12 +33,20 @@ pub async fn message_update(
         new_msg.content = String::from("(no content)");
     }
 
+    let guild_id = {
+        if let Some(Some(channel)) = new_msg.channel(&ctx).await.map(|c| c.guild()).ok() {
+            channel.guild_id.get()
+        } else {
+            0
+        }
+    };
+
     let base = format!(
         "**MESSAGE EDITED**\n-# Message {0} [jump](https://discord.com/channels/{3}/{2}/{0}) | Target: <@{1}> | Channel: <#{2}> ({2})",
         new_msg.id.get(),
         new_msg.author.id.get(),
         new_msg.channel_id.get(),
-        new_msg.guild_id.map(|g| g.get()).unwrap_or(0)
+        guild_id
     );
 
     let (desc, files) = match old_if_available {
@@ -78,7 +86,7 @@ pub async fn message_update(
             } else {
                 (
                     format!(
-                        "{base}\nBefore:\nMessage content not found in cache\n\nAfter:\n```\n{}\n```",
+                        "{base}\n-# Previous message content not found in cache\nAfter:\n```\n{}\n```",
                         new_msg.content.replace("```", "\\`\\`\\`"),
                     ),
                     vec![],
