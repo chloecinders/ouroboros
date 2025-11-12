@@ -10,8 +10,7 @@ use tracing::{error, warn};
 use crate::{
     GUILD_SETTINGS, SQL,
     commands::{
-        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions,
-        CommandSyntax, TransformerError, TransformerFnArc, TransformerReturn,
+        Command, CommandArgument, CommandCategory, CommandParameter, CommandPermissions, CommandSyntax, TransformerError, TransformerFn, TransformerFnArc
     },
     constants::BRAND_BLUE,
     event_handler::CommandError,
@@ -20,15 +19,8 @@ use crate::{
     utils::Settings,
 };
 
-type UnwrapTransformerFn = Box<
-    dyn for<'a> Fn(
-            &'a Context,
-            &'a Message,
-            &'a mut Peekable<IntoIter<Token>>,
-        ) -> TransformerReturn<'a>
-        + Send
-        + Sync,
->;
+/// The signature of a Transformer function boxed
+type BoxedTransformerFn = Box<TransformerFn>;
 
 pub struct Config;
 
@@ -37,6 +29,7 @@ impl Config {
         Self {}
     }
 
+    /// Matches a bot config option to a description string
     fn get_option_desc(&self, opt: &str) -> &str {
         match opt {
             "log" => "Settings controlling guild event logging",
@@ -88,6 +81,7 @@ impl Command for Config {
         args: Vec<Token>,
         _params: HashMap<&str, (bool, CommandArgument)>,
     ) -> Result<(), CommandError> {
+        // find the config subcommand first
         let mut args_iter = args.into_iter();
 
         let Some(subcommand_token) = args_iter.next() else {
@@ -101,6 +95,7 @@ impl Command for Config {
             return Err(CommandError::arg_not_found("String", Some("subcommand")));
         };
 
+        // process the first/second arg for the subcommand
         let arg1_token = args_iter.next();
         let arg1: Option<String> = match arg1_token.clone() {
             Some(arg) => match arg.contents {
@@ -119,15 +114,15 @@ impl Command for Config {
             None => None,
         };
 
+        // grab the settings struct
         let mut global = GUILD_SETTINGS.get().unwrap().lock().await;
         let settings = match global.get(msg.guild_id.map(|g| g.get()).unwrap_or(1)).await {
             Ok(s) => s,
-            Err(_) => Settings {
-                ..Default::default()
-            },
+            Err(_) => Settings::default(),
         };
 
         if subcommand == "list" {
+            // the list subcommand which lists all available config options
             let Ok(Value::Object(json_rep)) = json::to_value(&settings) else {
                 error!("Json serialization went wrong on guild settings");
                 return Err(CommandError {
@@ -183,6 +178,7 @@ impl Command for Config {
 
             Ok(())
         } else if subcommand == "get" {
+            // the get subcommand which gets the current value of a config option
             let Some(setting) = arg1 else {
                 return Err(CommandError::arg_not_found("String", Some("arg1")));
             };
@@ -217,6 +213,7 @@ impl Command for Config {
 
             Ok(())
         } else if subcommand == "set" {
+            // the set subcommand which sets the value of a config option
             let Some(setting) = arg1 else {
                 return Err(CommandError::arg_not_found("String", Some("arg1")));
             };
@@ -227,8 +224,9 @@ impl Command for Config {
 
             let mut iter = vec![arg2_token.clone().unwrap()].into_iter().peekable();
 
+            // a map of config options to their correct argument transformers and sqlx statements
             let setting_info: (
-                UnwrapTransformerFn,
+                BoxedTransformerFn,
                 sqlx::query::Query<'_, sqlx::Postgres, sqlx::postgres::PgArguments>,
             ) = match setting.as_str() {
                 "log.log_bots" => (

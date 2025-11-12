@@ -10,25 +10,32 @@ use serenity::{
     async_trait,
 };
 
+/// An error enum used by transformers
 #[allow(clippy::large_enum_variant)]
 pub enum TransformerError {
+    /// Used when a general command/transformer error happened
     CommandError(CommandError),
+    /// Used when there is no actual input to transform
     MissingArgumentError(MissingArgumentError),
 }
 
+/// The return type of transformer functions
 pub type TransformerReturn<'a> =
     Pin<Box<dyn Future<Output = Result<Token, TransformerError>> + Send + 'a>>;
+/// The exact type of transformer functions
 pub type TransformerFn = dyn for<'a> Fn(&'a Context, &'a Message, &'a mut Peekable<IntoIter<Token>>) -> TransformerReturn<'a>
     + Send
     + Sync;
+/// Transformer function wrapped in an Arc
 pub type TransformerFnArc = Arc<TransformerFn>;
 
+/// Defines the values which can be passed to a command
 #[derive(Debug, Clone)]
 #[allow(non_camel_case_types)]
 pub enum CommandArgument {
     String(String),
     User(User),
-    // ManyUsers(Vec<User>),
+    // ManyUsers(Vec<User>), // may be used in the future
     Member(Member),
     Duration(chrono::Duration),
     None,
@@ -37,23 +44,31 @@ pub enum CommandArgument {
     bool(bool),
 }
 
+/// Defines a commands syntax, implementing a type and a visual representation of the syntax
 pub enum CommandSyntax {
+    /// Consume the remaining text as a String argument
     Consume(&'static str),
     User(&'static str, bool),
     Member(&'static str, bool),
     Channel(&'static str, bool),
     String(&'static str, bool),
     Duration(&'static str, bool),
+    /// A string but with a more appropriate example
     Reason(&'static str),
     Number(&'static str, bool),
+    /// Consume the remaining text as a set of filters (used for the purge command)
     Filters,
     Or(Box<CommandSyntax>, Box<CommandSyntax>),
 }
 
+/// Command parameter which changes command behaviour, the original input gets cut out before being processed further into tokens/arguments
 pub struct CommandParameter<'a> {
     pub name: &'a str,
+    /// A short description for the parameter
     pub short: &'a str,
+    /// The transformer function to use when processing the input into a CommandArgument
     pub transformer: &'a TransformerFn,
+    /// A long description for the parameter
     pub desc: &'a str,
 }
 
@@ -83,6 +98,7 @@ impl fmt::Display for CommandCategory {
 }
 
 impl CommandSyntax {
+    /// Returns the definition of a type, meaning something like `<(argument name): (argument type)>`: [target: User]
     pub fn get_def(&self) -> String {
         let (inner, required) = match self {
             Self::Consume(name) | Self::Reason(name) => (format!("...[{name}]"), None),
@@ -107,6 +123,7 @@ impl CommandSyntax {
         }
     }
 
+    /// A short example of what input could be passed
     pub fn get_example(&self) -> String {
         match self {
             CommandSyntax::Consume(_) => String::from("Some Text"),
@@ -123,14 +140,19 @@ impl CommandSyntax {
     }
 }
 
+/// A struct defining required permissions by both the user and the bot
 #[derive(Default)]
 pub struct CommandPermissions {
+    /// Permissions which are required by the user to run the command
     pub required: Vec<Permissions>,
+    /// Permissions where a user only needs to have one permission to run the command
     pub one_of: Vec<Permissions>,
+    /// Permissions the bot needs to run the command
     pub bot: Vec<Permissions>,
 }
 
 impl CommandPermissions {
+    /// Baseline permission set needed for bot operation
     pub fn baseline() -> Vec<Permissions> {
         vec![
             Permissions::VIEW_CHANNEL,
@@ -143,6 +165,7 @@ impl CommandPermissions {
         ]
     }
 
+    /// Moderation permission set needed for bot moderation commands
     pub fn moderation() -> Vec<Permissions> {
         vec![
             Permissions::KICK_MEMBERS,
@@ -155,17 +178,26 @@ impl CommandPermissions {
     }
 }
 
+/// The base command trait which needs to be implemented by all command structs
 #[async_trait]
 pub trait Command: Send + Sync {
     // Command descriptors
+    /// The name of the command, also used when actually running the command
     fn get_name(&self) -> &'static str;
+    /// A short description of the command used in the help command list
     fn get_short(&self) -> &'static str;
+    /// A long description of the command used in the individual command help
     fn get_full(&self) -> &'static str;
+    /// The syntax of the command to display in the command help
     fn get_syntax(&self) -> Vec<CommandSyntax>;
+    /// The category of the command to put it in the correct spot of the help command list
     fn get_category(&self) -> CommandCategory;
-    fn get_params(&self) -> Vec<&'static CommandParameter<'static>>;
 
     // Runner
+    /// The function to execute when running a command
+    /// This function should also have the `#[command]` ouroboros macro attached
+    /// The macro allows for easier definition of command arguments
+    /// This can be left out if there are no arguments to define
     async fn run(
         &self,
         ctx: Context,
@@ -175,15 +207,22 @@ pub trait Command: Send + Sync {
     ) -> Result<(), CommandError>;
 
     // Run helpers
+    /// The transformers to use to process arguments
+    /// This is normally generated by the `#[command]` ouroboros macro but can be left out if there are no arguments to define
     fn get_transformers(&self) -> Vec<TransformerFnArc> {
         vec![]
     }
+
+    /// Returns the permissions required by the user/bot to run the command
     fn get_permissions(&self) -> CommandPermissions {
         CommandPermissions {
             bot: CommandPermissions::baseline(),
             ..Default::default()
         }
     }
+
+    /// The optional position-less parameters the command can take
+    fn get_params(&self) -> Vec<&'static CommandParameter<'static>>;
 }
 
 mod admin;

@@ -59,12 +59,14 @@ impl Command for Ping {
         _args: Vec<Token>,
         _params: HashMap<&str, (bool, CommandArgument)>,
     ) -> Result<(), CommandError> {
+        // the time it takes to request the current user object and get it back
         let http = {
             let start = Instant::now();
             let _ = ctx.http.get_current_user().await;
             start.elapsed().as_millis()
         };
 
+        // the websocket gateway latency, may take a bit to produce an actual number after restart due to the weird way serenity measures latency
         let gateway = {
             let data_read = ctx.data.read().await;
             let shard_manager = data_read.get::<ShardManagerContainer>().unwrap().clone();
@@ -76,22 +78,11 @@ impl Command for Ping {
                 .as_millis()
         };
 
-        let ping = {
-            let client = Client::builder().redirect(Policy::none()).build().unwrap();
-
-            let start = Instant::now();
-            let _ = client
-                .get("https://discord.com/api/v10/gateway")
-                .send()
-                .await;
-            start.elapsed().as_millis()
-        };
-
         let message = CreateMessage::new()
             .embed(
                 CreateEmbed::new()
                     .description(format!(
-                        "HTTP: {http}ms\nGateway: {gateway}ms\nPing: {ping}ms",
+                        "HTTP: {http}ms\nGateway: {gateway}ms",
                     ))
                     .color(BRAND_BLUE),
             )

@@ -71,6 +71,7 @@ impl Command for Update {
             return Ok(());
         };
 
+        // Fetch the new github artifact first
         let client = Client::new();
         let mut request = Request::new(
             Method::GET,
@@ -82,6 +83,7 @@ impl Command for Update {
         let headers = request.headers_mut();
         headers.append(
             "User-Agent",
+            // i think using this UA is funny
             HeaderValue::from_str(format!("Ouroboros Bot v{}", env!("CARGO_PKG_VERSION")).as_str())
                 .unwrap(),
         );
@@ -180,6 +182,7 @@ impl Command for Update {
                 }
             };
 
+            // i hope nobody is actually using a windows server but the option is here if anyone wants it lol!
             #[cfg(target_os = "windows")]
             fn artifact_matches(name: &str) -> bool {
                 name.ends_with(".exe")
@@ -298,6 +301,7 @@ impl Command for Update {
                 return Ok(());
             }
 
+            // cleanup before exiting the process, to be restarted by task scheduler or systemd or whatever
             #[cfg(not(target_os = "windows"))]
             {
                 use std::fs;
@@ -357,6 +361,8 @@ impl Command for Update {
 }
 
 use serde::Deserialize;
+
+// github api response structs
 
 #[derive(Debug, Deserialize)]
 pub struct WorkflowRunsResponse {

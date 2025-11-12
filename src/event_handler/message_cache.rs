@@ -124,17 +124,6 @@ impl MessageQueue {
         self.items.push_back(msg);
     }
 
-    fn insert_msg(&mut self, msg: Message) {
-        let partial = PartialMessage {
-            id: msg.id.get(),
-            channel_id: msg.channel_id.get(),
-            author_id: msg.author.id.get(),
-            content: msg.content,
-        };
-
-        self.insert(partial)
-    }
-
     fn len(&self) -> usize {
         self.items.len()
     }
@@ -144,10 +133,11 @@ impl MessageQueue {
     }
 
     fn pop(&mut self) {
-        let msg = self.items.pop_back();
-
-        if let Some(msg) = msg {
+        if let Some(msg) = self.items.pop_front() {
             self.index.remove(&msg.id);
+            for (i, m) in self.items.iter().enumerate() {
+                self.index.insert(m.id, i);
+            }
         }
     }
 }
