@@ -21,8 +21,8 @@ use crate::{
         Unban, Unmute, Update, Warn,
     },
     constants::BRAND_RED,
-    event_handler::message_cache::MessageCache,
     lexer::Token,
+    utils::cache::message_cache::MessageCache,
 };
 #[derive(Debug)]
 pub struct CommandError {
@@ -75,7 +75,6 @@ struct MessageDeleteEvent {
 }
 
 mod help_cmd;
-mod message_cache;
 
 // events
 mod guild_create;

@@ -5,8 +5,8 @@ use serenity::all::{
 
 use crate::{
     constants::SOFT_YELLOW,
-    event_handler::{Handler, message_cache::PartialMessage},
-    utils::{LogType, guild_log},
+    event_handler::Handler,
+    utils::{LogType, cache::partials::PartialMessage, guild_log},
 };
 
 pub async fn message_update(
@@ -78,7 +78,7 @@ pub async fn message_update(
             } else {
                 (
                     format!(
-                        "{base}\nBefore:```\nMessage content not found in cache\n```\nAfter:\n```\n{}\n```",
+                        "{base}\nBefore:\nMessage content not found in cache\n\nAfter:\n```\n{}\n```",
                         new_msg.content.replace("```", "\\`\\`\\`"),
                     ),
                     vec![],

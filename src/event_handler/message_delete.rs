@@ -8,8 +8,8 @@ use tracing::warn;
 use crate::{
     GUILD_SETTINGS,
     constants::BRAND_RED,
-    event_handler::{Handler, MessageDeleteEvent, message_cache::PartialMessage},
-    utils::{LogType, guild_log, snowflake_to_timestamp},
+    event_handler::{Handler, MessageDeleteEvent},
+    utils::{LogType, cache::partials::PartialMessage, guild_log, snowflake_to_timestamp},
 };
 
 pub async fn message_delete(
@@ -18,17 +18,9 @@ pub async fn message_delete(
     event: MessageDeleteEvent,
     old_if_available: Option<PartialMessage>,
 ) {
-    let old_if_available = {
-        if let Some(partial) = old_if_available && let Some(msg) = partial.to_message(&ctx).await {
-            Some(msg)
-        } else {
-            None
-        }
-    };
-
     if let Some(msg) = old_if_available.clone() {
         let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
-        let guild_id = msg.guild_id.map(|g| g.get()).unwrap_or(0);
+        let guild_id = msg.guild_id.unwrap_or(0);
 
         if let Ok(guild_settings) = settings.get(guild_id).await {
             if msg.author.bot && guild_settings.log.log_bots.is_none_or(|b| !b) {
@@ -65,8 +57,8 @@ pub async fn message_delete(
                 && let Some(target) = entry.target_id
                 && let Some(Some(channel)) = entry.options.clone().map(|o| o.channel_id)
                 && let Some(msg) = old_if_available.clone()
-                && target.get() == msg.author.id.get()
-                && channel.get() == msg.channel_id.get()
+                && target.get() == msg.author.id
+                && channel.get() == msg.channel_id
             {
                 actor_id = Some(entry.user_id.get());
             }
@@ -78,8 +70,8 @@ pub async fn message_delete(
                     && let Some(target) = entry.target_id
                     && let Some(Some(channel)) = entry.options.clone().map(|o| o.channel_id)
                     && let Some(msg) = old_if_available.clone()
-                    && target.get() == msg.author.id.get()
-                    && channel.get() == msg.channel_id.get()
+                    && target.get() == msg.author.id
+                    && channel.get() == msg.channel_id
                 {
                     actor_id = Some(entry.user_id.get());
                 }
@@ -91,19 +83,22 @@ pub async fn message_delete(
     let mut files = vec![];
     let mut embed = CreateEmbed::new().color(BRAND_RED);
 
-    if let Some(msg) = old_if_available.clone() {
-        description.push_str(&format!("| Target: <@{}> ", msg.author.id.get()));
+    if
+        let Some(msg) = old_if_available.clone()
+        && let Some(author) = msg.author.to_user(&ctx).await
+    {
+        description.push_str(&format!("| Target: <@{}> ", msg.author.id));
         embed = embed.author(
-            CreateEmbedAuthor::new(format!("{}: {}", msg.author.name, msg.author.id.get()))
+            CreateEmbedAuthor::new(format!("{}: {}", msg.author.name, msg.author.id))
                 .icon_url(
-                    msg.author
+                    author
                         .avatar_url()
-                        .unwrap_or(msg.author.default_avatar_url()),
+                        .unwrap_or(author.default_avatar_url()),
                 ),
         );
 
-        for attachment in msg.attachments.iter() {
-            let name = attachment.filename.clone();
+        for attachment in msg.attachment_urls.iter() {
+            let name = attachment.name.clone();
             if let Ok(bytes) = attachment.download().await {
                 files.push(CreateAttachment::bytes(bytes, name));
             };

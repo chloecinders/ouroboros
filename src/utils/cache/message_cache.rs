@@ -1,22 +1,8 @@
 use std::collections::{HashMap, VecDeque};
 
-use serenity::all::{CacheHttp, Message};
+use serenity::all::Message;
 
-#[derive(Clone)]
-pub struct PartialMessage {
-    pub id: u64,
-    pub channel_id: u64,
-    pub author_id: u64,
-    pub content: String,
-}
-
-impl PartialMessage {
-    pub async fn to_message(&self, ctx: &impl CacheHttp) -> Option<Message> {
-        let mut current = ctx.http().get_message(self.channel_id.into(), self.id.into()).await.ok()?;
-        current.content = self.content.clone();
-        Some(current)
-    }
-}
+use crate::utils::cache::partials::PartialMessage;
 
 pub struct MessageCache {
     sizes: HashMap<u64, usize>,
@@ -56,13 +42,7 @@ impl MessageCache {
     }
 
     pub fn insert_message(&mut self, channel_id: u64, msg: Message) {
-        let partial = PartialMessage {
-            id: msg.id.get(),
-            channel_id: msg.channel_id.get(),
-            author_id: msg.author.id.get(),
-            content: msg.content,
-        };
-
+        let partial = PartialMessage::from(msg);
         self.insert(channel_id, partial);
     }
 
@@ -77,11 +57,11 @@ impl MessageCache {
         let queue = self.messages.entry(channel_id).or_default();
 
         if queue.len() >= queue_size {
+            dbg!(queue.len(), queue_size);
             queue.pop();
         }
 
         queue.insert(message);
-
     }
 
     pub fn get(&mut self, channel: u64, message: u64) -> Option<&PartialMessage> {
@@ -135,6 +115,7 @@ impl MessageQueue {
     fn pop(&mut self) {
         if let Some(msg) = self.items.pop_front() {
             self.index.remove(&msg.id);
+
             for (i, m) in self.items.iter().enumerate() {
                 self.index.insert(m.id, i);
             }
