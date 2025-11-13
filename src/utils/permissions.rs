@@ -6,7 +6,7 @@ use tracing::warn;
 use crate::BOT_CONFIG;
 
 /// Checks if a member has a permission in the guild. Ingnores channel overrides.
-pub async fn check_guild_permission(ctx: &Context, guild: &PartialGuild, member: &Member, permission: Permissions) -> bool {
+pub async fn check_guild_permission(guild: &PartialGuild, member: &Member, permission: Permissions) -> bool {
     if guild.owner_id.get() == member.user.id.get() {
         return true;
     }
@@ -25,28 +25,23 @@ pub async fn check_guild_permission(ctx: &Context, guild: &PartialGuild, member:
 }
 
 /// Checks if a member has a permission in a guilds channel. Respects channel overrides.
-pub async fn check_channel_permission(
-    ctx: &Context,
-    guild: &PartialGuild,
-    channel: &GuildChannel,
-    member: &Member,
-    permission: Permissions,
-) -> bool {
-    if guild.owner_id.get() == member.user.id.get() {
-        return true
-    }
+// pub async fn check_channel_permission(
+//     ctx: &Context,
+//     guild: &PartialGuild,
+//     channel: &GuildChannel,
+//     member: &Member,
+//     permission: Permissions,
+// ) -> bool {
+//     if guild.owner_id.get() == member.user.id.get() {
+//         return true
+//     }
 
-    #[allow(deprecated)] // Serenity has no equivalent not-deprecated function...
-    if let Ok(perms) = member.permissions(&ctx.cache) && perms.contains(Permissions::ADMINISTRATOR) {
-        return true;
-    }
-
-    let channel_perms = permissions_for_channel(ctx, channel, member).await;
-    channel_perms.contains(Permissions::ADMINISTRATOR) || channel_perms.contains(permission) // another admin check since the above can fail
-}
+//     let channel_perms = permissions_for_channel(ctx, channel, member).await;
+//     channel_perms.contains(Permissions::ADMINISTRATOR) || channel_perms.contains(permission)
+// }
 
 /// Gets all the permissions of a member in a guild.
-pub fn permissions_for_guild(guild: PartialGuild, member: &Member) -> Permissions {
+pub fn permissions_for_guild(guild: &PartialGuild, member: &Member) -> Permissions {
     let everyone = guild.roles.iter().find(|r| r.1.position == 0).unwrap();
     let mut roles = member
         .roles
@@ -80,7 +75,7 @@ pub async fn permissions_for_channel(
             return Permissions::empty();
         }
     };
-    let mut permissions = permissions_for_guild(guild.to_owned(), member);
+    let mut permissions = permissions_for_guild(&guild, member);
     let everyone = guild.roles.iter().find(|r| r.1.position == 0).unwrap();
     let mut roles = member
         .roles

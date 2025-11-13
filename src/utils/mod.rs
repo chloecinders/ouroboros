@@ -1,5 +1,5 @@
 mod permissions;
-pub use permissions::check_channel_permission;
+// pub use permissions::check_channel_permission;
 pub use permissions::check_guild_permission;
 pub use permissions::is_developer;
 pub use permissions::permissions_for_channel;
@@ -24,3 +24,4 @@ pub use message::extract_command_parameters;
 pub use message::message_and_dm;
 
 pub mod cache;
+pub mod command_processing;

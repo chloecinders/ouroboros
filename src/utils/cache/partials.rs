@@ -43,11 +43,11 @@ impl From<Message> for PartialMessage {
 }
 
 impl PartialMessage {
-    pub async fn to_message(&self, ctx: &impl CacheHttp) -> Option<Message> {
-        let mut current = ctx.http().get_message(self.channel_id.into(), self.id.into()).await.ok()?;
-        current.content = self.content.clone();
-        Some(current)
-    }
+    // pub async fn to_message(&self, ctx: &impl CacheHttp) -> Option<Message> {
+    //     let mut current = ctx.http().get_message(self.channel_id.into(), self.id.into()).await.ok()?;
+    //     current.content = self.content.clone();
+    //     Some(current)
+    // }
 }
 
 impl PartialUser {

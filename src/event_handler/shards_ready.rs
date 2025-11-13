@@ -1,10 +1,10 @@
 use std::fs;
 
-use serenity::all::Context;
+use serenity::{all::{Context, Permissions, RoleId}, futures::StreamExt};
 use sqlx::query;
 use tracing::{error, info};
 
-use crate::{BOT_CONFIG, GUILD_SETTINGS, SQL, config::Environment, event_handler::Handler};
+use crate::{BOT_CONFIG, GUILD_SETTINGS, SQL, config::Environment, event_handler::Handler, utils::cache::permission_cache::CommandPermissionRequest};
 
 pub async fn shards_ready(handler: &Handler, ctx: Context, _total_shards: u32) {
     let cfg = BOT_CONFIG.get().unwrap();
@@ -13,6 +13,7 @@ pub async fn shards_ready(handler: &Handler, ctx: Context, _total_shards: u32) {
     check_whitelist(cfg, &ctx).await;
     update_guild_settings(&ctx).await;
     fill_message_cache(handler, &ctx).await;
+    fill_permission_cache(handler, &ctx).await;
 }
 
 pub async fn finish_update(ctx: &Context) {
@@ -135,5 +136,42 @@ pub async fn fill_message_cache(handler: &Handler, ctx: &Context) {
 
     for record in existing_data {
         lock.assign_count(record.channel_id as u64, record.message_count as usize);
+    }
+}
+
+pub async fn fill_permission_cache(handler: &Handler, ctx: &Context) {
+    for guild in ctx.cache.guilds() {
+        let Ok(partial) = guild.to_partial_guild(&ctx).await else {
+            continue;
+        };
+
+        let mut valid_roles: Vec<RoleId> = Vec::new();
+
+        for (id, role) in &partial.roles {
+            if role.has_permission(Permissions::MANAGE_MESSAGES)
+                || role.has_permission(Permissions::BAN_MEMBERS)
+                || role.has_permission(Permissions::KICK_MEMBERS)
+                || role.has_permission(Permissions::ADMINISTRATOR) {
+                valid_roles.push(id.clone());
+            }
+        }
+
+        let mut members = guild.members_iter(&ctx).boxed();
+
+        while let Some(member_result) = members.next().await {
+            let Ok(member) = member_result else {
+                continue;
+            };
+
+            if member.roles.iter().any(|r| valid_roles.contains(&r)) {
+                let mut cache = handler.permission_cache.lock().await;
+                cache.can_run(CommandPermissionRequest {
+                    command: handler.commands.iter().find(|c| c.get_name() == "ban").cloned().unwrap(),
+                    member,
+                    guild: partial.clone(),
+                    handler: handler.clone(),
+                }).await;
+            }
+        }
     }
 }

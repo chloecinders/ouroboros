@@ -1,4 +1,4 @@
-use std::{collections::HashMap, iter::Peekable, sync::Arc, vec::IntoIter};
+use std::{collections::HashMap, sync::Arc};
 
 use serenity::{
     all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Message, Permissions},

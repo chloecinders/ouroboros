@@ -2,8 +2,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use serenity::{
     all::{
-        ChannelId, Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EventHandler, Guild,
-        GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent, User,
+        ChannelId, Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EventHandler, Guild, GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent, PartialGuild, Role, RoleId, User
     },
     async_trait,
 };
@@ -22,7 +21,7 @@ use crate::{
     },
     constants::BRAND_RED,
     lexer::Token,
-    utils::cache::message_cache::MessageCache,
+    utils::cache::{message_cache::MessageCache, permission_cache::PermissionCache},
 };
 #[derive(Debug)]
 pub struct CommandError {
@@ -84,11 +83,16 @@ mod message;
 mod message_delete;
 mod message_update;
 mod shards_ready;
+mod guild_role_update;
+mod guild_role_delete;
+mod guild_update;
 
+#[derive(Clone)]
 pub struct Handler {
-    prefix: String,
-    commands: Vec<Arc<dyn Command>>,
-    message_cache: Arc<Mutex<MessageCache>>,
+    pub prefix: String,
+    pub commands: Vec<Arc<dyn Command>>,
+    pub message_cache: Arc<Mutex<MessageCache>>,
+    pub permission_cache: Arc<Mutex<PermissionCache>>,
 }
 
 impl Handler {
@@ -134,12 +138,13 @@ impl Handler {
             prefix,
             commands,
             message_cache: cache,
+            permission_cache: Arc::new(Mutex::new(PermissionCache::new()))
         }
     }
 }
 
 impl Handler {
-    pub async fn send_error(&self, ctx: Context, msg: Message, input: String, err: CommandError) {
+    pub async fn send_error(&self, ctx: &Context, msg: &Message, input: String, err: CommandError) {
         let error_message;
 
         if let Some(arg) = err.arg {
@@ -176,7 +181,7 @@ impl Handler {
                     .description(error_message.clone())
                     .color(BRAND_RED),
             )
-            .reference_message(&msg)
+            .reference_message(msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
         if let Err(e) = msg.channel_id.send_message(&ctx, reply).await {
@@ -322,5 +327,33 @@ impl EventHandler for Handler {
             member_data_if_available,
         )
         .await
+    }
+
+    async fn guild_role_update(
+        &self,
+        ctx: Context,
+        old_data_if_available: Option<Role>,
+        new: Role,
+    ) {
+        guild_role_update::guild_role_update(self, ctx, old_data_if_available, new).await
+    }
+
+    async fn guild_role_delete(
+        &self,
+        ctx: Context,
+        guild_id: GuildId,
+        removed_role_id: RoleId,
+        removed_role_data_if_available: Option<Role>,
+    ) {
+        guild_role_delete::guild_role_delete(self, ctx, guild_id, removed_role_id, removed_role_data_if_available).await
+    }
+
+    async fn guild_update(
+        &self,
+        ctx: Context,
+        old_data_if_available: Option<Guild>,
+        new_data: PartialGuild,
+    ) {
+        guild_update::guild_update(self, ctx, old_data_if_available, new_data).await
     }
 }

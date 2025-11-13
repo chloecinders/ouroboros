@@ -17,12 +17,17 @@ use crate::{
 };
 
 pub async fn guild_member_update(
-    _handler: &Handler,
+    handler: &Handler,
     ctx: Context,
     old_if_available: Option<Member>,
     new: Option<Member>,
     event: GuildMemberUpdateEvent,
 ) {
+    {
+        let mut permission_lock = handler.permission_cache.lock().await;
+        permission_lock.invalidate(event.guild_id.get(), event.user.id.get()).await;
+    }
+
     {
         let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
         let Ok(guild_settings) = settings.get(event.guild_id.get()).await else {

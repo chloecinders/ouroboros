@@ -3,7 +3,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use reqwest::{Client, redirect::Policy};
 use serenity::{
     all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Message as DiscordMessage},
     async_trait,
@@ -82,7 +81,7 @@ impl Command for Ping {
             .embed(
                 CreateEmbed::new()
                     .description(format!(
-                        "HTTP: {http}ms\nGateway: {gateway}ms",
+                        "**PING**\nHTTP: {http}ms\nGateway: {gateway}ms",
                     ))
                     .color(BRAND_BLUE),
             )
