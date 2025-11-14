@@ -15,7 +15,7 @@ use tracing::{info, warn};
 use crate::{
     SQL,
     commands::{
-        About, Ban, Cache, ColonThree, Command, Config, DefineLog, Duration as DurationCommand,
+        About, Ban, Cache, ColonThree, Command, DefineLog, Duration as DurationCommand,
         ExtractId, Kick, Log, MsgDbg, Mute, PermDbg, Ping, Purge, Reason, Say, Softban, Stats,
         Unban, Unmute, Update, Warn,
     },
@@ -113,7 +113,7 @@ impl Handler {
             Arc::new(ColonThree::new()),
             Arc::new(Reason::new()),
             Arc::new(Update::new()),
-            Arc::new(Config::new()),
+            // Arc::new(Config::new()),
             Arc::new(Say::new()),
             Arc::new(About::new()),
             Arc::new(DurationCommand::new()),
@@ -275,10 +275,19 @@ impl EventHandler for Handler {
         new: Option<Message>,
         event: MessageUpdateEvent,
     ) {
-        let mut lock = self.message_cache.lock().await;
-        let old_if_available = lock
-            .get(event.channel_id.get(), event.id.get())
-            .cloned();
+        let old_if_available;
+
+        {
+            let mut lock = self.message_cache.lock().await;
+            old_if_available = lock
+                .get(event.channel_id.get(), event.id.get())
+                .cloned();
+
+            if let Ok(msg) = event.channel_id.message(&ctx, event.id).await {
+                lock.insert_message(event.channel_id.get(), msg);
+            }
+        }
+
         message_update::message_update(self, ctx, old_if_available, new, event).await
     }
 

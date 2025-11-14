@@ -28,15 +28,19 @@ pub async fn guild_member_removal(
     _member_data_if_available: Option<Member>,
 ) {
     {
-        let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
+        // let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
 
-        if let Ok(guild_settings) = settings.get(guild_id.get()).await {
-            if user.bot && guild_settings.log.log_bots.is_none_or(|b| !b) {
-                return;
-            }
-        } else {
-            warn!("Found guild with no cached settings; Id = {}", guild_id);
-        };
+        // if let Ok(guild_settings) = settings.get(guild_id.get()).await {
+        //     if user.bot && guild_settings.log.log_bots.is_none_or(|b| !b) {
+        //         return;
+        //     }
+        // } else {
+        //     warn!("Found guild with no cached settings; Id = {}", guild_id);
+        // };
+
+        if user.bot {
+            return;
+        }
     }
 
     let audit_log = guild_id

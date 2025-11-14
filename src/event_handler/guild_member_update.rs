@@ -29,16 +29,20 @@ pub async fn guild_member_update(
     }
 
     {
-        let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
-        let Ok(guild_settings) = settings.get(event.guild_id.get()).await else {
-            warn!(
-                "Found guild with no cached settings; Id = {}",
-                event.guild_id.get()
-            );
-            return;
-        };
+        // let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
+        // let Ok(guild_settings) = settings.get(event.guild_id.get()).await else {
+        //     warn!(
+        //         "Found guild with no cached settings; Id = {}",
+        //         event.guild_id.get()
+        //     );
+        //     return;
+        // };
 
-        if event.user.bot && guild_settings.log.log_bots.is_none_or(|b| !b) {
+        // if event.user.bot && guild_settings.log.log_bots.is_none_or(|b| !b) {
+        //     return;
+        // }
+
+        if event.user.bot {
             return;
         }
     }

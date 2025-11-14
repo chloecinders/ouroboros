@@ -19,16 +19,20 @@ pub async fn message_delete(
     old_if_available: Option<PartialMessage>,
 ) {
     if let Some(msg) = old_if_available.clone() {
-        let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
-        let guild_id = msg.guild_id.unwrap_or(0);
+        // let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
+        // let guild_id = msg.guild_id.unwrap_or(0);
 
-        if let Ok(guild_settings) = settings.get(guild_id).await {
-            if msg.author.bot && guild_settings.log.log_bots.is_none_or(|b| !b) {
-                return;
-            }
-        } else {
-            warn!("Found guild with no cached settings; Id = {}", guild_id);
-        };
+        // if let Ok(guild_settings) = settings.get(guild_id).await {
+        //     if msg.author.bot && guild_settings.log.log_bots.is_none_or(|b| !b) {
+        //         return;
+        //     }
+        // } else {
+        //     warn!("Found guild with no cached settings; Id = {}", guild_id);
+        // };
+
+        if msg.author.bot {
+            return;
+        }
     }
 
     let guild_id = match event.channel_id.to_channel(&ctx).await {

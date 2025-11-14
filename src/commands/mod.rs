@@ -41,7 +41,7 @@ pub enum CommandArgument {
     None,
     i32(i32),
     GuildChannel(GuildChannel),
-    bool(bool),
+    // bool(bool),
 }
 
 /// Defines a commands syntax, implementing a type and a visual representation of the syntax
@@ -226,7 +226,7 @@ pub trait Command: Send + Sync {
 }
 
 mod admin;
-pub use admin::Config;
+// pub use admin::Config;
 pub use admin::DefineLog;
 
 mod developer;

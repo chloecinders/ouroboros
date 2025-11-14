@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::{collections::HashMap, sync::Arc};
 
 use serenity::{
@@ -22,6 +23,7 @@ use crate::{
 /// The signature of a Transformer function boxed
 type BoxedTransformerFn = Box<TransformerFn>;
 
+// Disabled until its actually needed
 pub struct Config;
 
 impl Config {

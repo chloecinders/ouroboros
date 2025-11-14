@@ -100,8 +100,13 @@ impl MessageQueue {
 
     fn insert(&mut self, msg: PartialMessage) {
         let id = msg.id;
-        self.index.insert(id, self.items.len());
-        self.items.push_back(msg);
+
+        if let Some(&idx) = self.index.get(&id) {
+            self.items[idx] = msg;
+        } else {
+            self.index.insert(id, self.items.len());
+            self.items.push_back(msg);
+        }
     }
 
     fn len(&self) -> usize {

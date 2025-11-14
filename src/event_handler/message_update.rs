@@ -6,7 +6,7 @@ use serenity::all::{
 use crate::{
     constants::SOFT_YELLOW,
     event_handler::Handler,
-    utils::{LogType, cache::partials::PartialMessage, guild_log},
+    utils::{LogType, cache::partials::PartialMessage, create_diff, guild_log},
 };
 
 pub async fn message_update(
@@ -49,7 +49,7 @@ pub async fn message_update(
         guild_id
     );
 
-    let (desc, files) = match old_if_available {
+    let (desc, file) = match old_if_available {
         Some(mut old) => {
             if old.content.is_empty() {
                 old.content = String::from("(no content)");
@@ -58,10 +58,7 @@ pub async fn message_update(
             if old.content.len() > 500 || new_msg.content.len() > 500 {
                 (
                     base.clone(),
-                    vec![
-                        CreateAttachment::bytes(new_msg.content.as_bytes(), "new.txt"),
-                        CreateAttachment::bytes(old.content.as_bytes(), "old.txt"),
-                    ],
+                    Some(CreateAttachment::bytes(create_diff(new_msg.content, old.content).as_bytes(), "msg.diff"))
                 )
             } else {
                 (
@@ -70,18 +67,18 @@ pub async fn message_update(
                         old.content.replace("```", "\\`\\`\\`"),
                         new_msg.content.replace("```", "\\`\\`\\`"),
                     ),
-                    vec![],
+                    None,
                 )
             }
         }
         None => {
             if new_msg.content.len() > 500 {
                 (
-                    format!("{base}\nMessage content not found in cache"),
-                    vec![CreateAttachment::bytes(
+                    format!("{base}\n-# Previous message content not found in cache"),
+                    Some(CreateAttachment::bytes(
                         new_msg.content.as_bytes(),
                         "new.txt",
-                    )],
+                    )),
                 )
             } else {
                 (
@@ -89,7 +86,7 @@ pub async fn message_update(
                         "{base}\n-# Previous message content not found in cache\nAfter:\n```\n{}\n```",
                         new_msg.content.replace("```", "\\`\\`\\`"),
                     ),
-                    vec![],
+                    None,
                 )
             }
         }
@@ -114,7 +111,7 @@ pub async fn message_update(
             ),
     );
 
-    for f in files {
+    if let Some(f) = file {
         message = message.add_file(f);
     }
 

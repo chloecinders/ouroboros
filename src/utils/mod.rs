@@ -25,3 +25,6 @@ pub use message::message_and_dm;
 
 pub mod cache;
 pub mod command_processing;
+
+mod formatting;
+pub use formatting::create_diff;
