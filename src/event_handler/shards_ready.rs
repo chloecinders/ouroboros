@@ -1,6 +1,6 @@
 use std::fs;
 
-use serenity::{all::{Context, Permissions, RoleId}, futures::StreamExt};
+use serenity::{all::{ActivityData, Context, Permissions, RoleId}, futures::StreamExt};
 use sqlx::query;
 use tracing::{error, info};
 
@@ -14,6 +14,7 @@ pub async fn shards_ready(handler: &Handler, ctx: Context, _total_shards: u32) {
     update_guild_settings(&ctx).await;
     fill_message_cache(handler, &ctx).await;
     fill_permission_cache(handler, &ctx).await;
+    set_activity(handler, &ctx).await;
 }
 
 pub async fn finish_update(ctx: &Context) {
@@ -206,4 +207,8 @@ pub async fn fill_permission_cache(handler: &Handler, ctx: &Context) {
             }
         }
     }
+}
+
+async fn set_activity(handler: &Handler, ctx: &Context) {
+    ctx.set_activity(Some(ActivityData::watching(format!("Moderating Members... | {}help", handler.prefix))));
 }
