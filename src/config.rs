@@ -4,7 +4,7 @@ use serde::Deserialize;
 pub struct Config {
     pub bot: Bot,
     pub release: Environment,
-    pub dev: Environment,
+    pub dev: Option<Environment>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -17,8 +17,7 @@ pub struct Environment {
     pub token: String,
     pub prefix: String,
     pub database_url: String,
-    pub max_connections: u32,
-    pub msg_cache: usize,
+    pub max_connections: Option<u32>,
     pub dev_ids: Option<Vec<u64>>,
     pub whitelist_enabled: Option<bool>,
     pub whitelist: Option<Vec<u64>>,

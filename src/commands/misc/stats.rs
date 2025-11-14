@@ -4,7 +4,7 @@ use serenity::{
     all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Message},
     async_trait,
 };
-use sysinfo::System;
+use sysinfo::{MemoryRefreshKind, RefreshKind, System};
 use tracing::warn;
 
 use crate::{
@@ -66,8 +66,10 @@ impl Command for Stats {
         };
 
         let memory = {
-            let mut sys = System::new_all();
-            sys.refresh_all();
+            let refresh_kind = RefreshKind::nothing()
+                .with_memory(MemoryRefreshKind::everything());
+            let mut sys = System::new_with_specifics(refresh_kind);
+            sys.refresh_memory();
 
             sys.process((std::process::id() as usize).into())
                 .map(|p| p.memory() as f64 / 1024.0 / 1024.0)

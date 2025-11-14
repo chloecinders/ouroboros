@@ -81,14 +81,14 @@ async fn main() {
 
     let active_env = match config.bot.env.as_str() {
         "release" => &config.release,
-        "dev" => &config.dev,
+        "dev" => &config.dev.expect("You need to add a dev environment in the config if you are gonna specify to use th dev environment..."),
         _ => panic!("Unknown bot.env, verify bot.env is one of release or dev"),
     };
 
     let _ = SQL.set({
         async {
             PgPoolOptions::new()
-                .max_connections(active_env.max_connections)
+                .max_connections(active_env.max_connections.unwrap_or(5))
                 .connect(&active_env.database_url)
                 .await
                 .expect("Failed to create database pool, make sure the database url in the config is valid.")
@@ -106,7 +106,7 @@ async fn main() {
     let intents = GatewayIntents::all();
 
     let mut cache_settings = Settings::default();
-    cache_settings.max_messages = active_env.msg_cache;
+    cache_settings.max_messages = 0;
     let handler = Handler::new(active_env.prefix.clone());
 
     let mut client = Client::builder(&active_env.token, intents)
