@@ -1,7 +1,6 @@
 use serenity::all::{
     Context, GuildChannel, Member, PartialGuild, PermissionOverwriteType, Permissions, User
 };
-use tracing::warn;
 
 use crate::BOT_CONFIG;
 
@@ -25,20 +24,19 @@ pub async fn check_guild_permission(guild: &PartialGuild, member: &Member, permi
 }
 
 /// Checks if a member has a permission in a guilds channel. Respects channel overrides.
-// pub async fn check_channel_permission(
-//     ctx: &Context,
-//     guild: &PartialGuild,
-//     channel: &GuildChannel,
-//     member: &Member,
-//     permission: Permissions,
-// ) -> bool {
-//     if guild.owner_id.get() == member.user.id.get() {
-//         return true
-//     }
+pub fn check_channel_permission(
+    guild: &PartialGuild,
+    channel: &GuildChannel,
+    member: &Member,
+    permission: Permissions,
+) -> bool {
+    if guild.owner_id.get() == member.user.id.get() {
+        return true
+    }
 
-//     let channel_perms = permissions_for_channel(ctx, channel, member).await;
-//     channel_perms.contains(Permissions::ADMINISTRATOR) || channel_perms.contains(permission)
-// }
+    let channel_perms = permissions_for_channel(guild, channel, member);
+    channel_perms.contains(Permissions::ADMINISTRATOR) || channel_perms.contains(permission)
+}
 
 /// Gets all the permissions of a member in a guild.
 pub fn permissions_for_guild(guild: &PartialGuild, member: &Member) -> Permissions {
@@ -63,19 +61,12 @@ pub fn permissions_for_guild(guild: &PartialGuild, member: &Member) -> Permissio
 }
 
 /// Gets all the permissions of a member in a guild channel, including channel overrides.
-pub async fn permissions_for_channel(
-    ctx: &Context,
+pub fn permissions_for_channel(
+    guild: &PartialGuild,
     channel: &GuildChannel,
     member: &Member,
 ) -> Permissions {
-    let guild = match channel.guild_id.to_partial_guild(&ctx).await {
-        Ok(g) => g,
-        Err(err) => {
-            warn!("Couldn't get PartialGuild during permissions check; err = {err:?}");
-            return Permissions::empty();
-        }
-    };
-    let mut permissions = permissions_for_guild(&guild, member);
+    let mut permissions = permissions_for_guild(guild, member);
     let everyone = guild.roles.iter().find(|r| r.1.position == 0).unwrap();
     let mut roles = member
         .roles
@@ -108,13 +99,8 @@ pub async fn permissions_for_channel(
     }
 
     if let Some(overwrite) = overwrites.iter().find(|p| {
-        if let PermissionOverwriteType::Member(id) = p.kind
-            && id == ctx.cache.current_user().id
-        {
-            true
-        } else {
-            false
-        }
+        let PermissionOverwriteType::Member(id) = p.kind else { return false };
+        id == member.user.id
     }) {
         for perm in overwrite.allow {
             permissions.insert(perm);
@@ -134,4 +120,32 @@ pub fn is_developer(user: &User) -> bool {
     cfg.dev_ids
         .clone()
         .is_some_and(|i| i.contains(&user.id.get()))
+}
+
+/// Checks if a user can target another user with a specific permission (i.e. can user ban target?)
+pub async fn can_target(ctx: &Context, user: &Member, target: &Member, permission: Permissions) -> bool {
+    if let Ok(partial) = user.guild_id.to_partial_guild(ctx).await {
+        if user.user.id == partial.owner_id { return true };
+        if target.user.id == partial.owner_id { return false };
+    }
+
+    let get_highest_role_pos = |mem: &Member| {
+         let mut matching = -1;
+
+        if let Some(mut roles) = mem.roles(&ctx) {
+            roles.sort();
+
+            for role in roles {
+                if role.has_permission(permission) || role.has_permission(Permissions::ADMINISTRATOR) {
+                    matching = role.position as i32;
+                }
+            }
+        }
+
+        matching
+    };
+
+    let user_highest_matching_role_pos = get_highest_role_pos(user);
+    let target_highest_matching_role_pos = get_highest_role_pos(target);
+    user_highest_matching_role_pos > target_highest_matching_role_pos
 }

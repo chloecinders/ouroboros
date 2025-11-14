@@ -2,30 +2,63 @@ use std::{
     collections::HashMap,
     sync::Arc,
 };
-use serenity::all::{Member, PartialGuild, Permissions};
+use serenity::all::{Context, GuildChannel, Member, PartialGuild, Permissions};
 use tokio::sync::Mutex;
 
-use crate::{commands::Command, event_handler::Handler, utils::check_guild_permission};
+use crate::{commands::Command, event_handler::Handler, utils::{check_guild_permission, permissions::check_channel_permission}};
 
+#[derive(Default)]
 pub struct PermissionCache {
     inner: HashMap<u64, GuildPermissionCache>,
+    user: HashMap<u64, HashMap<String, (bool, CommandPermissionResult)>>,
+    user_valid: bool,
 }
 
 impl PermissionCache {
     pub fn new() -> Self {
-        Self { inner: Default::default() }
+        Self::default()
     }
 
-    pub async fn can_run(&mut self, request: CommandPermissionRequest) -> bool {
+    pub async fn can_run(&mut self, request: CommandPermissionRequest) -> CommandPermissionResult {
+        let cmd_perms = request.command.get_permissions();
+
+        if !self.user_valid {
+            self.user = Default::default();
+            self.user_valid = true;
+        }
+
+        let user_channel_entry = self.user.entry(request.channel.id.get()).or_default();
+        let user_cmd_entry = user_channel_entry.entry(request.command.get_name().to_string()).or_default();
+
+        if !user_cmd_entry.0 {
+            for perm in cmd_perms.bot {
+                if !check_channel_permission(&request.guild, &request.channel, &request.current_user, perm) {
+                    user_cmd_entry.0 = true;
+                    user_cmd_entry.1 = CommandPermissionResult::FailedBot(perm);
+                    return user_cmd_entry.1.clone();
+                }
+            }
+
+            user_cmd_entry.0 = true;
+            user_cmd_entry.1 = CommandPermissionResult::Success;
+        } else if user_cmd_entry.0 && user_cmd_entry.1 != CommandPermissionResult::Success {
+            return user_cmd_entry.1.clone();
+        }
+
         let guild_entry = self.inner.entry(request.guild.id.get()).or_default();
         guild_entry.can_run(request).await
     }
 
-    pub async fn invalidate(&mut self, guild_id: u64, user_id: u64) {
+    pub async fn invalidate(&mut self, ctx: &Context, guild_id: u64, user_id: u64) {
+        if ctx.cache.current_user().id.get() == user_id {
+            self.user_valid = false;
+        }
+
         self.inner.entry(guild_id).or_default().invalidate(user_id).await;
     }
 
     pub async fn invalidate_guild(&mut self, guild_id: u64) {
+        self.user_valid = false;
         self.inner.insert(guild_id, Default::default());
     }
 }
@@ -36,11 +69,12 @@ struct GuildPermissionCache {
 }
 
 impl GuildPermissionCache {
-    pub async fn can_run(&mut self, request: CommandPermissionRequest) -> bool {
+    pub async fn can_run(&mut self, request: CommandPermissionRequest) -> CommandPermissionResult {
         let perms = request.command.get_permissions();
 
+
         if perms.one_of.is_empty() && perms.required.is_empty() {
-            return true;
+            return CommandPermissionResult::Success;
         }
 
         let user_id = request.member.user.id.get();
@@ -50,12 +84,14 @@ impl GuildPermissionCache {
 
         if !user_entry.valid {
             let allowed = Self::evaluate_permissions(request.clone()).await;
-            user_entry.allowed.insert(command_name.clone(), allowed);
+            user_entry.allowed.insert(command_name.clone(), allowed.clone());
             user_entry.valid = true;
 
             let handler = request.handler.clone();
             let member = request.member.clone();
             let guild = request.guild.clone();
+            let channel = request.channel.clone();
+            let current_user = request.current_user.clone();
             let entry_ref = Arc::clone(&user_entry_arc);
 
             tokio::spawn(async move {
@@ -70,8 +106,10 @@ impl GuildPermissionCache {
                     }
 
                     let req = CommandPermissionRequest {
+                        current_user: current_user.clone(),
                         command: command.clone(),
                         member: member.clone(),
+                        channel: channel.clone(),
                         guild: guild.clone(),
                         handler: handler.clone(),
                     };
@@ -86,13 +124,11 @@ impl GuildPermissionCache {
             return allowed;
         }
 
-        dbg!(&user_entry);
-
         match user_entry.allowed.get(&command_name) {
-            Some(v) => *v,
+            Some(v) => v.clone(),
             None => {
                 let allowed = Self::evaluate_permissions(request).await;
-                user_entry.allowed.insert(command_name, allowed);
+                user_entry.allowed.insert(command_name, allowed.clone());
                 allowed
             }
         }
@@ -104,7 +140,7 @@ impl GuildPermissionCache {
         entry.allowed = Default::default();
     }
 
-    async fn evaluate_permissions(request: CommandPermissionRequest) -> bool {
+    async fn evaluate_permissions(request: CommandPermissionRequest) -> CommandPermissionResult {
         let permissions = request.command.get_permissions();
         let guild = request.guild;
         let member = request.member;
@@ -112,38 +148,56 @@ impl GuildPermissionCache {
         if check_guild_permission(&guild, &member, Permissions::ADMINISTRATOR).await
             || guild.owner_id.get() == member.user.id.get()
         {
-            return true;
+            return CommandPermissionResult::Success;
         }
 
         for permission in permissions.required {
             if !check_guild_permission(&guild, &member, permission).await {
-                return false;
+                return CommandPermissionResult::FailedUserRequired;
             }
         }
 
         if !permissions.one_of.is_empty() {
             for permission in permissions.one_of {
                 if check_guild_permission(&guild, &member, permission).await {
-                    return true;
+                    return CommandPermissionResult::Success;
                 }
             }
-            return false;
+
+            return CommandPermissionResult::FailedUserOneOf;
         }
 
-        true
+        CommandPermissionResult::Success
     }
 }
 
 #[derive(Default, Debug, Clone)]
 struct CommandPermissionCacheInfo {
-    pub allowed: HashMap<String, bool>,
+    pub allowed: HashMap<String, CommandPermissionResult>,
     pub valid: bool,
 }
 
 #[derive(Clone)]
 pub struct CommandPermissionRequest {
+    pub current_user: Member,
     pub command: Arc<dyn Command>,
     pub member: Member,
     pub guild: PartialGuild,
+    pub channel: GuildChannel,
     pub handler: Handler,
+}
+
+#[derive(PartialEq, Debug, Clone)]
+pub enum CommandPermissionResult {
+    Success,
+    FailedBot(Permissions),
+    FailedUserOneOf,
+    FailedUserRequired,
+    Uninitialised,
+}
+
+impl Default for CommandPermissionResult {
+    fn default() -> Self {
+        Self::Uninitialised
+    }
 }

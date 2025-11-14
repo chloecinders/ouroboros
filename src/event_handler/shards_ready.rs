@@ -145,6 +145,30 @@ pub async fn fill_permission_cache(handler: &Handler, ctx: &Context) {
             continue;
         };
 
+        let channel = {
+            let Some(channel_id) = partial.system_channel_id
+                .or(partial.widget_channel_id)
+                .or(partial.rules_channel_id)
+                .or(partial.public_updates_channel_id)
+            else {
+                continue;
+            };
+
+            let Ok(channels) = partial.channels(&ctx).await else { continue };
+            let mut res_channel = None;
+
+            for (id, channel) in channels {
+                res_channel = Some(channel);
+
+                if channel_id == id {
+                    break;
+                }
+            }
+
+            let Some(channel) = res_channel else { continue };
+            channel
+        };
+
         let mut valid_roles: Vec<RoleId> = Vec::new();
 
         for (id, role) in &partial.roles {
@@ -156,6 +180,11 @@ pub async fn fill_permission_cache(handler: &Handler, ctx: &Context) {
             }
         }
 
+        let id = ctx.cache.current_user().id.clone();
+        let Ok(current_user) = partial.member(&ctx, id).await else {
+            continue;
+        };
+
         let mut members = guild.members_iter(&ctx).boxed();
 
         while let Some(member_result) = members.next().await {
@@ -165,9 +194,12 @@ pub async fn fill_permission_cache(handler: &Handler, ctx: &Context) {
 
             if member.roles.iter().any(|r| valid_roles.contains(&r)) {
                 let mut cache = handler.permission_cache.lock().await;
+
                 cache.can_run(CommandPermissionRequest {
+                    current_user: current_user.clone(),
                     command: handler.commands.iter().find(|c| c.get_name() == "ban").cloned().unwrap(),
                     member,
+                    channel: channel.clone(),
                     guild: partial.clone(),
                     handler: handler.clone(),
                 }).await;

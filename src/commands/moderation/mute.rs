@@ -18,7 +18,7 @@ use crate::{
     event_handler::CommandError,
     lexer::{InferType, Token},
     transformers::Transformers,
-    utils::{LogType, guild_log, message_and_dm, tinyid},
+    utils::{LogType, can_target, guild_log, message_and_dm, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -75,6 +75,22 @@ impl Command for Mute {
         #[transformers::maybe_duration] duration: Option<Duration>,
         #[transformers::reply_consume] reason: Option<String>,
     ) -> Result<(), CommandError> {
+        let Ok(author_member) = msg.member(&ctx).await else {
+            return Err(CommandError {
+                title: String::from("Unexpected error has occured."),
+                hint: Some(String::from("could not get author member")),
+                arg: None
+            });
+        };
+    
+        if !can_target(&ctx, &author_member, &member, Permissions::MODERATE_MEMBERS).await {
+            return Err(CommandError {
+                title: String::from("You may not target this member."),
+                hint: None,
+                arg: None
+            });
+        }
+        
         let inferred = args
             .first()
             .map(|a| matches!(a.inferred, Some(InferType::Message)))

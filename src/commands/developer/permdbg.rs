@@ -68,7 +68,7 @@ impl Command for PermDbg {
                 .unwrap()
                 .into_owned();
 
-            let permissions = permissions_for_channel(&ctx, &channel, &member).await;
+            let permissions = permissions_for_channel(&guild.into(), &channel, &member);
 
         let mut perms = Permissions::all()
             .iter()

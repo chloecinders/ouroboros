@@ -1,8 +1,8 @@
 mod permissions;
-// pub use permissions::check_channel_permission;
 pub use permissions::check_guild_permission;
 pub use permissions::is_developer;
 pub use permissions::permissions_for_channel;
+pub use permissions::can_target;
 
 mod logging;
 pub use logging::LogType;

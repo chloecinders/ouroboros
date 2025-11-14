@@ -190,7 +190,7 @@ impl Handler {
                 .send_message(
                     &ctx,
                     CreateMessage::new().content(format!(
-                        "{error_message}\n-# Bot does not have embed perms in this channel."
+                        "{error_message}\n-# Bot does not have embed permissions in this channel."
                     )),
                 )
                 .await;
@@ -224,9 +224,15 @@ impl Handler {
             })
             .collect();
 
-        let channel_ids: Vec<i64> = rows.iter().map(|r| r.0).collect();
-        let message_counts: Vec<i64> = rows.iter().map(|r| r.1).collect();
-        let previous_actions: Vec<i16> = rows.iter().map(|r| r.2).collect();
+        let mut channel_ids: Vec<i64> = Vec::new();
+        let mut message_counts: Vec<i64> = Vec::new();
+        let mut previous_actions: Vec<i16> = Vec::new();
+
+        rows.into_iter().for_each(|(id, count, act)| {
+            channel_ids.push(id);
+            message_counts.push(count);
+            previous_actions.push(act);
+        });
 
         if let Err(err) = sqlx::query!(
             r#"
