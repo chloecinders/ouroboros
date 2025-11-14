@@ -89,10 +89,12 @@ impl Command for Softban {
             });
         };
     
-        if !can_target(&ctx, &author_member, &member, Permissions::KICK_MEMBERS).await {
+        let res = can_target(&ctx, &author_member, &member, Permissions::MODERATE_MEMBERS).await;
+        
+        if !res.0 {
             return Err(CommandError {
                 title: String::from("You may not target this member."),
-                hint: None,
+                hint: Some(format!("check: {} vs {}", res.1, res.2)),
                 arg: None
             });
         }

@@ -123,10 +123,10 @@ pub fn is_developer(user: &User) -> bool {
 }
 
 /// Checks if a user can target another user with a specific permission (i.e. can user ban target?)
-pub async fn can_target(ctx: &Context, user: &Member, target: &Member, permission: Permissions) -> bool {
+pub async fn can_target(ctx: &Context, user: &Member, target: &Member, permission: Permissions) -> (bool, i32, i32) {
     if let Ok(partial) = user.guild_id.to_partial_guild(ctx).await {
-        if user.user.id == partial.owner_id { return true };
-        if target.user.id == partial.owner_id { return false };
+        if user.user.id == partial.owner_id { return (true, -2, -2) };
+        if target.user.id == partial.owner_id { return (false, -2, -2) };
     }
 
     let get_highest_role_pos = |mem: &Member| {
@@ -147,5 +147,5 @@ pub async fn can_target(ctx: &Context, user: &Member, target: &Member, permissio
 
     let user_highest_matching_role_pos = get_highest_role_pos(user);
     let target_highest_matching_role_pos = get_highest_role_pos(target);
-    user_highest_matching_role_pos > target_highest_matching_role_pos
+    (user_highest_matching_role_pos > target_highest_matching_role_pos, user_highest_matching_role_pos, target_highest_matching_role_pos)
 }
