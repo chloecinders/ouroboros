@@ -58,7 +58,7 @@ pub async fn message_update(
             if old.content.len() > 500 || new_msg.content.len() > 500 {
                 (
                     base.clone(),
-                    Some(CreateAttachment::bytes(create_diff(new_msg.content, old.content).as_bytes(), "msg.diff"))
+                    Some(CreateAttachment::bytes(create_diff(old.content, new_msg.content).as_bytes(), "msg.diff"))
                 )
             } else {
                 (
