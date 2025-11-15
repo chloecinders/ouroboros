@@ -70,7 +70,7 @@ pub async fn message_delete(
         }
     }
 
-    let mut description = format!("**MESSAGE DELETED**\n-# {0} ", event.message_id.get());
+    let mut description = format!("**MESSAGE DELETED**\n-# ID: {0} ", event.message_id.get());
     let mut files = vec![];
     let mut embed = CreateEmbed::new().color(BRAND_RED);
 

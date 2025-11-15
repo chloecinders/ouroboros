@@ -20,6 +20,10 @@ pub async fn message_update(
         return;
     }
 
+    if let Some(user) = event.author && user.bot {
+        return;
+    }
+
     let mut new_msg = match new {
         Some(m) if m.author.id != ctx.cache.current_user().id => m,
         Some(_) => return,
@@ -42,7 +46,7 @@ pub async fn message_update(
     };
 
     let base = format!(
-        "**MESSAGE EDITED**\n-# Message {0} [jump](https://discord.com/channels/{3}/{2}/{0}) | Target: <@{1}> | Channel: <#{2}>",
+        "**MESSAGE EDITED**\n-# ID: {0} [jump](https://discord.com/channels/{3}/{2}/{0}) | Target: <@{1}> | Channel: <#{2}>",
         new_msg.id.get(),
         new_msg.author.id.get(),
         new_msg.channel_id.get(),
