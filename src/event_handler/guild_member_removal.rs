@@ -5,10 +5,8 @@ use serenity::all::{
     Mentionable, User, UserId,
     audit_log::Action,
 };
-use tracing::warn;
 
 use crate::{
-    GUILD_SETTINGS,
     constants::BRAND_BLUE,
     event_handler::Handler,
     utils::{LogType, guild_log, snowflake_to_timestamp},

@@ -3,10 +3,8 @@ use serenity::all::{
     Channel, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
     MessageAction, audit_log::Action,
 };
-use tracing::warn;
 
 use crate::{
-    GUILD_SETTINGS,
     constants::BRAND_RED,
     event_handler::{Handler, MessageDeleteEvent},
     utils::{LogType, cache::partials::PartialMessage, guild_log, snowflake_to_timestamp},
@@ -19,17 +17,6 @@ pub async fn message_delete(
     old_if_available: Option<PartialMessage>,
 ) {
     if let Some(msg) = old_if_available.clone() {
-        // let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
-        // let guild_id = msg.guild_id.unwrap_or(0);
-
-        // if let Ok(guild_settings) = settings.get(guild_id).await {
-        //     if msg.author.bot && guild_settings.log.log_bots.is_none_or(|b| !b) {
-        //         return;
-        //     }
-        // } else {
-        //     warn!("Found guild with no cached settings; Id = {}", guild_id);
-        // };
-
         if msg.author.bot {
             return;
         }
@@ -109,11 +96,11 @@ pub async fn message_delete(
         }
     }
 
-    description.push_str(&format!("| Channel: <#{0}> ({0}) ", event.channel_id.get()));
-
     if let Some(moderator) = actor_id {
-        description.push_str(&format!("| Actor: <@{moderator}> ({moderator}) "));
+        description.push_str(&format!("| Actor: <@{moderator}> "));
     };
+
+    description.push_str(&format!("| Channel: <#{0}> ", event.channel_id.get()));
 
     if let Some(msg) = old_if_available {
         description.push_str(&format!(

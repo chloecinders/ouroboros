@@ -7,10 +7,8 @@ use serenity::all::{
     Change, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
     GuildMemberUpdateEvent, Member, MemberAction, audit_log::Action,
 };
-use tracing::warn;
 
 use crate::{
-    GUILD_SETTINGS,
     constants::BRAND_BLUE,
     event_handler::Handler,
     utils::{LogType, guild_log, snowflake_to_timestamp},
