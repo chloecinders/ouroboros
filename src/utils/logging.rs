@@ -32,7 +32,7 @@ impl LogType {
             LogType::MemberUpdate => "Nickname, role, avatar changes",
             LogType::ActionUpdate => "Modeartion action duration/reason change",
             LogType::MessageUpdate => "Message deletions and edits",
-            LogType::OuroborosAnnonucements => "Scheduled bot downtime, updates"
+            LogType::OuroborosAnnonucements => "Scheduled bot downtime, updates",
         })
     }
 

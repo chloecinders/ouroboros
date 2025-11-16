@@ -80,9 +80,7 @@ impl Command for Ping {
         let message = CreateMessage::new()
             .embed(
                 CreateEmbed::new()
-                    .description(format!(
-                        "**PING**\nHTTP: {http}ms\nGateway: {gateway}ms",
-                    ))
+                    .description(format!("**PING**\nHTTP: {http}ms\nGateway: {gateway}ms",))
                     .color(BRAND_BLUE),
             )
             .reference_message(&msg)

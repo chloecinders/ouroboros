@@ -2,7 +2,9 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use serenity::{
     all::{
-        ChannelId, Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EventHandler, Guild, GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent, PartialGuild, Role, RoleId, User
+        ChannelId, Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EventHandler, Guild,
+        GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent,
+        PartialGuild, Role, RoleId, User,
     },
     async_trait,
 };
@@ -15,9 +17,9 @@ use tracing::{info, warn};
 use crate::{
     SQL,
     commands::{
-        About, Ban, Cache, ColonThree, Command, DefineLog, Duration as DurationCommand,
-        ExtractId, Kick, Log, MsgDbg, Mute, PermDbg, Ping, Purge, Reason, Say, Softban, Stats,
-        Unban, Unmute, Update, Warn,
+        About, Ban, Cache, ColonThree, Command, DefineLog, Duration as DurationCommand, ExtractId,
+        Kick, Log, MsgDbg, Mute, PermDbg, Ping, Purge, Reason, Say, Softban, Stats, Unban, Unmute,
+        Update, Warn,
     },
     constants::BRAND_RED,
     lexer::Token,
@@ -79,13 +81,13 @@ mod help_cmd;
 mod guild_create;
 mod guild_member_removal;
 mod guild_member_update;
+mod guild_role_delete;
+mod guild_role_update;
+mod guild_update;
 mod message;
 mod message_delete;
 mod message_update;
 mod shards_ready;
-mod guild_role_update;
-mod guild_role_delete;
-mod guild_update;
 
 #[derive(Clone)]
 pub struct Handler {
@@ -138,7 +140,7 @@ impl Handler {
             prefix,
             commands,
             message_cache: cache,
-            permission_cache: Arc::new(Mutex::new(PermissionCache::new()))
+            permission_cache: Arc::new(Mutex::new(PermissionCache::new())),
         }
     }
 }
@@ -279,9 +281,7 @@ impl EventHandler for Handler {
 
         {
             let mut lock = self.message_cache.lock().await;
-            old_if_available = lock
-                .get(event.channel_id.get(), event.id.get())
-                .cloned();
+            old_if_available = lock.get(event.channel_id.get(), event.id.get()).cloned();
 
             if let Ok(msg) = event.channel_id.message(&ctx, event.id).await {
                 lock.insert_message(event.channel_id.get(), msg);
@@ -360,7 +360,14 @@ impl EventHandler for Handler {
         removed_role_id: RoleId,
         removed_role_data_if_available: Option<Role>,
     ) {
-        guild_role_delete::guild_role_delete(self, ctx, guild_id, removed_role_id, removed_role_data_if_available).await
+        guild_role_delete::guild_role_delete(
+            self,
+            ctx,
+            guild_id,
+            removed_role_id,
+            removed_role_data_if_available,
+        )
+        .await
     }
 
     async fn guild_update(

@@ -6,10 +6,16 @@ use serenity::{
 use tracing::warn;
 
 use crate::{
-    BOT_CONFIG, commands::{
+    BOT_CONFIG,
+    commands::{
         Command, CommandArgument, CommandCategory, CommandParameter, CommandSyntax,
         TransformerFnArc,
-    }, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::{LogType, get_all_guilds, guild_log, is_developer}
+    },
+    constants::BRAND_BLUE,
+    event_handler::CommandError,
+    lexer::Token,
+    transformers::Transformers,
+    utils::{LogType, get_all_guilds, guild_log, is_developer},
 };
 use ouroboros_macros::command;
 use std::{process::exit, sync::Arc};
@@ -78,11 +84,12 @@ impl Command for Update {
                         LogType::OuroborosAnnonucements,
                         guild.id,
                         CreateMessage::new().add_embed(
-                            CreateEmbed::new()
-                                .color(BRAND_BLUE)
-                                .description(format!("**OUROBOROS UPDATE: {title}**\n\n{description}\n"))
-                        )
-                    ).await
+                            CreateEmbed::new().color(BRAND_BLUE).description(format!(
+                                "**OUROBOROS UPDATE: {title}**\n\n{description}\n"
+                            )),
+                        ),
+                    )
+                    .await
                 }
             }));
         }
@@ -386,7 +393,6 @@ impl Command for Update {
                             return Ok(());
                         }
                     };
-
 
                 drop(child);
                 exit(0);

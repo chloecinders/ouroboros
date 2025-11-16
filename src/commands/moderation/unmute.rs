@@ -74,17 +74,17 @@ impl Command for Unmute {
             return Err(CommandError {
                 title: String::from("Unexpected error has occured."),
                 hint: Some(String::from("could not get author member")),
-                arg: None
+                arg: None,
             });
         };
-    
+
         let res = can_target(&ctx, &author_member, &member, Permissions::MODERATE_MEMBERS).await;
-        
+
         if !res.0 {
             return Err(CommandError {
                 title: String::from("You may not target this member."),
                 hint: Some(format!("check: {} vs {}", res.1, res.2)),
-                arg: None
+                arg: None,
             });
         }
 

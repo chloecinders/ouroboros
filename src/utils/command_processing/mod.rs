@@ -3,7 +3,15 @@ use std::collections::HashMap;
 use serenity::all::{Context, CreateAllowedMentions, CreateMessage, Message};
 use tracing::warn;
 
-use crate::{commands::{CommandArgument, TransformerError}, event_handler::{CommandError, Handler}, lexer::{Token, lex}, utils::{cache::permission_cache::{CommandPermissionRequest, CommandPermissionResult}, extract_command_parameters, is_developer}};
+use crate::{
+    commands::{CommandArgument, TransformerError},
+    event_handler::{CommandError, Handler},
+    lexer::{Token, lex},
+    utils::{
+        cache::permission_cache::{CommandPermissionRequest, CommandPermissionResult},
+        extract_command_parameters, is_developer,
+    },
+};
 
 pub async fn process(handler: &Handler, ctx: Context, mut msg: Message) {
     if !msg.content.starts_with(handler.prefix.as_str()) || msg.guild_id.is_none() {
@@ -61,51 +69,69 @@ pub async fn process(handler: &Handler, ctx: Context, mut msg: Message) {
 
         {
             let Ok(member) = msg.member(&ctx).await else {
-                handler.send_error(&ctx, &msg,
-                    msg.content.clone(),
-                    CommandError {
-                        title: String::from("You do not have permissions to execute this command."),
-                        hint: Some(String::from("could not get member object")),
-                        arg: None,
-                    },
-                ).await;
+                handler
+                    .send_error(
+                        &ctx,
+                        &msg,
+                        msg.content.clone(),
+                        CommandError {
+                            title: String::from(
+                                "You do not have permissions to execute this command.",
+                            ),
+                            hint: Some(String::from("could not get member object")),
+                            arg: None,
+                        },
+                    )
+                    .await;
                 return;
             };
 
             let Ok(guild) = member.guild_id.to_partial_guild(&ctx).await else {
-                handler.send_error(&ctx, &msg,
-                    msg.content.clone(),
-                    CommandError {
-                        title: format!("You do not have permissions to execute this command."),
-                        hint: Some(String::from("could not get guild object")),
-                        arg: None,
-                    },
-                ).await;
+                handler
+                    .send_error(
+                        &ctx,
+                        &msg,
+                        msg.content.clone(),
+                        CommandError {
+                            title: format!("You do not have permissions to execute this command."),
+                            hint: Some(String::from("could not get guild object")),
+                            arg: None,
+                        },
+                    )
+                    .await;
                 return;
             };
 
             let Ok(Some(channel)) = msg.channel(&ctx).await.map(|c| c.guild()) else {
-                handler.send_error(&ctx, &msg,
-                    msg.content.clone(),
-                    CommandError {
-                        title: format!("You do not have permissions to execute this command."),
-                        hint: Some(String::from("could not get channel object")),
-                        arg: None,
-                    },
-                ).await;
+                handler
+                    .send_error(
+                        &ctx,
+                        &msg,
+                        msg.content.clone(),
+                        CommandError {
+                            title: format!("You do not have permissions to execute this command."),
+                            hint: Some(String::from("could not get channel object")),
+                            arg: None,
+                        },
+                    )
+                    .await;
                 return;
             };
 
             let id = ctx.cache.current_user().id.clone();
             let Ok(current_user) = guild.member(&ctx, id).await else {
-                handler.send_error(&ctx, &msg,
-                    msg.content.clone(),
-                    CommandError {
-                        title: format!("You do not have permissions to execute this command."),
-                        hint: Some(String::from("could not get current member object")),
-                        arg: None,
-                    },
-                ).await;
+                handler
+                    .send_error(
+                        &ctx,
+                        &msg,
+                        msg.content.clone(),
+                        CommandError {
+                            title: format!("You do not have permissions to execute this command."),
+                            hint: Some(String::from("could not get current member object")),
+                            arg: None,
+                        },
+                    )
+                    .await;
                 return;
             };
 
@@ -115,7 +141,7 @@ pub async fn process(handler: &Handler, ctx: Context, mut msg: Message) {
                 command: c.clone(),
                 channel: channel,
                 member: member,
-                guild: guild
+                guild: guild,
             };
 
             let mut lock = handler.permission_cache.lock().await;
@@ -125,20 +151,32 @@ pub async fn process(handler: &Handler, ctx: Context, mut msg: Message) {
             if result != CommandPermissionResult::Success {
                 let err_msg = match result {
                     CommandPermissionResult::Success => unreachable!(),
-                    CommandPermissionResult::FailedBot(perm) => format!("I do not have the required permissions to execute this command. Required: {perm}"),
-                    CommandPermissionResult::FailedUserOneOf => String::from("You do not have one of the permissions required to execute this command."),
-                    CommandPermissionResult::FailedUserRequired => String::from("You do not have the required permissiosn to execute this command."),
-                    CommandPermissionResult::Uninitialised => String::from("You arent supposed to see this! Report this to the devs ;("),
+                    CommandPermissionResult::FailedBot(perm) => format!(
+                        "I do not have the required permissions to execute this command. Required: {perm}"
+                    ),
+                    CommandPermissionResult::FailedUserOneOf => String::from(
+                        "You do not have one of the permissions required to execute this command.",
+                    ),
+                    CommandPermissionResult::FailedUserRequired => String::from(
+                        "You do not have the required permissiosn to execute this command.",
+                    ),
+                    CommandPermissionResult::Uninitialised => {
+                        String::from("You arent supposed to see this! Report this to the devs ;(")
+                    }
                 };
 
-                handler.send_error(&ctx, &msg,
-                    msg.content.clone(),
-                    CommandError {
-                        title: err_msg,
-                        hint: None,
-                        arg: None,
-                    },
-                ).await;
+                handler
+                    .send_error(
+                        &ctx,
+                        &msg,
+                        msg.content.clone(),
+                        CommandError {
+                            title: err_msg,
+                            hint: None,
+                            arg: None,
+                        },
+                    )
+                    .await;
                 return;
             }
         }

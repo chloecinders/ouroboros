@@ -1,11 +1,12 @@
-use std::{
-    collections::HashMap,
-    sync::Arc,
-};
 use serenity::all::{Context, GuildChannel, Member, PartialGuild, Permissions};
+use std::{collections::HashMap, sync::Arc};
 use tokio::sync::Mutex;
 
-use crate::{commands::Command, event_handler::Handler, utils::{check_guild_permission, permissions::check_channel_permission}};
+use crate::{
+    commands::Command,
+    event_handler::Handler,
+    utils::{check_guild_permission, permissions::check_channel_permission},
+};
 
 #[derive(Default)]
 pub struct PermissionCache {
@@ -28,11 +29,18 @@ impl PermissionCache {
         }
 
         let user_channel_entry = self.user.entry(request.channel.id.get()).or_default();
-        let user_cmd_entry = user_channel_entry.entry(request.command.get_name().to_string()).or_default();
+        let user_cmd_entry = user_channel_entry
+            .entry(request.command.get_name().to_string())
+            .or_default();
 
         if !user_cmd_entry.0 {
             for perm in cmd_perms.bot {
-                if !check_channel_permission(&request.guild, &request.channel, &request.current_user, perm) {
+                if !check_channel_permission(
+                    &request.guild,
+                    &request.channel,
+                    &request.current_user,
+                    perm,
+                ) {
                     user_cmd_entry.0 = true;
                     user_cmd_entry.1 = CommandPermissionResult::FailedBot(perm);
                     return user_cmd_entry.1.clone();
@@ -54,7 +62,11 @@ impl PermissionCache {
             self.user_valid = false;
         }
 
-        self.inner.entry(guild_id).or_default().invalidate(user_id).await;
+        self.inner
+            .entry(guild_id)
+            .or_default()
+            .invalidate(user_id)
+            .await;
     }
 
     pub async fn invalidate_guild(&mut self, guild_id: u64) {
@@ -72,7 +84,6 @@ impl GuildPermissionCache {
     pub async fn can_run(&mut self, request: CommandPermissionRequest) -> CommandPermissionResult {
         let perms = request.command.get_permissions();
 
-
         if perms.one_of.is_empty() && perms.required.is_empty() {
             return CommandPermissionResult::Success;
         }
@@ -84,7 +95,9 @@ impl GuildPermissionCache {
 
         if !user_entry.valid {
             let allowed = Self::evaluate_permissions(request.clone()).await;
-            user_entry.allowed.insert(command_name.clone(), allowed.clone());
+            user_entry
+                .allowed
+                .insert(command_name.clone(), allowed.clone());
             user_entry.valid = true;
 
             let handler = request.handler.clone();

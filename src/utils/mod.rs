@@ -1,8 +1,8 @@
 mod permissions;
+pub use permissions::can_target;
 pub use permissions::check_guild_permission;
 pub use permissions::is_developer;
 pub use permissions::permissions_for_channel;
-pub use permissions::can_target;
 
 mod logging;
 pub use logging::LogType;
@@ -20,8 +20,8 @@ mod error;
 pub use error::AnyError;
 
 mod message;
-pub use message::extract_command_parameters;
 pub use message::CommandMessageResponse;
+pub use message::extract_command_parameters;
 
 pub mod cache;
 pub mod command_processing;

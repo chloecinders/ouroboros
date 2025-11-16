@@ -70,24 +70,28 @@ impl Command for PermDbg {
 
             let permissions = permissions_for_channel(&guild.into(), &channel, &member);
 
-        let mut perms = Permissions::all()
-            .iter()
-            .map(|flag| (flag.bits(), flag, permissions.contains(flag)))
-            .collect::<Vec<_>>();
+            let mut perms = Permissions::all()
+                .iter()
+                .map(|flag| (flag.bits(), flag, permissions.contains(flag)))
+                .collect::<Vec<_>>();
 
-        perms.sort_by_key(|k| k.0);
+            perms.sort_by_key(|k| k.0);
 
-        let strings = perms
-            .into_iter()
-            .map(|(_, flag, is_set)| {
-                format!(
-                    "`{} (1<<{}) {}`",
-                    if flag.to_string().is_empty() { String::from("UNKNOWN") } else { flag.to_string() },
-                    flag.bits().trailing_zeros(),
-                    if is_set { "[x]" } else { "[ ]" }
-                )
-            })
-            .collect::<Vec<_>>();
+            let strings = perms
+                .into_iter()
+                .map(|(_, flag, is_set)| {
+                    format!(
+                        "`{} (1<<{}) {}`",
+                        if flag.to_string().is_empty() {
+                            String::from("UNKNOWN")
+                        } else {
+                            flag.to_string()
+                        },
+                        flag.bits().trailing_zeros(),
+                        if is_set { "[x]" } else { "[ ]" }
+                    )
+                })
+                .collect::<Vec<_>>();
 
             let reply = CreateMessage::new()
                 .content(format!(

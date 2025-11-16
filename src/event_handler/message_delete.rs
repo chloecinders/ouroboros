@@ -74,18 +74,13 @@ pub async fn message_delete(
     let mut files = vec![];
     let mut embed = CreateEmbed::new().color(BRAND_RED);
 
-    if
-        let Some(msg) = old_if_available.clone()
+    if let Some(msg) = old_if_available.clone()
         && let Some(author) = msg.author.to_user(&ctx).await
     {
         description.push_str(&format!("| Target: <@{}> ", msg.author.id));
         embed = embed.author(
             CreateEmbedAuthor::new(format!("{}: {}", msg.author.name, msg.author.id))
-                .icon_url(
-                    author
-                        .avatar_url()
-                        .unwrap_or(author.default_avatar_url()),
-                ),
+                .icon_url(author.avatar_url().unwrap_or(author.default_avatar_url())),
         );
 
         for attachment in msg.attachment_urls.iter() {
@@ -117,7 +112,7 @@ pub async fn message_delete(
 
     guild_log(
         &ctx,
-        LogType::MemberModeration,
+        LogType::MessageUpdate,
         guild_id,
         CreateMessage::new()
             .add_embed(embed.description(description))

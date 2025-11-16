@@ -66,8 +66,7 @@ impl Command for Stats {
         };
 
         let memory = {
-            let refresh_kind = RefreshKind::nothing()
-                .with_memory(MemoryRefreshKind::everything());
+            let refresh_kind = RefreshKind::nothing().with_memory(MemoryRefreshKind::everything());
             let mut sys = System::new_with_specifics(refresh_kind);
             sys.refresh_memory();
 

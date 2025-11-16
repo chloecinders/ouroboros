@@ -23,7 +23,9 @@ pub async fn guild_member_update(
 ) {
     {
         let mut permission_lock = handler.permission_cache.lock().await;
-        permission_lock.invalidate(&ctx, event.guild_id.get(), event.user.id.get()).await;
+        permission_lock
+            .invalidate(&ctx, event.guild_id.get(), event.user.id.get())
+            .await;
     }
 
     {

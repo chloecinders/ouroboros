@@ -49,13 +49,12 @@ impl Command for ScheduleDowntime {
     }
 
     #[command]
-    async fn run(
-        &self,
-        ctx: Context,
-        msg: Message,
-    ) -> Result<(), CommandError> {
+    async fn run(&self, ctx: Context, msg: Message) -> Result<(), CommandError> {
         if is_developer(&msg.author) {
-            let _ = msg.channel_id.send_message(&ctx, CreateMessage::new().content("fuck you")).await;
+            let _ = msg
+                .channel_id
+                .send_message(&ctx, CreateMessage::new().content("fuck you"))
+                .await;
         }
 
         Ok(())

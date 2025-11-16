@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use chrono::{Duration, Utc};
 use serenity::{
-    all::{Context, CreateEmbed, CreateMessage, GuildId, Mentionable, Message, Permissions}, async_trait
+    all::{Context, CreateEmbed, CreateMessage, GuildId, Mentionable, Message, Permissions},
+    async_trait,
 };
 use sqlx::query;
 use tracing::{error, warn};
@@ -91,7 +92,7 @@ impl Command for Ban {
             return Err(CommandError {
                 title: String::from("Unexpected error has occured."),
                 hint: Some(String::from("could not get guild id")),
-                arg: None
+                arg: None,
             });
         };
 
@@ -100,16 +101,22 @@ impl Command for Ban {
                 return Err(CommandError {
                     title: String::from("Unexpected error has occured."),
                     hint: Some(String::from("could not get author member")),
-                    arg: None
+                    arg: None,
                 });
             };
 
-            let res = can_target(&ctx, &author_member, &target_member, Permissions::MODERATE_MEMBERS).await;
+            let res = can_target(
+                &ctx,
+                &author_member,
+                &target_member,
+                Permissions::MODERATE_MEMBERS,
+            )
+            .await;
             if !res.0 {
                 return Err(CommandError {
                     title: String::from("You may not target this member."),
                     hint: Some(format!("check: {} vs {}", res.1, res.2)),
-                    arg: None
+                    arg: None,
                 });
             }
         }
@@ -208,10 +215,7 @@ impl Command for Ban {
             duration
         ).execute(SQL.get().unwrap());
 
-        let (res1, res2) = tokio::join!(
-            disable_past,
-            insert_ban
-        );
+        let (res1, res2) = tokio::join!(disable_past, insert_ban);
 
         if let Err(err) = res1 {
             warn!("Got error while banning; err = {err:?}");
@@ -238,25 +242,36 @@ impl Command for Ban {
         }
 
         let guild_name = {
-            match msg.guild_id.unwrap_or(GuildId::new(1)).to_partial_guild(&ctx).await {
+            match msg
+                .guild_id
+                .unwrap_or(GuildId::new(1))
+                .to_partial_guild(&ctx)
+                .await
+            {
                 Ok(p) => p.name.clone(),
-                Err(_) => String::from("UNKNOWN_GUILD")
+                Err(_) => String::from("UNKNOWN_GUILD"),
             }
         };
 
         let static_server_contents = (
-            format!("**{} BANNED**\n-# Log ID: `{db_id}` | Duration: {time_string}{clear_msg}", user.mention()),
-            format!("\n```\n{reason}\n```")
+            format!(
+                "**{} BANNED**\n-# Log ID: `{db_id}` | Duration: {time_string}{clear_msg}",
+                user.mention()
+            ),
+            format!("\n```\n{reason}\n```"),
         );
 
         let mut cmd_response = CommandMessageResponse::new(user.id)
             .dm_content(format!(
                 "**BANNED**\n-# Server: {} | Duration: {}\n```\n{}\n```",
-                guild_name,
-                time_string,
-                reason
+                guild_name, time_string, reason
             ))
-            .server_content(Box::new(move |a| format!("{}{a}{}", static_server_contents.0, static_server_contents.1)))
+            .server_content(Box::new(move |a| {
+                format!(
+                    "{}{a}{}",
+                    static_server_contents.0, static_server_contents.1
+                )
+            }))
             .automatically_delete(inferred)
             .mark_silent(params.contains_key("silent"));
 
@@ -318,10 +333,7 @@ impl Command for Ban {
                 )
         );
 
-        tokio::join!(
-            delete_user_msg,
-            send_log
-        );
+        tokio::join!(delete_user_msg, send_log);
 
         Ok(())
     }

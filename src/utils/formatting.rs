@@ -84,11 +84,14 @@ pub fn create_diff(a: String, b: String) -> String {
     let mut final_string = String::new();
 
     for line in result.into_iter() {
-        final_string.push_str(match line {
-            LineType::Unchanged(line) => format!("  {line}\n"),
-            LineType::Added(line) => format!("+ {line}\n"),
-            LineType::Removed(line) => format!("- {line}\n"),
-        }.as_str());
+        final_string.push_str(
+            match line {
+                LineType::Unchanged(line) => format!("  {line}\n"),
+                LineType::Added(line) => format!("+ {line}\n"),
+                LineType::Removed(line) => format!("- {line}\n"),
+            }
+            .as_str(),
+        );
     }
 
     final_string

@@ -1,10 +1,16 @@
 use std::fs;
 
-use serenity::{all::{ActivityData, Context, Permissions, RoleId}, futures::StreamExt};
+use serenity::{
+    all::{ActivityData, Context, Permissions, RoleId},
+    futures::StreamExt,
+};
 use sqlx::query;
 use tracing::{error, info};
 
-use crate::{BOT_CONFIG, GUILD_SETTINGS, SQL, config::Environment, event_handler::Handler, utils::cache::permission_cache::CommandPermissionRequest};
+use crate::{
+    BOT_CONFIG, GUILD_SETTINGS, SQL, config::Environment, event_handler::Handler,
+    utils::cache::permission_cache::CommandPermissionRequest,
+};
 
 pub async fn shards_ready(handler: &Handler, ctx: Context, _total_shards: u32) {
     let cfg = BOT_CONFIG.get().unwrap();
@@ -147,7 +153,8 @@ pub async fn fill_permission_cache(handler: &Handler, ctx: &Context) {
         };
 
         let channel = {
-            let Some(channel_id) = partial.system_channel_id
+            let Some(channel_id) = partial
+                .system_channel_id
                 .or(partial.widget_channel_id)
                 .or(partial.rules_channel_id)
                 .or(partial.public_updates_channel_id)
@@ -155,7 +162,9 @@ pub async fn fill_permission_cache(handler: &Handler, ctx: &Context) {
                 continue;
             };
 
-            let Ok(channels) = partial.channels(&ctx).await else { continue };
+            let Ok(channels) = partial.channels(&ctx).await else {
+                continue;
+            };
             let mut res_channel = None;
 
             for (id, channel) in channels {
@@ -176,7 +185,8 @@ pub async fn fill_permission_cache(handler: &Handler, ctx: &Context) {
             if role.has_permission(Permissions::MANAGE_MESSAGES)
                 || role.has_permission(Permissions::BAN_MEMBERS)
                 || role.has_permission(Permissions::KICK_MEMBERS)
-                || role.has_permission(Permissions::ADMINISTRATOR) {
+                || role.has_permission(Permissions::ADMINISTRATOR)
+            {
                 valid_roles.push(id.clone());
             }
         }
@@ -196,19 +206,29 @@ pub async fn fill_permission_cache(handler: &Handler, ctx: &Context) {
             if member.roles.iter().any(|r| valid_roles.contains(&r)) {
                 let mut cache = handler.permission_cache.lock().await;
 
-                cache.can_run(CommandPermissionRequest {
-                    current_user: current_user.clone(),
-                    command: handler.commands.iter().find(|c| c.get_name() == "ban").cloned().unwrap(),
-                    member,
-                    channel: channel.clone(),
-                    guild: partial.clone(),
-                    handler: handler.clone(),
-                }).await;
+                cache
+                    .can_run(CommandPermissionRequest {
+                        current_user: current_user.clone(),
+                        command: handler
+                            .commands
+                            .iter()
+                            .find(|c| c.get_name() == "ban")
+                            .cloned()
+                            .unwrap(),
+                        member,
+                        channel: channel.clone(),
+                        guild: partial.clone(),
+                        handler: handler.clone(),
+                    })
+                    .await;
             }
         }
     }
 }
 
 async fn set_activity(handler: &Handler, ctx: &Context) {
-    ctx.set_activity(Some(ActivityData::watching(format!("Moderating Members... | {}help", handler.prefix))));
+    ctx.set_activity(Some(ActivityData::watching(format!(
+        "Moderating Members... | {}help",
+        handler.prefix
+    ))));
 }

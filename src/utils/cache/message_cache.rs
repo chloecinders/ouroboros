@@ -21,7 +21,10 @@ impl MessageCache {
 
     pub fn assign_count(&mut self, channel: u64, count: usize) {
         self.sizes.insert(channel, count);
-        let entry = self.messages.entry(channel).or_insert(MessageQueue::with_capacity(count));
+        let entry = self
+            .messages
+            .entry(channel)
+            .or_insert(MessageQueue::with_capacity(count));
 
         if entry.items.capacity() > count {
             while entry.items.len() > count {
@@ -93,7 +96,7 @@ impl MessageQueue {
     fn with_capacity(capacity: usize) -> Self {
         Self {
             items: VecDeque::with_capacity(capacity),
-            index: Default::default()
+            index: Default::default(),
         }
     }
 
@@ -129,6 +132,9 @@ impl MessageQueue {
 
 impl Default for MessageQueue {
     fn default() -> Self {
-        Self { items: VecDeque::with_capacity(100), index: Default::default() }
+        Self {
+            items: VecDeque::with_capacity(100),
+            index: Default::default(),
+        }
     }
 }

@@ -4,7 +4,7 @@ use serenity::all::{CacheHttp, Message, User};
 pub struct PartialUser {
     pub id: u64,
     pub name: String,
-    pub bot: bool
+    pub bot: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -20,7 +20,7 @@ pub struct PartialMessage {
     pub channel_id: u64,
     pub content: String,
     pub author: PartialUser,
-    pub attachment_urls: Vec<PartialAttachment>
+    pub attachment_urls: Vec<PartialAttachment>,
 }
 
 impl From<Message> for PartialMessage {
@@ -33,11 +33,16 @@ impl From<Message> for PartialMessage {
             author: PartialUser {
                 id: value.author.id.get(),
                 name: value.author.name,
-                bot: value.author.bot
+                bot: value.author.bot,
             },
-            attachment_urls: value.attachments.into_iter().map(|a| {
-                PartialAttachment { name: a.filename, url: a.url }
-            }).collect()
+            attachment_urls: value
+                .attachments
+                .into_iter()
+                .map(|a| PartialAttachment {
+                    name: a.filename,
+                    url: a.url,
+                })
+                .collect(),
         }
     }
 }

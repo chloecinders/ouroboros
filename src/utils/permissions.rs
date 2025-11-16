@@ -1,11 +1,15 @@
 use serenity::all::{
-    Context, GuildChannel, Member, PartialGuild, PermissionOverwriteType, Permissions, User
+    Context, GuildChannel, Member, PartialGuild, PermissionOverwriteType, Permissions, User,
 };
 
 use crate::BOT_CONFIG;
 
 /// Checks if a member has a permission in the guild. Ingnores channel overrides.
-pub async fn check_guild_permission(guild: &PartialGuild, member: &Member, permission: Permissions) -> bool {
+pub async fn check_guild_permission(
+    guild: &PartialGuild,
+    member: &Member,
+    permission: Permissions,
+) -> bool {
     if guild.owner_id.get() == member.user.id.get() {
         return true;
     }
@@ -31,7 +35,7 @@ pub fn check_channel_permission(
     permission: Permissions,
 ) -> bool {
     if guild.owner_id.get() == member.user.id.get() {
-        return true
+        return true;
     }
 
     let channel_perms = permissions_for_channel(guild, channel, member);
@@ -99,7 +103,9 @@ pub fn permissions_for_channel(
     }
 
     if let Some(overwrite) = overwrites.iter().find(|p| {
-        let PermissionOverwriteType::Member(id) = p.kind else { return false };
+        let PermissionOverwriteType::Member(id) = p.kind else {
+            return false;
+        };
         id == member.user.id
     }) {
         for perm in overwrite.allow {
@@ -123,20 +129,31 @@ pub fn is_developer(user: &User) -> bool {
 }
 
 /// Checks if a user can target another user with a specific permission (i.e. can user ban target?)
-pub async fn can_target(ctx: &Context, user: &Member, target: &Member, permission: Permissions) -> (bool, i32, i32) {
+pub async fn can_target(
+    ctx: &Context,
+    user: &Member,
+    target: &Member,
+    permission: Permissions,
+) -> (bool, i32, i32) {
     if let Ok(partial) = user.guild_id.to_partial_guild(ctx).await {
-        if user.user.id == partial.owner_id { return (true, -2, -2) };
-        if target.user.id == partial.owner_id { return (false, -2, -2) };
+        if user.user.id == partial.owner_id {
+            return (true, -2, -2);
+        };
+        if target.user.id == partial.owner_id {
+            return (false, -2, -2);
+        };
     }
 
     let get_highest_role_pos = |mem: &Member| {
-         let mut matching = -1;
+        let mut matching = -1;
 
         if let Some(mut roles) = mem.roles(&ctx) {
             roles.sort();
 
             for role in roles {
-                if role.has_permission(permission) || role.has_permission(Permissions::ADMINISTRATOR) {
+                if role.has_permission(permission)
+                    || role.has_permission(Permissions::ADMINISTRATOR)
+                {
                     matching = role.position as i32;
                 }
             }
@@ -147,5 +164,9 @@ pub async fn can_target(ctx: &Context, user: &Member, target: &Member, permissio
 
     let user_highest_matching_role_pos = get_highest_role_pos(user);
     let target_highest_matching_role_pos = get_highest_role_pos(target);
-    (user_highest_matching_role_pos > target_highest_matching_role_pos, user_highest_matching_role_pos, target_highest_matching_role_pos)
+    (
+        user_highest_matching_role_pos > target_highest_matching_role_pos,
+        user_highest_matching_role_pos,
+        target_highest_matching_role_pos,
+    )
 }

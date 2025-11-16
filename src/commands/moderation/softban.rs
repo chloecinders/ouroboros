@@ -85,7 +85,7 @@ impl Command for Softban {
             return Err(CommandError {
                 title: String::from("Unexpected error has occured."),
                 hint: Some(String::from("could not get author member")),
-                arg: None
+                arg: None,
             });
         };
 
@@ -95,7 +95,7 @@ impl Command for Softban {
             return Err(CommandError {
                 title: String::from("You may not target this member."),
                 hint: Some(format!("check: {} vs {}", res.1, res.2)),
-                arg: None
+                arg: None,
             });
         }
 
@@ -163,22 +163,29 @@ impl Command for Softban {
         }
 
         let guild_name = {
-            match msg.guild_id.unwrap_or(GuildId::new(1)).to_partial_guild(&ctx).await {
+            match msg
+                .guild_id
+                .unwrap_or(GuildId::new(1))
+                .to_partial_guild(&ctx)
+                .await
+            {
                 Ok(p) => p.name.clone(),
-                Err(_) => String::from("UNKNOWN_GUILD")
+                Err(_) => String::from("UNKNOWN_GUILD"),
             }
         };
 
         let static_response_parts = (
-            format!("**{} SOFTBANNED**\n-# Log ID: `{db_id}`{clear_msg}", member.mention()),
-            format!("\n```\n{reason}\n```")
+            format!(
+                "**{} SOFTBANNED**\n-# Log ID: `{db_id}`{clear_msg}",
+                member.mention()
+            ),
+            format!("\n```\n{reason}\n```"),
         );
 
         let mut cmd_response = CommandMessageResponse::new(member.user.id)
             .dm_content(format!(
                 "**KICKED**\n-# Server: {}\n```\n{}\n```",
-                guild_name,
-                reason
+                guild_name, reason
             ))
             .server_content(Box::new(move |a| {
                 format!("{}{a}{}", static_response_parts.0, static_response_parts.1)

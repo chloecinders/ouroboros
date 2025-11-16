@@ -1,6 +1,12 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use serenity::{FutureExt, all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EditMessage, Message, UserId}, futures};
+use serenity::{
+    FutureExt,
+    all::{
+        Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EditMessage, Message, UserId,
+    },
+    futures,
+};
 use tokio::{sync::Mutex, task::JoinHandle, time::sleep};
 use tracing::warn;
 
@@ -77,7 +83,13 @@ impl CommandMessageResponse {
             if let Some(handle) = lock.as_mut() {
                 if let Some(res) = handle.now_or_never() {
                     match res {
-                        Ok(b) => if b { String::new() } else { String::from("| DM failed") },
+                        Ok(b) => {
+                            if b {
+                                String::new()
+                            } else {
+                                String::from("| DM failed")
+                            }
+                        }
                         Err(_) => String::from("| DM failed"),
                     }
                 } else {
@@ -108,15 +120,24 @@ impl CommandMessageResponse {
         let mut lock = self.join_thread.lock().await;
         if let Some(handle) = lock.as_mut() {
             let addition = match handle.await {
-                Ok(b) => if b { String::new() } else { String::from("| DM failed") },
+                Ok(b) => {
+                    if b {
+                        String::new()
+                    } else {
+                        String::from("| DM failed")
+                    }
+                }
                 Err(_) => String::from("| DM failed"),
             };
             let desc = (*self.server_content)(addition);
 
-            let _ = msg.edit(
-                &ctx,
-                EditMessage::new().embed(CreateEmbed::new().description(desc).color(BRAND_BLUE))
-            ).await;
+            let _ = msg
+                .edit(
+                    &ctx,
+                    EditMessage::new()
+                        .embed(CreateEmbed::new().description(desc).color(BRAND_BLUE)),
+                )
+                .await;
         }
 
         if self.delete {
@@ -125,10 +146,7 @@ impl CommandMessageResponse {
 
             tokio::spawn(async move {
                 sleep(Duration::from_secs(5)).await;
-                tokio::join!(
-                    msg.delete(&ctx),
-                    cmd_msg.delete(&ctx)
-                )
+                tokio::join!(msg.delete(&ctx), cmd_msg.delete(&ctx))
             });
         }
     }

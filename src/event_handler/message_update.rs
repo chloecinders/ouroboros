@@ -17,11 +17,16 @@ pub async fn message_update(
     new: Option<Message>,
     event: MessageUpdateEvent,
 ) {
-    if event.edited_timestamp.is_none_or(|t| t.timestamp() < Utc::now().timestamp()) {
+    if event
+        .edited_timestamp
+        .is_none_or(|t| t.timestamp() < Utc::now().timestamp())
+    {
         return;
     }
 
-    if let Some(user) = event.author && user.bot {
+    if let Some(user) = event.author
+        && user.bot
+    {
         return;
     }
 
@@ -63,7 +68,10 @@ pub async fn message_update(
             if old.content.len() > 500 || new_msg.content.len() > 500 {
                 (
                     base.clone(),
-                    Some(CreateAttachment::bytes(create_diff(old.content, new_msg.content).as_bytes(), "msg.diff"))
+                    Some(CreateAttachment::bytes(
+                        create_diff(old.content, new_msg.content).as_bytes(),
+                        "msg.diff",
+                    )),
                 )
             } else {
                 (
