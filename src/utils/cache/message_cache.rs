@@ -57,7 +57,6 @@ impl MessageCache {
         let queue = self.messages.entry(channel_id).or_default();
 
         if queue.len() >= queue_size {
-            dbg!(queue.len(), queue_size);
             queue.pop();
         }
 

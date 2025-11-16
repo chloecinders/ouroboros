@@ -98,7 +98,7 @@ pub async fn guild_member_removal(
 
             guild_log(
                 &ctx,
-                LogType::MemberKick,
+                LogType::MemberModeration,
                 guild_id,
                 CreateMessage::new()
                     .add_embed(
@@ -121,7 +121,7 @@ pub async fn guild_member_removal(
 
             guild_log(
                 &ctx,
-                LogType::MemberBan,
+                LogType::MemberModeration,
                 guild_id,
                 CreateMessage::new()
                     .add_embed(

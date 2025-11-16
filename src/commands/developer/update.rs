@@ -1,22 +1,18 @@
 use reqwest::{Client, Method, Request, Url, header::HeaderValue};
 use serenity::{
-    all::{Context, Message},
+    all::{Context, CreateEmbed, CreateMessage, Message},
     async_trait,
 };
 use tracing::warn;
 
 use crate::{
-    BOT_CONFIG,
-    commands::{
+    BOT_CONFIG, commands::{
         Command, CommandArgument, CommandCategory, CommandParameter, CommandSyntax,
         TransformerFnArc,
-    },
-    event_handler::CommandError,
-    lexer::Token,
-    utils::is_developer,
+    }, constants::BRAND_BLUE, event_handler::CommandError, lexer::Token, transformers::Transformers, utils::{LogType, get_all_guilds, guild_log, is_developer}
 };
 use ouroboros_macros::command;
-use std::process::exit;
+use std::{process::exit, sync::Arc};
 
 pub struct Update;
 
@@ -54,9 +50,41 @@ impl Command for Update {
     }
 
     #[command]
-    async fn run(&self, ctx: Context, msg: Message) -> Result<(), CommandError> {
+    async fn run(
+        &self,
+        ctx: Context,
+        msg: Message,
+        #[transformers::bool] send_announcement: Option<bool>,
+        #[transformers::string] title: Option<String>,
+        #[transformers::consume] description: Option<String>,
+    ) -> Result<(), CommandError> {
         if !is_developer(&msg.author) {
             return Ok(());
+        }
+
+        let mut log_thread_handle = None;
+
+        if send_announcement.is_some_and(|b| b) {
+            let ctx_clone = ctx.clone();
+            log_thread_handle = Some(tokio::spawn(async move {
+                let guilds = get_all_guilds(&ctx_clone).await;
+
+                let title = title.unwrap_or_default();
+                let description = description.unwrap_or_default();
+
+                for guild in guilds {
+                    guild_log(
+                        &ctx_clone,
+                        LogType::OuroborosAnnonucements,
+                        guild.id,
+                        CreateMessage::new().add_embed(
+                            CreateEmbed::new()
+                                .color(BRAND_BLUE)
+                                .description(format!("**OUROBOROS UPDATE: {title}**\n\n{description}\n"))
+                        )
+                    ).await
+                }
+            }));
         }
 
         let cfg = BOT_CONFIG.get().unwrap();
@@ -304,6 +332,10 @@ impl Command for Update {
             // cleanup before exiting the process, to be restarted by task scheduler or systemd or whatever
             #[cfg(not(target_os = "windows"))]
             {
+                if let Some(handle) = log_thread_handle {
+                    handle.await.unwrap();
+                }
+
                 use std::fs;
                 use std::os::unix::fs::PermissionsExt;
 
@@ -333,6 +365,10 @@ impl Command for Update {
             {
                 use std::process::Command as SystemCommand;
 
+                if let Some(handle) = log_thread_handle {
+                    handle.await.unwrap();
+                }
+
                 let child =
                     match SystemCommand::new(format!(".{}{filename}", std::path::MAIN_SEPARATOR))
                         .arg(format!(
@@ -350,6 +386,7 @@ impl Command for Update {
                             return Ok(());
                         }
                     };
+
 
                 drop(child);
                 exit(0);

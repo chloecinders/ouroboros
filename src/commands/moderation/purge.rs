@@ -188,7 +188,7 @@ impl Command for Purge {
 
         guild_log(
             &ctx,
-            LogType::MessageDelete,
+            LogType::MemberModeration,
             msg.guild_id.unwrap(),
             CreateMessage::new()
                 .add_embed(

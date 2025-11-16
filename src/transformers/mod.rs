@@ -1,6 +1,6 @@
 pub struct Transformers;
 
-// mod bool;
+mod bool;
 mod consume;
 mod duration;
 mod guild_channel;

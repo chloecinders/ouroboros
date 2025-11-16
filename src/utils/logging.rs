@@ -8,52 +8,41 @@ use crate::GUILD_SETTINGS;
 #[derive(Hash, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum LogType {
-    MemberBan,
-    MemberUnban,
-    MemberCache,
-    MemberKick,
-    MemberMute,
-    MemberUnmute,
-    MemberWarn,
-    MemberSoftban,
+    MemberModeration,
     MemberUpdate,
     ActionUpdate,
-    MessageDelete,
-    MessageEdit,
+    MessageUpdate,
+    OuroborosAnnonucements,
 }
 
 impl LogType {
     pub fn title(&self) -> String {
         String::from(match self {
-            LogType::MemberBan => "Member Ban",
-            LogType::MemberUnban => "Member Unban",
-            LogType::MemberCache => "Member Cache",
-            LogType::MemberKick => "Member Kick",
-            LogType::MemberMute => "Member Mute",
-            LogType::MemberUnmute => "Member Unmute",
-            LogType::MemberWarn => "Member Warn",
-            LogType::MemberSoftban => "Member Softban",
+            LogType::MemberModeration => "Member Moderation",
             LogType::MemberUpdate => "Member Update",
             LogType::ActionUpdate => "Action Update",
-            LogType::MessageDelete => "Message Delete",
-            LogType::MessageEdit => "Message Edit",
+            LogType::MessageUpdate => "Message Delete",
+            LogType::OuroborosAnnonucements => "Ouroboros Announcements",
+        })
+    }
+
+    pub fn description(&self) -> String {
+        String::from(match self {
+            LogType::MemberModeration => "New warns, bans, mutes, etc.",
+            LogType::MemberUpdate => "Nickname, role, avatar changes",
+            LogType::ActionUpdate => "Modeartion action duration/reason change",
+            LogType::MessageUpdate => "Message deletions and edits",
+            LogType::OuroborosAnnonucements => "Scheduled bot downtime, updates"
         })
     }
 
     pub fn all() -> Vec<LogType> {
         vec![
-            LogType::MemberBan,
-            LogType::MemberUnban,
-            LogType::MemberCache,
-            LogType::MemberKick,
-            LogType::MemberMute,
-            LogType::MemberUnmute,
-            LogType::MemberWarn,
-            LogType::MemberSoftban,
+            LogType::MemberModeration,
             LogType::MemberUpdate,
             LogType::ActionUpdate,
-            LogType::MessageDelete,
-            LogType::MessageEdit,
+            LogType::MessageUpdate,
+            LogType::OuroborosAnnonucements,
         ]
     }
 

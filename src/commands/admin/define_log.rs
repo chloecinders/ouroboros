@@ -108,6 +108,8 @@ impl Command for DefineLog {
                     } else {
                         opt = opt.description("Currently assigned to this channel")
                     }
+                } else {
+                    opt = opt.description(t.description())
                 }
 
                 opt

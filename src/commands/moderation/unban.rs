@@ -167,7 +167,7 @@ impl Command for Unban {
 
         guild_log(
             &ctx,
-            LogType::MemberUnban,
+            LogType::MemberModeration,
             msg.guild_id.unwrap(),
             CreateMessage::new()
                 .add_embed(

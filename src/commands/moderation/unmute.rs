@@ -180,7 +180,7 @@ impl Command for Unmute {
 
         guild_log(
             &ctx,
-            LogType::MemberUnmute,
+            LogType::MemberModeration,
             msg.guild_id.unwrap(),
             CreateMessage::new()
                 .add_embed(

@@ -9,3 +9,6 @@ pub use say::Say;
 
 mod update;
 pub use update::Update;
+
+mod schedule_downtime;
+pub use schedule_downtime::ScheduleDowntime;

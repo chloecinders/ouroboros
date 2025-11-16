@@ -117,7 +117,7 @@ pub async fn message_delete(
 
     guild_log(
         &ctx,
-        LogType::MessageDelete,
+        LogType::MemberModeration,
         guild_id,
         CreateMessage::new()
             .add_embed(embed.description(description))

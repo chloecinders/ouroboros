@@ -17,7 +17,7 @@ use crate::{
     event_handler::CommandError,
     lexer::{InferType, Token},
     transformers::Transformers,
-    utils::{LogType, can_target, guild_log, message_and_dm, tinyid},
+    utils::{CommandMessageResponse, LogType, can_target, guild_log, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -88,9 +88,9 @@ impl Command for Softban {
                 arg: None
             });
         };
-    
+
         let res = can_target(&ctx, &author_member, &member, Permissions::MODERATE_MEMBERS).await;
-        
+
         if !res.0 {
             return Err(CommandError {
                 title: String::from("You may not target this member."),
@@ -152,6 +152,42 @@ impl Command for Softban {
             });
         }
 
+        if inferred && let Some(reply) = msg.referenced_message.clone() {
+            let _ = reply.delete(&ctx).await;
+        }
+
+        let mut clear_msg = String::new();
+
+        if days != 0 {
+            clear_msg = format!(" | Cleared {days} days of messages");
+        }
+
+        let guild_name = {
+            match msg.guild_id.unwrap_or(GuildId::new(1)).to_partial_guild(&ctx).await {
+                Ok(p) => p.name.clone(),
+                Err(_) => String::from("UNKNOWN_GUILD")
+            }
+        };
+
+        let static_response_parts = (
+            format!("**{} SOFTBANNED**\n-# Log ID: `{db_id}`{clear_msg}", member.mention()),
+            format!("\n```\n{reason}\n```")
+        );
+
+        let mut cmd_response = CommandMessageResponse::new(member.user.id)
+            .dm_content(format!(
+                "**KICKED**\n-# Server: {}\n```\n{}\n```",
+                guild_name,
+                reason
+            ))
+            .server_content(Box::new(move |a| {
+                format!("{}{a}{}", static_response_parts.0, static_response_parts.1)
+            }))
+            .automatically_delete(inferred)
+            .mark_silent(params.contains_key("silent"));
+
+        cmd_response.send_dm(&ctx).await;
+
         if let Err(err) = member.ban_with_reason(&ctx, days, &reason).await {
             warn!("Got error while softbanning; err = {err:?}");
 
@@ -187,46 +223,11 @@ impl Command for Softban {
             });
         }
 
-        if inferred && let Some(reply) = msg.referenced_message.clone() {
-            let _ = reply.delete(&ctx).await;
-        }
-
-        let mut clear_msg = String::new();
-
-        if days != 0 {
-            clear_msg = format!(" | Cleared {days} days of messages");
-        }
-
-        let guild_name = {
-            match msg.guild_id.unwrap_or(GuildId::new(1)).to_partial_guild(&ctx).await {
-                Ok(p) => p.name.clone(),
-                Err(_) => String::from("UNKNOWN_GUILD")
-            }
-        };
-
-        message_and_dm(
-            &ctx,
-            &msg,
-            &member.user,
-            |a| {
-                format!(
-                    "**{} SOFTBANNED**\n-# Log ID: `{db_id}`{clear_msg}{a}\n```\n{reason}\n```",
-                    member.mention()
-                )
-            },
-            format!(
-                "**KICKED**\n-# Server: {}\n```\n{}\n```",
-                guild_name,
-                reason
-            ),
-            inferred,
-            params.contains_key("silent"),
-        )
-        .await;
+        cmd_response.send_response(&ctx, &msg).await;
 
         guild_log(
             &ctx,
-            LogType::MemberSoftban,
+            LogType::MemberModeration,
             msg.guild_id.unwrap(),
             CreateMessage::new()
                 .add_embed(

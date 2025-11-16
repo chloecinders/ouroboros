@@ -21,10 +21,13 @@ pub use error::AnyError;
 
 mod message;
 pub use message::extract_command_parameters;
-pub use message::message_and_dm;
+pub use message::CommandMessageResponse;
 
 pub mod cache;
 pub mod command_processing;
 
 mod formatting;
 pub use formatting::create_diff;
+
+mod guilds;
+pub use guilds::get_all_guilds;

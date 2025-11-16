@@ -17,7 +17,7 @@ use crate::{
     event_handler::CommandError,
     lexer::{InferType, Token},
     transformers::Transformers,
-    utils::{LogType, can_target, guild_log, message_and_dm, tinyid},
+    utils::{CommandMessageResponse, LogType, can_target, guild_log, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -139,29 +139,29 @@ impl Command for Warn {
             }
         };
 
-        message_and_dm(
-            &ctx,
-            &msg,
-            &member.user,
-            |a| {
-                format!(
-                    "**{} WARNED**\n-# Log ID: `{db_id}`{a}\n```\n{reason}\n```",
-                    member.mention()
-                )
-            },
-            format!(
+        let static_response_parts = (
+            format!("**{} WARNED**\n-# Log ID: `{db_id}`", member.mention()),
+            format!("\n```\n{reason}\n```")
+        );
+
+        let mut cmd_response = CommandMessageResponse::new(member.user.id)
+            .dm_content(format!(
                 "**WARNED**\n-# Server: {}\n```\n{}\n```",
                 guild_name,
                 reason
-            ),
-            inferred,
-            params.contains_key("silent"),
-        )
-        .await;
+            ))
+            .server_content(Box::new(move |a| {
+                format!("{}{a}{}", static_response_parts.0, static_response_parts.1)
+            }))
+            .automatically_delete(inferred)
+            .mark_silent(params.contains_key("silent"));
+
+        cmd_response.send_dm(&ctx).await;
+        cmd_response.send_response(&ctx, &msg).await;
 
         guild_log(
             &ctx,
-            LogType::MemberWarn,
+            LogType::MemberModeration,
             msg.guild_id.unwrap(),
             CreateMessage::new()
                 .add_embed(

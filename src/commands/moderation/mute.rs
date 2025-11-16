@@ -18,7 +18,7 @@ use crate::{
     event_handler::CommandError,
     lexer::{InferType, Token},
     transformers::Transformers,
-    utils::{LogType, can_target, guild_log, message_and_dm, tinyid},
+    utils::{CommandMessageResponse, LogType, can_target, guild_log, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -82,9 +82,9 @@ impl Command for Mute {
                 arg: None
             });
         };
-    
+
         let res = can_target(&ctx, &author_member, &member, Permissions::MODERATE_MEMBERS).await;
-        
+
         if !res.0 {
             return Err(CommandError {
                 title: String::from("You may not target this member."),
@@ -92,7 +92,7 @@ impl Command for Mute {
                 arg: None
             });
         }
-        
+
         let inferred = args
             .first()
             .map(|a| matches!(a.inferred, Some(InferType::Message)))
@@ -219,28 +219,30 @@ impl Command for Mute {
             }
         };
 
-        message_and_dm(
-            &ctx,
-            &msg,
-            &member.user,
-            |a| format!(
-                "**{} TIMEOUT**\n-# Log ID: `{db_id}` | Duration: {time_string}{a}\n```\n{reason}\n```",
-                member.mention()
-            ),
-            format!(
+        let static_response_parts = (
+            format!("**{} TIMEOUT**\n-# Log ID: `{db_id}` | Duration: {time_string}", member.mention()),
+            format!("\n```\n{reason}\n```")
+        );
+
+        let mut cmd_response = CommandMessageResponse::new(member.user.id)
+            .dm_content(format!(
                 "**TIMEOUT**\n-# Server: {} | Duration: {}\n```\n{}\n```",
                 guild_name,
                 time_string,
                 reason
-            ),
-            inferred,
-            params.contains_key("silent")
-        )
-        .await;
+            ))
+            .server_content(Box::new(move |a| {
+                format!("{}{a}{}", static_response_parts.0, static_response_parts.1)
+            }))
+            .automatically_delete(inferred)
+            .mark_silent(params.contains_key("silent"));
+
+        cmd_response.send_dm(&ctx).await;
+        cmd_response.send_response(&ctx, &msg).await;
 
         guild_log(
             &ctx,
-            LogType::MemberMute,
+            LogType::MemberModeration,
             msg.guild_id.unwrap(),
             CreateMessage::new()
                 .add_embed(

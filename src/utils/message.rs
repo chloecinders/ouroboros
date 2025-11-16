@@ -1,7 +1,7 @@
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use serenity::all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EditMessage, Message, User};
-use tokio::time::sleep;
+use serenity::{FutureExt, all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EditMessage, Message, UserId}, futures};
+use tokio::{sync::Mutex, task::JoinHandle, time::sleep};
 use tracing::warn;
 
 use crate::{
@@ -10,68 +10,127 @@ use crate::{
     lexer::lex,
 };
 
-pub async fn message_and_dm(
-    ctx: &Context,
-    command_msg: &Message,
-    dm_user: &User,
-    server_msg: impl Fn(String) -> String,
-    dm_msg: String,
-    automatically_delete: bool,
+pub struct CommandMessageResponse {
+    server_content: Box<dyn Fn(String) -> String + Send + Sync>,
+    dm_content: String,
+    user: UserId,
+    delete: bool,
+    join_thread: Arc<Mutex<Option<JoinHandle<bool>>>>,
     silent: bool,
-) {
-    let mut addition = if silent {
-        String::from(" | silent")
-    } else {
-        String::new()
-    };
+}
 
-    let embed = CreateEmbed::new()
-        .description(server_msg(addition))
-        .color(BRAND_BLUE);
-
-    let reply = CreateMessage::new()
-        .add_embed(embed)
-        .reference_message(command_msg)
-        .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
-
-    let msg = match command_msg.channel_id.send_message(&ctx, reply).await {
-        Ok(m) => m,
-        Err(err) => {
-            warn!("Could not send message; err = {err:?}");
-            return;
+impl CommandMessageResponse {
+    pub fn new(user_id: UserId) -> Self {
+        Self {
+            server_content: Box::new(|a| a),
+            dm_content: String::default(),
+            user: user_id,
+            delete: false,
+            join_thread: Arc::new(Mutex::new(None)),
+            silent: false,
         }
-    };
-
-    let dm = CreateMessage::new()
-        .add_embed(CreateEmbed::new().description(dm_msg).color(BRAND_BLUE));
-
-    if dm_user.direct_message(&ctx, dm).await.is_err() {
-        addition = String::from(" | DM failed");
-        let desc = server_msg(addition);
-        let mut msg_clone = msg.clone();
-        let ctx_clone = ctx.clone();
-
-        tokio::spawn(
-            async move {
-                msg_clone.edit(
-                    &ctx_clone,
-                    EditMessage::new().embed(CreateEmbed::new().description(desc).color(BRAND_BLUE))
-                ).await
-            }
-        );
     }
 
-    if automatically_delete {
-        let ctx = ctx.clone();
-        let cmd_msg = command_msg.clone();
+    pub fn server_content(mut self, content: Box<dyn Fn(String) -> String + Send + Sync>) -> Self {
+        self.server_content = content;
+        self
+    }
 
-        tokio::spawn(async move {
-            sleep(Duration::from_secs(5)).await;
-            tokio::join!(
-                msg.delete(&ctx),
-                cmd_msg.delete(&ctx)
-            )
-        });
+    pub fn dm_content(mut self, content: String) -> Self {
+        self.dm_content = content;
+        self
+    }
+
+    pub fn automatically_delete(mut self, delete: bool) -> Self {
+        self.delete = delete;
+        self
+    }
+
+    pub fn mark_silent(mut self, silent: bool) -> Self {
+        self.silent = silent;
+        self
+    }
+
+    pub async fn send_dm(&self, ctx: &Context) {
+        let ctx_clone = ctx.clone();
+        let desc = self.dm_content.clone();
+        let user = self.user.clone();
+
+        {
+            let mut lock = self.join_thread.lock().await;
+
+            *lock = Some(tokio::spawn(async move {
+                let dm = CreateMessage::new()
+                    .add_embed(CreateEmbed::new().description(desc).color(BRAND_BLUE));
+
+                user.direct_message(&ctx_clone, dm).await.is_err()
+            }));
+        }
+    }
+
+    pub async fn send_response(&mut self, ctx: &Context, cmd_msg: &Message) {
+        let addition = if self.silent {
+            String::from("| silent")
+        } else {
+            let mut lock = self.join_thread.lock().await;
+
+            if let Some(handle) = lock.as_mut() {
+                if let Some(res) = handle.now_or_never() {
+                    match res {
+                        Ok(b) => if b { String::new() } else { String::from("| DM failed") },
+                        Err(_) => String::from("| DM failed"),
+                    }
+                } else {
+                    String::new()
+                }
+            } else {
+                String::new()
+            }
+        };
+
+        let embed = CreateEmbed::new()
+            .description((*self.server_content)(addition))
+            .color(BRAND_BLUE);
+
+        let reply = CreateMessage::new()
+            .add_embed(embed)
+            .reference_message(cmd_msg)
+            .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
+
+        let mut msg = match cmd_msg.channel_id.send_message(&ctx, reply).await {
+            Ok(m) => m,
+            Err(err) => {
+                warn!("Could not send message; err = {err:?}");
+                return;
+            }
+        };
+
+        let mut lock = self.join_thread.lock().await;
+        if let Some(handle) = lock.as_mut() {
+            let addition = match handle.await {
+                Ok(b) => if b { String::new() } else { String::from("| DM failed") },
+                Err(_) => String::from("| DM failed"),
+            };
+            let desc = (*self.server_content)(addition);
+
+            let _ = msg.edit(
+                &ctx,
+                EditMessage::new().embed(CreateEmbed::new().description(desc).color(BRAND_BLUE))
+            ).await;
+        }
+
+        if self.delete {
+            let ctx = ctx.clone();
+            let cmd_msg = cmd_msg.clone();
+
+            tokio::spawn(async move {
+                sleep(Duration::from_secs(5)).await;
+                tokio::join!(
+                    msg.delete(&ctx),
+                    cmd_msg.delete(&ctx)
+                )
+            });
+        }
     }
 }
 

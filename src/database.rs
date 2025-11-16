@@ -40,6 +40,7 @@ pub async fn run_migrations() {
     remove_log_mod_and_change_channel_id_to_jsonb_150020250921().await;
     add_message_cache_store_133120250922().await;
     add_last_reapplied_at_to_actions_160120250923().await;
+    migrate_log_types_231320251115().await;
 }
 
 pub async fn create_actions_223320250818() {
@@ -194,5 +195,41 @@ pub async fn add_last_reapplied_at_to_actions_160120250923() {
         panic!(
             "Couldnt run database migration add_last_reapplied_at_to_actions_160120250923; Err = {err:?}"
         );
+    }
+}
+
+pub async fn migrate_log_types_231320251115() {
+    let r = query!(
+        r#"
+        UPDATE public.guild_settings
+        SET log_channel_ids = (
+            SELECT jsonb_object_agg(
+                CASE
+                    WHEN key='member_ban' THEN 'member_moderation'
+                    WHEN key='member_unban' THEN 'member_moderation'
+                    WHEN key='member_cache' THEN 'member_update'
+                    WHEN key='member_kick' THEN 'member_moderation'
+                    WHEN key='member_mute' THEN 'member_moderation'
+                    WHEN key='member_unmute' THEN 'member_moderation'
+                    WHEN key='member_warn' THEN 'member_moderation'
+                    WHEN key='member_softban' THEN 'member_moderation'
+                    WHEN key='member_update' THEN 'member_update'
+                    WHEN key='action_update' THEN 'action_update'
+                    WHEN key='message_delete' THEN 'message_update'
+                    WHEN key='message_edit' THEN 'message_update'
+                    ELSE key
+                END,
+                value
+            )
+            FROM jsonb_each(log_channel_ids)
+        )
+        WHERE log_channel_ids IS NOT NULL;
+        "#
+    )
+    .execute(SQL.get().unwrap())
+    .await;
+
+    if let Err(err) = r {
+        panic!("Couldnt run database migration migrate_log_types_231320251115; Err = {err:?}");
     }
 }

@@ -17,7 +17,7 @@ use crate::{
     event_handler::CommandError,
     lexer::{InferType, Token},
     transformers::Transformers,
-    utils::{LogType, can_target, guild_log, message_and_dm, tinyid},
+    utils::{CommandMessageResponse, LogType, can_target, guild_log, tinyid},
 };
 use ouroboros_macros::command;
 
@@ -103,7 +103,7 @@ impl Command for Ban {
                     arg: None
                 });
             };
-        
+
             let res = can_target(&ctx, &author_member, &target_member, Permissions::MODERATE_MEMBERS).await;
             if !res.0 {
                 return Err(CommandError {
@@ -231,6 +231,37 @@ impl Command for Ban {
             });
         }
 
+        let mut clear_msg = String::new();
+
+        if days != 0 {
+            clear_msg = format!(" | Cleared {days} days of messages");
+        }
+
+        let guild_name = {
+            match msg.guild_id.unwrap_or(GuildId::new(1)).to_partial_guild(&ctx).await {
+                Ok(p) => p.name.clone(),
+                Err(_) => String::from("UNKNOWN_GUILD")
+            }
+        };
+
+        let static_server_contents = (
+            format!("**{} BANNED**\n-# Log ID: `{db_id}` | Duration: {time_string}{clear_msg}", user.mention()),
+            format!("\n```\n{reason}\n```")
+        );
+
+        let mut cmd_response = CommandMessageResponse::new(user.id)
+            .dm_content(format!(
+                "**BANNED**\n-# Server: {} | Duration: {}\n```\n{}\n```",
+                guild_name,
+                time_string,
+                reason
+            ))
+            .server_content(Box::new(move |a| format!("{}{a}{}", static_server_contents.0, static_server_contents.1)))
+            .automatically_delete(inferred)
+            .mark_silent(params.contains_key("silent"));
+
+        cmd_response.send_dm(&ctx).await;
+
         if let Err(err) = msg
             .guild_id
             .unwrap()
@@ -258,12 +289,6 @@ impl Command for Ban {
             });
         }
 
-        let mut clear_msg = String::new();
-
-        if days != 0 {
-            clear_msg = format!(" | Cleared {days} days of messages");
-        }
-
         let ctx_clone = ctx.clone();
         let msg_clone = msg.clone();
 
@@ -273,34 +298,11 @@ impl Command for Ban {
             }
         };
 
-        let guild_name = {
-            match msg.guild_id.unwrap_or(GuildId::new(1)).to_partial_guild(&ctx).await {
-                Ok(p) => p.name.clone(),
-                Err(_) => String::from("UNKNOWN_GUILD")
-            }
-        };
-
-        let send_dm = message_and_dm(
-            &ctx,
-            &msg,
-            &user,
-            |a| format!(
-                "**{} BANNED**\n-# Log ID: `{db_id}` | Duration: {time_string}{clear_msg}{a}\n```\n{reason}\n```",
-                user.mention()
-            ),
-            format!(
-                "**BANNED**\n-# Server: {} | Duration: {}\n```\n{}\n```",
-                guild_name,
-                time_string,
-                reason
-            ),
-            inferred,
-            params.contains_key("silent")
-        );
+        cmd_response.send_response(&ctx, &msg).await;
 
         let send_log = guild_log(
             &ctx,
-            LogType::MemberBan,
+            LogType::MemberModeration,
             msg.guild_id.unwrap(),
             CreateMessage::new()
                 .add_embed(
@@ -318,7 +320,6 @@ impl Command for Ban {
 
         tokio::join!(
             delete_user_msg,
-            send_dm,
             send_log
         );
 

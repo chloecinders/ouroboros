@@ -123,7 +123,7 @@ impl Command for Cache {
 
         guild_log(
             &ctx,
-            LogType::MemberCache,
+            LogType::MemberModeration,
             msg.guild_id.unwrap(),
             CreateMessage::new().add_embed(
                 CreateEmbed::new()

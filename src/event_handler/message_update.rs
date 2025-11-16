@@ -1,3 +1,4 @@
+use chrono::Utc;
 use serenity::all::{
     Channel, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage, Message,
     MessageUpdateEvent,
@@ -16,7 +17,7 @@ pub async fn message_update(
     new: Option<Message>,
     event: MessageUpdateEvent,
 ) {
-    if event.edited_timestamp.is_none() {
+    if event.edited_timestamp.is_none_or(|t| t.timestamp() < Utc::now().timestamp()) {
         return;
     }
 
@@ -124,5 +125,5 @@ pub async fn message_update(
         _ => new_msg.guild_id.map(|g| g.get()).unwrap_or(1),
     };
 
-    guild_log(&ctx, LogType::MessageEdit, guild_id.into(), message).await;
+    guild_log(&ctx, LogType::MemberModeration, guild_id.into(), message).await;
 }
