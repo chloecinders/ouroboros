@@ -41,7 +41,15 @@ pub async fn guild_member_update(
         |a| {
             a.target_id.map(|id| id.get()).unwrap_or(0) == event.user.id.get()
         }
-    ).await {
+    ).await.or(
+        find_audit_log(
+        &ctx,
+        event.guild_id,
+        Action::Member(MemberAction::RoleUpdate),
+        |a| {
+            a.target_id.map(|id| id.get()).unwrap_or(0) == event.user.id.get()
+        }
+    ).await) {
         moderator_id = Some(log.user_id.get());
         reason = log.reason.clone();
     }
