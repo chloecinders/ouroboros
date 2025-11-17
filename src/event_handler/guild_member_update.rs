@@ -39,7 +39,7 @@ pub async fn guild_member_update(
         event.guild_id,
         Action::Member(MemberAction::Update),
         |a| {
-            a.user_id.get() == event.user.id.get()
+            a.target_id.map(|id| id.get()).unwrap_or(0) == event.user.id.get()
         }
     ).await {
         moderator_id = Some(log.user_id.get());
