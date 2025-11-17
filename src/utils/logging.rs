@@ -13,6 +13,7 @@ pub enum LogType {
     ActionUpdate,
     MessageUpdate,
     OuroborosAnnonucements,
+    AvatarUpdate,
 }
 
 impl LogType {
@@ -23,16 +24,18 @@ impl LogType {
             LogType::ActionUpdate => "Action Update",
             LogType::MessageUpdate => "Message Delete",
             LogType::OuroborosAnnonucements => "Ouroboros Announcements",
+            LogType::AvatarUpdate => "Member Avatar Updates"
         })
     }
 
     pub fn description(&self) -> String {
         String::from(match self {
             LogType::MemberModeration => "New warns, bans, mutes, etc.",
-            LogType::MemberUpdate => "Nickname, role, avatar changes",
+            LogType::MemberUpdate => "Nickname, role changes",
             LogType::ActionUpdate => "Modeartion action duration/reason change",
             LogType::MessageUpdate => "Message deletions and edits",
             LogType::OuroborosAnnonucements => "Scheduled bot downtime, updates",
+            LogType::AvatarUpdate => "Avatar updates (Can get very spammy in large servers!)",
         })
     }
 
@@ -43,6 +46,7 @@ impl LogType {
             LogType::ActionUpdate,
             LogType::MessageUpdate,
             LogType::OuroborosAnnonucements,
+            LogType::AvatarUpdate,
         ]
     }
 

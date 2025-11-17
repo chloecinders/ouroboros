@@ -60,9 +60,7 @@ pub async fn guild_member_update(
         String::new()
     };
 
-    let avatar = if let Some(old) = old_if_available.clone()
-        && let Some(new) = new.clone()
-    {
+    if let Some(old) = old_if_available.clone() && let Some(new) = new.clone() {
         let lhs = old.avatar.or(old.user.avatar);
         let rhs = new.avatar.or(new.user.avatar);
 
@@ -71,8 +69,6 @@ pub async fn guild_member_update(
             (Some(a), Some(b), Some(ua_old), Some(ua_new))
                 if a == ua_old && b == ua_new
         ) {
-            (String::new(), None)
-        } else {
             let client = Client::new();
 
             if let (Some(old_image), Some(new_image)) = (
@@ -102,18 +98,34 @@ pub async fn guild_member_update(
                 let mut buff = Vec::new();
                 if output
                     .write_to(&mut Cursor::new(&mut buff), image::ImageFormat::WebP)
-                    .is_err()
+                    .is_ok()
                 {
-                    (String::new(), None)
-                } else {
-                    (String::from("\n\nAvatar:\n"), Some(buff))
+                    let description = format!(
+                        "**AVATAR UPDATE**\n-# <@{}>",
+                        event.user.id
+                    );
+
+                    let embed = CreateEmbed::new()
+                        .color(BRAND_BLUE)
+                        .description(description)
+                        .author(
+                            CreateEmbedAuthor::new(format!("{}: {}", event.user.name, event.user.id.get()))
+                                .icon_url(
+                                    event
+                                        .user
+                                        .avatar_url()
+                                        .unwrap_or(event.user.default_avatar_url()),
+                                ),
+                        ).image("attachment://avatar.webp");
+
+                    let msg = CreateMessage::new().add_embed(embed)
+                        .add_file(CreateAttachment::bytes(buff, "avatar.webp"));
+
+                    guild_log(&ctx, LogType::MemberUpdate, event.guild_id, msg).await;
+                    return;
                 }
-            } else {
-                (String::new(), None)
-            }
+            };
         }
-    } else {
-        (String::new(), None)
     };
 
     let roles = if let Some(old) = old_if_available && let Some(new) = new {
@@ -148,7 +160,7 @@ pub async fn guild_member_update(
         String::new()
     };
 
-    if name.is_empty() && avatar.0.is_empty() && roles.is_empty() {
+    if name.is_empty() && roles.is_empty() {
         return;
     }
 
@@ -165,10 +177,10 @@ pub async fn guild_member_update(
     };
 
     let description = format!(
-        "**MEMBER UPDATE**\n-# <@{}>{}{}{}{}{}",
-        event.user.id, moderator, name, reason, avatar.0, roles
+        "**MEMBER UPDATE**\n-# <@{}>{}{}{}{}",
+        event.user.id, moderator, name, reason, roles
     );
-    let mut embed = CreateEmbed::new()
+    let embed = CreateEmbed::new()
         .color(BRAND_BLUE)
         .description(description)
         .author(
@@ -180,16 +192,7 @@ pub async fn guild_member_update(
                         .unwrap_or(event.user.default_avatar_url()),
                 ),
         );
-
-    if !avatar.0.is_empty() {
-        embed = embed.image("attachment://avatar.webp");
-    }
-
-    let mut msg = CreateMessage::new().add_embed(embed);
-
-    if !avatar.0.is_empty() {
-        msg = msg.add_file(CreateAttachment::bytes(avatar.1.unwrap(), "avatar.webp"));
-    }
+    let msg = CreateMessage::new().add_embed(embed);
 
     guild_log(&ctx, LogType::MemberUpdate, event.guild_id, msg).await;
 }
