@@ -87,10 +87,10 @@ impl Command for Mute {
 
         let res = can_target(&ctx, &author_member, &member, Permissions::MODERATE_MEMBERS).await;
 
-        if !res.0 {
+        if !res {
             return Err(CommandError {
                 title: String::from("You may not target this member."),
-                hint: Some(format!("check: {} vs {}", res.1, res.2)),
+                hint: None,
                 arg: None,
             });
         }

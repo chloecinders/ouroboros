@@ -1,17 +1,15 @@
-use std::io::Cursor;
+use std::{collections::HashSet, io::Cursor};
 
-use chrono::Utc;
 use image::{DynamicImage, GenericImage, imageops::FilterType};
 use reqwest::Client;
 use serenity::all::{
-    Change, Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage,
-    GuildMemberUpdateEvent, Member, MemberAction, audit_log::Action,
+    Context, CreateAttachment, CreateEmbed, CreateEmbedAuthor, CreateMessage, GuildMemberUpdateEvent, Member, MemberAction, Mentionable, audit_log::Action
 };
 
 use crate::{
     constants::BRAND_BLUE,
     event_handler::Handler,
-    utils::{LogType, guild_log, snowflake_to_timestamp},
+    utils::{LogType, find_audit_log, guild_log},
 };
 
 pub async fn guild_member_update(
@@ -28,68 +26,24 @@ pub async fn guild_member_update(
             .await;
     }
 
-    {
-        // let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
-        // let Ok(guild_settings) = settings.get(event.guild_id.get()).await else {
-        //     warn!(
-        //         "Found guild with no cached settings; Id = {}",
-        //         event.guild_id.get()
-        //     );
-        //     return;
-        // };
-
-        // if event.user.bot && guild_settings.log.log_bots.is_none_or(|b| !b) {
-        //     return;
-        // }
-
-        if event.user.bot {
-            return;
-        }
+    if event.user.bot {
+        return;
     }
-
-    let audit_log = event
-        .guild_id
-        .audit_logs(
-            &ctx,
-            Some(Action::Member(MemberAction::Update)),
-            None,
-            None,
-            Some(10),
-        )
-        .await
-        .ok();
 
     let mut moderator_id: Option<u64> = None;
     let mut reason: Option<String> = None;
-    let mut old_nick: Option<Option<String>> = old_if_available.clone().map(|o| o.nick);
+    let old_nick: Option<Option<String>> = old_if_available.clone().map(|o| o.nick);
 
-    if let Some(logs) = audit_log {
-        'o: for entry in logs.entries {
-            for change in entry.changes.unwrap_or(Vec::new()) {
-                let entry_time = snowflake_to_timestamp(entry.id.get());
-
-                if let Change::Nick { old, new } = change
-                    && event.user.id.get() == entry.user_id.get()
-                    && new == event.nick
-                    && (Utc::now() - entry_time).num_seconds().abs() <= 300
-                {
-                    if old_if_available.clone().is_some_and(|old_user| {
-                        old.clone()
-                            .is_some_and(|old_nick| old_user.display_name() == old_nick)
-                    }) {
-                        continue;
-                    }
-
-                    moderator_id = Some(entry.user_id.get());
-                    reason = entry.reason.clone();
-
-                    if Some(old.clone()) != old_nick {
-                        old_nick = Some(old);
-                    }
-                    break 'o;
-                }
-            }
+    if let Some(log) = find_audit_log(
+        &ctx,
+        event.guild_id,
+        Action::Member(MemberAction::Update),
+        |a| {
+            a.user_id.get() == event.user.id.get()
         }
+    ).await {
+        moderator_id = Some(log.user_id.get());
+        reason = log.reason.clone();
     }
 
     let name = if let Some(old) = old_nick {
@@ -97,7 +51,7 @@ pub async fn guild_member_update(
             String::new()
         } else {
             format!(
-                "\nName:\n`{}` -> `{}`",
+                "\n\nName:\n`{}` -> `{}`",
                 old.unwrap_or(String::from("(none)")),
                 event.nick.unwrap_or(String::from("(none)"))
             )
@@ -106,10 +60,10 @@ pub async fn guild_member_update(
         String::new()
     };
 
-    let avatar = if let Some(old) = old_if_available
-        && let Some(new) = new
+    let avatar = if let Some(old) = old_if_available.clone()
+        && let Some(new) = new.clone()
     {
-        if old.avatar.or(old.user.avatar) == new.avatar.or(new.user.avatar) {
+        if old.avatar.or(old.user.avatar) == new.avatar.or(new.user.avatar) && new.avatar.or(new.user.avatar) != new.user.avatar {
             (String::new(), None)
         } else {
             let client = Client::new();
@@ -145,7 +99,7 @@ pub async fn guild_member_update(
                 {
                     (String::new(), None)
                 } else {
-                    (String::from("\nAvatar:\n"), Some(buff))
+                    (String::from("\n\nAvatar:\n"), Some(buff))
                 }
             } else {
                 (String::new(), None)
@@ -155,7 +109,39 @@ pub async fn guild_member_update(
         (String::new(), None)
     };
 
-    if name.is_empty() && avatar.0.is_empty() {
+    let roles = if let Some(old) = old_if_available && let Some(new) = new {
+        let old_set: HashSet<_> = old.roles.iter().cloned().map(|r| (r, ())).collect();
+        let new_set: HashSet<_> = new.roles.iter().cloned().map(|r| (r, ())).collect();
+
+        let removed = old_set
+            .difference(&new_set)
+            .cloned()
+            .map(|r| r.0.mention().to_string())
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        let added = new_set
+            .difference(&old_set)
+            .cloned()
+            .map(|r| r.0.mention().to_string())
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        if !added.is_empty() || !removed.is_empty() {
+            format!(
+                "\n\nRoles:\n{}{}{}",
+                if added.is_empty() { String::new() } else { format!("+{added}") },
+                if !added.is_empty() && !removed.is_empty() { "\n" } else { "" },
+                if removed.is_empty() { String::new() } else { format!("-{removed}") }
+            )
+        } else {
+            String::new()
+        }
+    } else {
+        String::new()
+    };
+
+    if name.is_empty() && avatar.0.is_empty() && roles.is_empty() {
         return;
     }
 
@@ -172,8 +158,8 @@ pub async fn guild_member_update(
     };
 
     let description = format!(
-        "**MEMBER UPDATE**\n-# <@{}>{}{}{}{}",
-        event.user.id, moderator, name, reason, avatar.0
+        "**MEMBER UPDATE**\n-# <@{}>{}{}{}{}{}",
+        event.user.id, moderator, name, reason, avatar.0, roles
     );
     let mut embed = CreateEmbed::new()
         .color(BRAND_BLUE)

@@ -112,10 +112,10 @@ impl Command for Ban {
                 Permissions::MODERATE_MEMBERS,
             )
             .await;
-            if !res.0 {
+            if !res {
                 return Err(CommandError {
                     title: String::from("You may not target this member."),
-                    hint: Some(format!("check: {} vs {}", res.1, res.2)),
+                    hint: None,
                     arg: None,
                 });
             }

@@ -17,9 +17,7 @@ use tracing::{info, warn};
 use crate::{
     SQL,
     commands::{
-        About, Ban, Cache, ColonThree, Command, DefineLog, Duration as DurationCommand, ExtractId,
-        Kick, Log, MsgDbg, Mute, PermDbg, Ping, Purge, Reason, Say, Softban, Stats, Unban, Unmute,
-        Update, Warn,
+        About, Ban, Cache, ColonThree, Command, DefineLog, Duration as DurationCommand, ExtractId, Kick, Log, MsgDbg, Mute, PermDbg, Ping, Purge, Reason, Say, ScheduleDowntime, Softban, Stats, Unban, Unmute, Update, Warn
     },
     constants::BRAND_RED,
     lexer::Token,
@@ -123,6 +121,7 @@ impl Handler {
             Arc::new(Cache::new()),
             Arc::new(DefineLog::new()),
             Arc::new(PermDbg::new()),
+            Arc::new(ScheduleDowntime::new()),
         ];
 
         let cache = Arc::new(Mutex::new(MessageCache::new()));

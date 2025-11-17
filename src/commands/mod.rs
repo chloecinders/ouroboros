@@ -234,6 +234,7 @@ pub use developer::MsgDbg;
 pub use developer::PermDbg;
 pub use developer::Say;
 pub use developer::Update;
+pub use developer::ScheduleDowntime;
 
 mod misc;
 pub use misc::About;

@@ -134,39 +134,46 @@ pub async fn can_target(
     user: &Member,
     target: &Member,
     permission: Permissions,
-) -> (bool, i32, i32) {
+) -> bool {
     if let Ok(partial) = user.guild_id.to_partial_guild(ctx).await {
         if user.user.id == partial.owner_id {
-            return (true, -2, -2);
+            return true;
         };
         if target.user.id == partial.owner_id {
-            return (false, -2, -2);
+            return false;
         };
     }
 
-    let get_highest_role_pos = |mem: &Member| {
+    let get_highest_role_pos = async |mem: &Member| {
         let mut matching = -1;
 
-        if let Some(mut roles) = mem.roles(&ctx) {
-            roles.sort();
-
-            for role in roles {
-                if role.has_permission(permission)
-                    || role.has_permission(Permissions::ADMINISTRATOR)
-                {
-                    matching = role.position as i32;
+        // fetch roles if they dont exist in the cache
+        let mut roles = {
+            if let Some(roles) = mem.roles(&ctx) {
+                roles
+            } else {
+                if let Ok(roles) = mem.guild_id.roles(&ctx).await {
+                    mem.roles.iter().filter_map(|r| roles.get(r).cloned()).collect()
+                } else {
+                    vec![]
                 }
+            }
+        };
+
+        roles.sort();
+
+        for role in roles {
+            if role.has_permission(permission)
+                || role.has_permission(Permissions::ADMINISTRATOR)
+            {
+                matching = role.position as i32;
             }
         }
 
         matching
     };
 
-    let user_highest_matching_role_pos = get_highest_role_pos(user);
-    let target_highest_matching_role_pos = get_highest_role_pos(target);
-    (
-        user_highest_matching_role_pos > target_highest_matching_role_pos,
-        user_highest_matching_role_pos,
-        target_highest_matching_role_pos,
-    )
+    let user_highest_matching_role_pos = get_highest_role_pos(user).await;
+    let target_highest_matching_role_pos = get_highest_role_pos(target).await;
+    user_highest_matching_role_pos > target_highest_matching_role_pos
 }

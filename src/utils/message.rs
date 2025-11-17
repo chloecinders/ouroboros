@@ -5,7 +5,6 @@ use serenity::{
     all::{
         Context, CreateAllowedMentions, CreateEmbed, CreateMessage, EditMessage, Message, UserId,
     },
-    futures,
 };
 use tokio::{sync::Mutex, task::JoinHandle, time::sleep};
 use tracing::warn;

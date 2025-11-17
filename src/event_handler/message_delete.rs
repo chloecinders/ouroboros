@@ -16,10 +16,12 @@ pub async fn message_delete(
     event: MessageDeleteEvent,
     old_if_available: Option<PartialMessage>,
 ) {
-    if let Some(msg) = old_if_available.clone() {
-        if msg.author.bot {
-            return;
-        }
+    let Some(msg) = old_if_available else {
+        return;
+    };
+
+    if msg.author.bot {
+        return;
     }
 
     let guild_id = match event.channel_id.to_channel(&ctx).await {
@@ -44,10 +46,9 @@ pub async fn message_delete(
         if let Some(entry) = logs.entries.first() {
             let entry_time = snowflake_to_timestamp(entry.id.get());
 
-            if (Utc::now() - entry_time).num_seconds().abs() <= 300
+            if (Utc::now() - entry_time).num_seconds().abs() <= 5
                 && let Some(target) = entry.target_id
                 && let Some(Some(channel)) = entry.options.clone().map(|o| o.channel_id)
-                && let Some(msg) = old_if_available.clone()
                 && target.get() == msg.author.id
                 && channel.get() == msg.channel_id
             {
@@ -60,7 +61,6 @@ pub async fn message_delete(
                 if (Utc::now() - entry_time).num_seconds().abs() <= 5
                     && let Some(target) = entry.target_id
                     && let Some(Some(channel)) = entry.options.clone().map(|o| o.channel_id)
-                    && let Some(msg) = old_if_available.clone()
                     && target.get() == msg.author.id
                     && channel.get() == msg.channel_id
                 {
@@ -74,8 +74,7 @@ pub async fn message_delete(
     let mut files = vec![];
     let mut embed = CreateEmbed::new().color(BRAND_RED);
 
-    if let Some(msg) = old_if_available.clone()
-        && let Some(author) = msg.author.to_user(&ctx).await
+    if let Some(author) = msg.author.to_user(&ctx).await
     {
         description.push_str(&format!("| Target: <@{}> ", msg.author.id));
         embed = embed.author(
@@ -96,19 +95,14 @@ pub async fn message_delete(
     };
 
     description.push_str(&format!("| Channel: <#{0}> ", event.channel_id.get()));
-
-    if let Some(msg) = old_if_available {
-        description.push_str(&format!(
-            "\n{}",
-            if msg.content.is_empty() {
-                String::new()
-            } else {
-                format!("```\n{} \n```", msg.content)
-            }
-        ));
-    } else {
-        description.push_str("\nContent not found in cache");
-    }
+    description.push_str(&format!(
+        "\n{}",
+        if msg.content.is_empty() {
+            String::new()
+        } else {
+            format!("```\n{} \n```", msg.content)
+        }
+    ));
 
     guild_log(
         &ctx,
