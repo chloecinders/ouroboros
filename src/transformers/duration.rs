@@ -28,6 +28,14 @@ impl Transformers {
             if s == "0" {
                 input.contents = Some(CommandArgument::Duration(Duration::default()));
                 return Ok(input);
+            } else if s.chars().count() < 2 {
+                return Err(TransformerError::CommandError(CommandError {
+                    arg: Some(input),
+                    title: String::from("Could not turn input to a <Duration>"),
+                    hint: Some(String::from(
+                        "provide a valid number and a unit (s, m, h, d, w, M, y), i.e. 1h (1 hour) or 25d (25 days)",
+                    )),
+                }));
             }
 
             let (digits, last) = s.split_at(s.len() - 1);
