@@ -63,7 +63,14 @@ pub async fn guild_member_update(
     let avatar = if let Some(old) = old_if_available.clone()
         && let Some(new) = new.clone()
     {
-        if old.avatar.or(old.user.avatar) == new.avatar.or(new.user.avatar) && new.avatar.or(new.user.avatar) != new.user.avatar {
+        let lhs = old.avatar.or(old.user.avatar);
+        let rhs = new.avatar.or(new.user.avatar);
+
+        if matches!(
+            (lhs, rhs, old.user.avatar, new.user.avatar),
+            (Some(a), Some(b), Some(ua_old), Some(ua_new))
+                if a == ua_old && b == ua_new
+        ) {
             (String::new(), None)
         } else {
             let client = Client::new();
