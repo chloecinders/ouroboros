@@ -160,7 +160,10 @@ pub async fn guild_member_update(
         String::new()
     };
 
-    if name.is_empty() && roles.is_empty() {
+    if
+        (name.is_empty() && roles.is_empty())
+        || (name.is_empty() && !roles.is_empty() && moderator_id.unwrap_or(0) == event.user.id.get())
+    {
         return;
     }
 
