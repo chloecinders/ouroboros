@@ -102,7 +102,15 @@ async fn main() {
     BOT_CONFIG.set(active_env.clone()).unwrap();
 
     panic::set_hook(Box::new(|info| {
-        send_error(String::from("Thread Panic"), format!("Panic info: {info:?}; Payload: {:?}", info.payload()));
+        let payload_str = if let Some(s) = info.payload().downcast_ref::<&str>() {
+            Some(s.to_string())
+        } else if let Some(s) = info.payload().downcast_ref::<String>() {
+            Some(s.clone())
+        } else {
+            None
+        };
+
+        send_error(String::from("Thread Panic"), format!("Panic info: {info:?}; Payload: {payload_str:?}"));
     }));
 
     let intents = GatewayIntents::all();
