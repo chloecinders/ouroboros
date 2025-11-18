@@ -34,3 +34,6 @@ pub use guilds::get_all_guilds;
 
 mod audit_log;
 pub use audit_log::find_audit_log;
+
+mod webhook;
+pub use webhook::send_error;

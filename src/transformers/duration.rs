@@ -28,7 +28,7 @@ impl Transformers {
             if s == "0" {
                 input.contents = Some(CommandArgument::Duration(Duration::default()));
                 return Ok(input);
-            } else if s.chars().count() < 2 {
+            } else if s.len() < 2 {
                 return Err(TransformerError::CommandError(CommandError {
                     arg: Some(input),
                     title: String::from("Could not turn input to a <Duration>"),

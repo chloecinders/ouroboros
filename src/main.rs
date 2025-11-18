@@ -1,7 +1,5 @@
 use std::{
-    env, fs,
-    sync::{Arc, OnceLock},
-    time::{Duration, Instant},
+    env, fs, panic, sync::{Arc, OnceLock}, time::{Duration, Instant}
 };
 
 use serenity::{
@@ -16,7 +14,7 @@ use tracing::{error, warn};
 use crate::{
     config::{Config, Environment},
     event_handler::Handler,
-    utils::GuildSettings,
+    utils::{GuildSettings, send_error},
 };
 use std::process::Command as SystemCommand;
 
@@ -102,6 +100,10 @@ async fn main() {
         .unwrap();
 
     BOT_CONFIG.set(active_env.clone()).unwrap();
+
+    panic::set_hook(Box::new(|info| {
+        send_error(String::from("Thread Panic"), format!("Panic info: {info:?}; Payload: {:?}", info.payload()));
+    }));
 
     let intents = GatewayIntents::all();
 
