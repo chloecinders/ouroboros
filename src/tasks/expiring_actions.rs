@@ -11,7 +11,7 @@ pub async fn check_expiring_bans(ctx: impl CacheHttp) {
         r#"
         SELECT id, guild_id, user_id FROM actions WHERE type = 'ban' AND active = true AND expires_at < NOW();
         "#
-    ).fetch_all(SQL.get().unwrap()).await {
+    ).fetch_all(&*SQL).await {
         Ok(d) => d,
         Err(e) => {
             error!("task check_expiring_bans couldnt fetch necessary data; Err = {e:?}");
@@ -47,7 +47,7 @@ pub async fn check_expiring_bans(ctx: impl CacheHttp) {
         "#,
         &updated
     )
-    .execute(SQL.get().unwrap())
+    .execute(&*SQL)
     .await
     .is_err()
     {
@@ -71,7 +71,7 @@ pub async fn check_expiring_timeouts(cache_http: impl CacheHttp) {
           AND active = true;
         "#
     )
-    .fetch_all(SQL.get().unwrap())
+    .fetch_all(&*SQL)
     .await
     {
         Ok(d) => d,
@@ -160,7 +160,7 @@ pub async fn check_expiring_timeouts(cache_http: impl CacheHttp) {
             r#"UPDATE actions SET last_reapplied_at = NOW() WHERE id = ANY($1);"#,
             &updated
         )
-        .execute(SQL.get().unwrap())
+        .execute(&*SQL)
         .await
     {
         error!(

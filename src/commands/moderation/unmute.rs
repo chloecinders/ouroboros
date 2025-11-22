@@ -111,7 +111,7 @@ impl Command for Unmute {
             "UPDATE actions SET active = false, expires_at = NULL WHERE guild_id = $1 AND user_id = $2 AND type = 'mute' AND active = true;",
             msg.guild_id.map(|g| g.get() as i64).unwrap_or(0),
             member.user.id.get() as i64,
-        ).execute(SQL.get().unwrap()).await;
+        ).execute(&*SQL).await;
 
         if let Err(err) = res {
             warn!("Got error while unmuting; err = {err:?}");
@@ -131,7 +131,7 @@ impl Command for Unmute {
             member.user.id.get() as i64,
             msg.author.id.get() as i64,
             reason.clone()
-        ).execute(SQL.get().unwrap()).await;
+        ).execute(&*SQL).await;
 
         if let Err(err) = res {
             warn!("Got error while unmuting; err = {err:?}");
@@ -146,7 +146,7 @@ impl Command for Unmute {
             warn!("Got error while unmuting; err = {err:?}");
 
             if query!("DELETE FROM actions WHERE id = $1", db_id)
-                .execute(SQL.get().unwrap())
+                .execute(&*SQL)
                 .await
                 .is_err()
             {

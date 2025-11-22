@@ -257,7 +257,7 @@ impl Command for Config {
                     .1
                     .bind(msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64)
                     .bind(None as Option<i32>)
-                    .execute(SQL.get().unwrap())
+                    .execute(&*SQL)
                     .await
             } else {
                 match setting_info.0(&ctx, &msg, &mut iter).await {
@@ -269,7 +269,7 @@ impl Command for Config {
                             .1
                             .bind(msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64)
                             .bind(channel.id.get() as i64)
-                            .execute(SQL.get().unwrap())
+                            .execute(&*SQL)
                             .await
                     }
 
@@ -281,7 +281,7 @@ impl Command for Config {
                             .1
                             .bind(msg.guild_id.map(|g| g.get()).unwrap_or(1) as i64)
                             .bind(b)
-                            .execute(SQL.get().unwrap())
+                            .execute(&*SQL)
                             .await
                     }
 

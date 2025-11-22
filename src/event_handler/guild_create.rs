@@ -8,13 +8,11 @@ pub async fn guild_create(_handler: &Handler, ctx: Context, guild: Guild, is_new
     if let Some(new) = is_new
         && new
     {
-        let cfg = BOT_CONFIG.get().unwrap();
-
-        if cfg.whitelist_enabled.is_none_or(|b| !b) {
+        if BOT_CONFIG.whitelist_enabled.is_none_or(|b| !b) {
             return;
         }
 
-        if cfg
+        if BOT_CONFIG
             .whitelist
             .as_ref()
             .is_none_or(|ids| !ids.contains(&guild.id.get()))
@@ -30,7 +28,7 @@ pub async fn guild_create(_handler: &Handler, ctx: Context, guild: Guild, is_new
             "INSERT INTO actions (guild_id) values ($1);",
             guild.id.get() as i64
         )
-        .execute(SQL.get().unwrap())
+        .execute(&*SQL)
         .await
         {
             error!(
@@ -41,7 +39,7 @@ pub async fn guild_create(_handler: &Handler, ctx: Context, guild: Guild, is_new
         }
 
         {
-            let mut global = GUILD_SETTINGS.get().unwrap().lock().await;
+            let mut global = GUILD_SETTINGS.lock().await;
             global.invalidate();
         }
     }

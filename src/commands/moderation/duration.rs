@@ -80,7 +80,7 @@ impl Command for Duration {
             "#,
             msg.guild_id.map(|g| g.get()).unwrap_or(0) as i64,
             id
-        ).fetch_one(SQL.get().unwrap()).await;
+        ).fetch_one(&*SQL).await;
 
         let data = match res {
             Ok(d) => d,
@@ -122,7 +122,7 @@ impl Command for Duration {
                     msg.guild_id.map(|g| g.get()).unwrap_or(0) as i64,
                     id
                 )
-                .execute(SQL.get().unwrap())
+                .execute(&*SQL)
                 .await
                 {
                     warn!("Couldn't update duration; err = {err:?}");
@@ -178,7 +178,7 @@ impl Command for Duration {
                     msg.guild_id.map(|g| g.get()).unwrap_or(0) as i64,
                     id
                 )
-                .execute(SQL.get().unwrap())
+                .execute(&*SQL)
                 .await
                 {
                     warn!("Couldn't update duration; err = {err:?}");

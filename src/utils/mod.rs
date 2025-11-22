@@ -37,3 +37,5 @@ pub use audit_log::find_audit_log;
 
 mod webhook;
 pub use webhook::send_error;
+pub use webhook::consume_serenity_error;
+pub use webhook::consume_pgsql_error;

@@ -1,5 +1,5 @@
 use std::{
-    env, fs, panic, sync::{Arc, OnceLock}, time::{Duration, Instant}
+    env, fs, panic, sync::Arc, time::{Duration, Instant}
 };
 
 use serenity::{
@@ -9,12 +9,10 @@ use serenity::{
 };
 use sqlx::{PgPool, postgres::PgPoolOptions};
 use tokio::{fs::File, io::AsyncReadExt, sync::Mutex, time::sleep};
-use tracing::{error, warn};
+use tracing::error;
 
 use crate::{
-    config::{Config, Environment},
-    event_handler::Handler,
-    utils::{GuildSettings, send_error},
+    auto_once::AutoOnceLock, config::{Config, Environment}, event_handler::Handler, utils::{GuildSettings, send_error}
 };
 use std::process::Command as SystemCommand;
 
@@ -33,11 +31,12 @@ mod lexer;
 mod tasks;
 mod transformers;
 mod utils;
+mod auto_once;
 
-pub static START_TIME: OnceLock<Instant> = OnceLock::new();
-pub static SQL: OnceLock<PgPool> = OnceLock::new();
-pub static GUILD_SETTINGS: OnceLock<Mutex<GuildSettings>> = OnceLock::new();
-pub static BOT_CONFIG: OnceLock<Environment> = OnceLock::new();
+pub static START_TIME: AutoOnceLock<Instant> = AutoOnceLock::new();
+pub static SQL: AutoOnceLock<PgPool> = AutoOnceLock::new();
+pub static GUILD_SETTINGS: AutoOnceLock<Mutex<GuildSettings>> = AutoOnceLock::new();
+pub static BOT_CONFIG: AutoOnceLock<Environment> = AutoOnceLock::new();
 
 #[tokio::main]
 async fn main() {
@@ -54,13 +53,13 @@ async fn main() {
 
         info!("Starting update process");
         if let Err(err) = update(arg) {
-            warn!("Got error while updating; err = {err:?}");
+            send_error(String::from("UPDATE ERROR"), err.to_string());
         }
         exit(0);
     }
 
     if let Err(err) = cleanup() {
-        warn!("Could not clean up update files; err = {err:?}");
+        send_error(String::from("UPDATE CLEANUP ERROR"), err.to_string());
     };
 
     let _ = START_TIME.set(Instant::now());
@@ -188,7 +187,6 @@ fn cleanup() -> std::io::Result<()> {
             && filename.contains("ouroboros")
         {
             fs::remove_file(&path)?;
-            warn!("Deleted file; {}", filename);
         }
     }
 

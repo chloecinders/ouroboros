@@ -93,7 +93,7 @@ impl Command for Unban {
             "UPDATE actions SET active = false, expires_at = NULL WHERE guild_id = $1 AND user_id = $2 AND type = 'ban' AND active = true;",
             msg.guild_id.map(|g| g.get() as i64).unwrap_or(0),
             user.id.get() as i64,
-        ).execute(SQL.get().unwrap()).await;
+        ).execute(&*SQL).await;
 
         if let Err(err) = res {
             warn!("Got error while unbanning; err = {err:?}");
@@ -113,7 +113,7 @@ impl Command for Unban {
             user.id.get() as i64,
             msg.author.id.get() as i64,
             reason.clone()
-        ).execute(SQL.get().unwrap()).await;
+        ).execute(&*SQL).await;
 
         if let Err(err) = res {
             warn!("Got error while unbanning; err = {err:?}");
@@ -133,7 +133,7 @@ impl Command for Unban {
             warn!("Got error while unbanning; err = {err:?}");
 
             if query!("DELETE FROM actions WHERE id = $1", db_id)
-                .execute(SQL.get().unwrap())
+                .execute(&*SQL)
                 .await
                 .is_err()
             {

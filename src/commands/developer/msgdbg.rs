@@ -11,7 +11,7 @@ use crate::{
     },
     event_handler::CommandError,
     lexer::{Token, lex},
-    utils::is_developer,
+    utils::{consume_serenity_error, is_developer},
 };
 use ouroboros_macros::command;
 
@@ -53,7 +53,6 @@ impl Command for MsgDbg {
     async fn run(&self, ctx: Context, msg: Message) -> Result<(), CommandError> {
         if is_developer(&msg.author) {
             let Some(reply) = msg.referenced_message.clone() else {
-                warn!("no reply found");
                 return Ok(());
             };
 
@@ -71,7 +70,9 @@ impl Command for MsgDbg {
 
             dbg!(reply);
 
-            let _ = msg.channel_id.send_message(&ctx, r).await;
+            if let Err(err) = msg.channel_id.send_message(&ctx, r).await {
+                consume_serenity_error(String::from("MSGDBG RUN"), err);
+            }
         }
 
         Ok(())

@@ -203,7 +203,7 @@ impl Command for Ban {
             "UPDATE actions SET active = false WHERE guild_id = $1 AND user_id = $2 AND type = 'ban'",
             msg.guild_id.map(|g| g.get() as i64).unwrap_or(0),
             user.id.get() as i64,
-        ).execute(SQL.get().unwrap());
+        ).execute(&*SQL);
 
         let insert_ban = query!(
             "INSERT INTO actions (id, type, guild_id, user_id, moderator_id, reason, expires_at) VALUES ($1, 'ban', $2, $3, $4, $5, $6)",
@@ -213,7 +213,7 @@ impl Command for Ban {
             msg.author.id.get() as i64,
             reason.as_str(),
             duration
-        ).execute(SQL.get().unwrap());
+        ).execute(&*SQL);
 
         let (res1, res2) = tokio::join!(disable_past, insert_ban);
 
@@ -286,7 +286,7 @@ impl Command for Ban {
             warn!("Got error while banning; err = {err:?}");
 
             if query!("DELETE FROM actions WHERE id = $1", db_id)
-                .execute(SQL.get().unwrap())
+                .execute(&*SQL)
                 .await
                 .is_err()
             {

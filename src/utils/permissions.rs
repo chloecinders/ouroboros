@@ -122,8 +122,7 @@ pub fn permissions_for_channel(
 
 /// Checks if a user is a developer using the BOT_CONFIG.
 pub fn is_developer(user: &User) -> bool {
-    let cfg = BOT_CONFIG.get().unwrap();
-    cfg.dev_ids
+    BOT_CONFIG.dev_ids
         .clone()
         .is_some_and(|i| i.contains(&user.id.get()))
 }

@@ -51,7 +51,7 @@ impl LogType {
     }
 
     pub async fn channel_id(&self, guild: GuildId) -> Option<ChannelId> {
-        let mut lock = GUILD_SETTINGS.get().unwrap().lock().await;
+        let mut lock = GUILD_SETTINGS.lock().await;
         let settings = lock.get(guild.get()).await.ok()?;
 
         settings

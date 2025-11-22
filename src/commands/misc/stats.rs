@@ -59,7 +59,7 @@ impl Command for Stats {
         let guild_count = ctx.cache.guild_count();
 
         let uptime = {
-            let elapsed = START_TIME.get().unwrap_or(&Instant::now()).elapsed();
+            let elapsed = START_TIME.elapsed();
             let seconds = elapsed.as_secs();
 
             (seconds / 3600, (seconds % 3600) / 60, seconds % 60)

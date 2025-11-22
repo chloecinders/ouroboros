@@ -86,10 +86,10 @@ impl CommandMessageResponse {
                             if b {
                                 String::new()
                             } else {
-                                String::from("| DM failed")
+                                String::from(" | DM failed")
                             }
                         }
-                        Err(_) => String::from("| DM failed"),
+                        Err(_) => String::from(" | DM failed"),
                     }
                 } else {
                     String::new()

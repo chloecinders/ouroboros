@@ -62,7 +62,7 @@ pub async fn create_actions_223320250818() {
         )
         "#
     )
-    .execute(SQL.get().unwrap())
+    .execute(&*SQL)
     .await
     {
         panic!("Couldnt run database migration create_actions_223320250818; Err = {err:?}");
@@ -79,7 +79,7 @@ pub async fn create_guild_settings_195120250826() {
         )
         "#
     )
-    .execute(SQL.get().unwrap())
+    .execute(&*SQL)
     .await
     {
         panic!("Couldnt run database migration create_guild_settings_195120250826; Err = {err:?}");
@@ -104,7 +104,7 @@ pub async fn create_action_type_201420250826() {
         END$$;
         "#
     )
-    .execute(SQL.get().unwrap())
+    .execute(&*SQL)
     .await
     {
         panic!("Couldnt run database migration create_guild_settings_195120250826; Err = {err:?}");
@@ -118,7 +118,7 @@ pub async fn add_log_bot_to_guild_settings_220420250829() {
         ADD COLUMN IF NOT EXISTS log_bot BOOLEAN
         "#
     )
-    .execute(SQL.get().unwrap())
+    .execute(&*SQL)
     .await
     {
         panic!(
@@ -134,7 +134,7 @@ pub async fn add_log_mod_to_guild_settings_021020250918() {
         ADD COLUMN IF NOT EXISTS log_mod bigint
         "#
     )
-    .execute(SQL.get().unwrap())
+    .execute(&*SQL)
     .await
     {
         panic!(
@@ -152,7 +152,7 @@ pub async fn remove_log_mod_and_change_channel_id_to_jsonb_150020250921() {
         ADD COLUMN IF NOT EXISTS log_channel_ids jsonb
         "#
     )
-    .execute(SQL.get().unwrap())
+    .execute(&*SQL)
     .await
     {
         panic!(
@@ -173,7 +173,7 @@ pub async fn add_message_cache_store_133120250922() {
         );
         "#
     )
-    .execute(SQL.get().unwrap())
+    .execute(&*SQL)
     .await
     {
         panic!(
@@ -189,7 +189,7 @@ pub async fn add_last_reapplied_at_to_actions_160120250923() {
         ADD COLUMN IF NOT EXISTS last_reapplied_at timestamp with time zone;
         "#
     )
-    .execute(SQL.get().unwrap())
+    .execute(&*SQL)
     .await
     {
         panic!(
@@ -226,7 +226,7 @@ pub async fn migrate_log_types_231320251115() {
         WHERE log_channel_ids IS NOT NULL;
         "#
     )
-    .execute(SQL.get().unwrap())
+    .execute(&*SQL)
     .await;
 
     if let Err(err) = r {

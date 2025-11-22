@@ -117,7 +117,7 @@ impl Command for Warn {
             member.user.id.get() as i64,
             msg.author.id.get() as i64,
             reason.as_str()
-        ).execute(SQL.get().unwrap()).await;
+        ).execute(&*SQL).await;
 
         if let Err(err) = res {
             warn!("Got error while warning; err = {err:?}");

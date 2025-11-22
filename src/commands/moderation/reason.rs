@@ -91,7 +91,7 @@ impl Command for Reason {
             reason,
             msg.guild_id.map(|g| g.get()).unwrap_or(0) as i64,
             id
-        ).fetch_optional(SQL.get().unwrap()).await;
+        ).fetch_optional(&*SQL).await;
 
         let data = match res {
             Ok(d) => d,

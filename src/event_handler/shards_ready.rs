@@ -13,10 +13,8 @@ use crate::{
 };
 
 pub async fn shards_ready(handler: &Handler, ctx: Context, _total_shards: u32) {
-    let cfg = BOT_CONFIG.get().unwrap();
-
     finish_update(&ctx).await;
-    check_whitelist(cfg, &ctx).await;
+    check_whitelist(&ctx).await;
     update_guild_settings(&ctx).await;
     fill_message_cache(handler, &ctx).await;
     fill_permission_cache(handler, &ctx).await;
@@ -87,23 +85,23 @@ pub async fn update_guild_settings(ctx: &Context) {
         guild_ids.join(", ")
     );
 
-    if let Err(err) = sqlx::query(&query).execute(SQL.get().unwrap()).await {
+    if let Err(err) = sqlx::query(&query).execute(&*SQL).await {
         error!("Couldnt add missing guilds to guild_settings; err = {err:?}")
     }
 
     {
-        let mut settings = GUILD_SETTINGS.get().unwrap().lock().await;
+        let mut settings = GUILD_SETTINGS.lock().await;
         settings.invalidate();
     }
 }
 
-pub async fn check_whitelist(cfg: &Environment, ctx: &Context) {
-    if cfg.whitelist_enabled.is_none_or(|b| !b) {
+pub async fn check_whitelist(ctx: &Context) {
+    if BOT_CONFIG.whitelist_enabled.is_none_or(|b| !b) {
         return;
     }
 
     for guild in ctx.cache.guilds() {
-        if cfg
+        if BOT_CONFIG
             .whitelist
             .as_ref()
             .is_none_or(|ids| !ids.contains(&guild.get()))
@@ -119,7 +117,7 @@ pub async fn check_whitelist(cfg: &Environment, ctx: &Context) {
 
 pub async fn fill_message_cache(handler: &Handler, ctx: &Context) {
     let existing_data = match query!("SELECT * FROM message_cache_store")
-        .fetch_all(SQL.get().unwrap())
+        .fetch_all(&*SQL)
         .await
     {
         Ok(r) => r,

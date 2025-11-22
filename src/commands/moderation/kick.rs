@@ -117,7 +117,7 @@ impl Command for Kick {
             member.user.id.get() as i64,
             msg.author.id.get() as i64,
             reason.as_str()
-        ).execute(SQL.get().unwrap()).await;
+        ).execute(&*SQL).await;
 
         if let Err(err) = res {
             warn!("Got error while kicking; err = {err:?}");
@@ -166,7 +166,7 @@ impl Command for Kick {
             warn!("Got error while kicking; err = {err:?}");
 
             if query!("DELETE FROM actions WHERE id = $1", db_id)
-                .execute(SQL.get().unwrap())
+                .execute(&*SQL)
                 .await
                 .is_err()
             {

@@ -21,7 +21,7 @@ use crate::{
     },
     constants::BRAND_RED,
     lexer::Token,
-    utils::cache::{message_cache::MessageCache, permission_cache::PermissionCache},
+    utils::{cache::{message_cache::MessageCache, permission_cache::PermissionCache}, consume_serenity_error},
 };
 #[derive(Debug)]
 pub struct CommandError {
@@ -195,7 +195,8 @@ impl Handler {
                     )),
                 )
                 .await;
-            warn!("Could not send message; err = {e:?}")
+
+            consume_serenity_error(String::from("PERMISSION ERROR HANDLING: SEND RESPONSE"), e);
         }
     }
 
@@ -247,7 +248,7 @@ impl Handler {
             &message_counts,
             &previous_actions,
         )
-        .execute(SQL.get().unwrap())
+        .execute(&*SQL)
         .await
         {
             warn!("Got error updating message cache store; err = {err:?}");

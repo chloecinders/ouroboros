@@ -54,7 +54,7 @@ impl GuildSettings {
                 log_channel_ids as "log_channel_ids?: sqlx::types::Json<HashMap<LogType, u64>>"
             FROM guild_settings"#
         )
-        .fetch_all(SQL.get().unwrap())
+        .fetch_all(&*SQL)
         .await
         {
             let mut map: HashMap<u64, Settings> = HashMap::new();

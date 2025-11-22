@@ -163,7 +163,7 @@ impl Command for Mute {
             msg.author.id.get() as i64,
             reason.as_str(),
             duration.map(|d| d.naive_utc()),
-        ).execute(SQL.get().unwrap()).await;
+        ).execute(&*SQL).await;
 
         if let Err(err) = res {
             warn!("Got error while timing out; err = {err:?}");
@@ -192,7 +192,7 @@ impl Command for Mute {
             warn!("Got error while timinng out; err = {err:?}");
 
             if query!("DELETE FROM actions WHERE id = $1", db_id)
-                .execute(SQL.get().unwrap())
+                .execute(&*SQL)
                 .await
                 .is_err()
             {

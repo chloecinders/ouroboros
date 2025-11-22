@@ -141,7 +141,7 @@ impl Command for Softban {
             member.user.id.get() as i64,
             msg.author.id.get() as i64,
             reason.as_str()
-        ).execute(SQL.get().unwrap()).await;
+        ).execute(&*SQL).await;
 
         if let Err(err) = res {
             warn!("Got error while softbanning; err = {err:?}");
@@ -199,7 +199,7 @@ impl Command for Softban {
             warn!("Got error while softbanning; err = {err:?}");
 
             if query!("DELETE FROM actions WHERE id = $1", db_id)
-                .execute(SQL.get().unwrap())
+                .execute(&*SQL)
                 .await
                 .is_err()
             {

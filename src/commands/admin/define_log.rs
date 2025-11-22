@@ -26,7 +26,7 @@ use crate::{
     event_handler::CommandError,
     lexer::Token,
     transformers::Transformers,
-    utils::LogType,
+    utils::{LogType, consume_pgsql_error, consume_serenity_error},
 };
 use ouroboros_macros::command;
 
@@ -85,7 +85,7 @@ impl Command for DefineLog {
         let channel_ids: HashMap<LogType, u64>;
 
         {
-            let mut lock = GUILD_SETTINGS.get().unwrap().lock().await;
+            let mut lock = GUILD_SETTINGS.lock().await;
             channel_ids = lock
                 .get(msg.guild_id.unwrap().get())
                 .await
@@ -159,7 +159,7 @@ impl Command for DefineLog {
         let mut new_msg = match msg.channel_id.send_message(&ctx, reply).await {
             Ok(m) => m,
             Err(err) => {
-                warn!("Could not send message; err = {err:?}");
+                consume_serenity_error(String::from("DLOG RESPONSE"), err);
                 return Ok(());
             }
         };
@@ -202,7 +202,7 @@ impl Command for DefineLog {
             };
 
             if interaction.user.id != msg.author.id {
-                if let Err(e) = interaction
+                if let Err(err) = interaction
                     .create_response(
                         &ctx,
                         CreateInteractionResponse::Message(
@@ -213,7 +213,7 @@ impl Command for DefineLog {
                     )
                     .await
                 {
-                    warn!("Could not send message; err = {e:?}");
+                    consume_serenity_error(String::from("DLOG INTERACTION RESPONSE"), err);
                     return Err(CommandError {
                         title: String::from("Could not send message"),
                         hint: None,
@@ -315,11 +315,11 @@ impl Command for DefineLog {
                 msg.guild_id.unwrap().get() as i64,
                 json::to_value(&new_values).unwrap()
             )
-            .execute(SQL.get().unwrap())
+            .execute(&*SQL)
             .await;
 
             if let Err(err) = res {
-                warn!("Got error while updating guild log ids; err = {err:?}");
+                consume_pgsql_error(String::from("DLOG DB INSERT"), err);
                 return Err(CommandError {
                     title: String::from("Could not update the database"),
                     hint: Some(String::from("please try again later")),
@@ -328,7 +328,7 @@ impl Command for DefineLog {
             }
 
             {
-                let mut lock = GUILD_SETTINGS.get().unwrap().lock().await;
+                let mut lock = GUILD_SETTINGS.lock().await;
                 lock.invalidate();
             }
 

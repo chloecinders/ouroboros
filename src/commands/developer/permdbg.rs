@@ -11,7 +11,7 @@ use crate::{
     },
     event_handler::CommandError,
     lexer::Token,
-    utils::{is_developer, permissions_for_channel},
+    utils::{consume_serenity_error, is_developer, permissions_for_channel},
 };
 use ouroboros_macros::command;
 
@@ -101,8 +101,8 @@ impl Command for PermDbg {
                 .reference_message(&msg)
                 .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
 
-            if let Err(e) = msg.channel_id.send_message(&ctx, reply).await {
-                warn!("{e:?}");
+            if let Err(err) = msg.channel_id.send_message(&ctx, reply).await {
+                consume_serenity_error(String::from("PERMDBG RESPONSE"), err);
             }
         }
 

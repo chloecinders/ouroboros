@@ -51,7 +51,7 @@ impl Log {
             guild_id,
             log
         )
-        .fetch_optional(SQL.get().unwrap()).await;
+        .fetch_optional(&*SQL).await;
 
         let data = match res {
             Ok(d) => d,
@@ -265,7 +265,7 @@ impl Command for Log {
             user.id.get() as i64,
             msg.guild_id.map(|g| g.get()).unwrap_or(0) as i64
         )
-        .fetch_all(SQL.get().unwrap()).await;
+        .fetch_all(&*SQL).await;
 
         let data = match res {
             Ok(d) => d,

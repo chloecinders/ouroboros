@@ -72,6 +72,7 @@ impl Command for Update {
 
         if send_announcement.is_some_and(|b| b) {
             let ctx_clone = ctx.clone();
+
             log_thread_handle = Some(tokio::spawn(async move {
                 let guilds = get_all_guilds(&ctx_clone).await;
 
@@ -94,8 +95,7 @@ impl Command for Update {
             }));
         }
 
-        let cfg = BOT_CONFIG.get().unwrap();
-        let Some(repo) = cfg.repository.clone() else {
+        let Some(repo) = BOT_CONFIG.repository.clone() else {
             warn!("Update command disabled! Please set a repository in the config!");
             let _ = msg
                 .reply(
@@ -123,7 +123,7 @@ impl Command for Update {
                 .unwrap(),
         );
 
-        if let Some(token) = cfg.github_token.clone() {
+        if let Some(token) = BOT_CONFIG.github_token.clone() {
             headers.append(
                 "Authorization",
                 HeaderValue::from_str(format!("Bearer {token}").as_str()).unwrap(),
@@ -183,7 +183,7 @@ impl Command for Update {
                 .unwrap(),
             );
 
-            if let Some(token) = cfg.github_token.clone() {
+            if let Some(token) = BOT_CONFIG.github_token.clone() {
                 headers.append(
                     "Authorization",
                     HeaderValue::from_str(format!("Bearer {token}").as_str()).unwrap(),
@@ -253,7 +253,7 @@ impl Command for Update {
                 .unwrap(),
             );
 
-            if let Some(token) = cfg.github_token.clone() {
+            if let Some(token) = BOT_CONFIG.github_token.clone() {
                 headers.append(
                     "Authorization",
                     HeaderValue::from_str(&format!("Bearer {token}")).unwrap(),
