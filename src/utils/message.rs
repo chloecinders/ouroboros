@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, panic, sync::Arc, time::Duration};
 
 use serenity::{
     FutureExt,
@@ -79,24 +79,13 @@ impl CommandMessageResponse {
         } else {
             let mut lock = self.join_thread.lock().await;
 
-            if let Some(handle) = lock.as_mut() {
-                if let Some(res) = handle.now_or_never() {
-                    match res {
-                        Ok(b) => {
-                            if b {
-                                String::new()
-                            } else {
-                                String::from(" | DM failed")
-                            }
-                        }
-                        Err(_) => String::from(" | DM failed"),
-                    }
-                } else {
-                    String::new()
-                }
-            } else {
-                String::new()
-            }
+            let res = match lock.as_mut().map(|h| h.now_or_never()) {
+                Some(Some(Ok(b))) if b => String::new(),
+                _ => String::from(" | DM failed")
+            };
+
+            lock.take();
+            res
         };
 
         let embed = CreateEmbed::new()
@@ -119,14 +108,8 @@ impl CommandMessageResponse {
         let mut lock = self.join_thread.lock().await;
         if let Some(handle) = lock.as_mut() {
             let addition = match handle.await {
-                Ok(b) => {
-                    if b {
-                        String::new()
-                    } else {
-                        String::from("| DM failed")
-                    }
-                }
-                Err(_) => String::from("| DM failed"),
+                Ok(b) if b => String::new(),
+                _ => String::from("| DM failed"),
             };
             let desc = (*self.server_content)(addition);
 

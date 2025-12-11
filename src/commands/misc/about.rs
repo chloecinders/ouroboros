@@ -1,4 +1,4 @@
-use std::{collections::HashMap, time::Instant};
+use std::collections::HashMap;
 
 use serenity::{
     all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Message},

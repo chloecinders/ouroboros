@@ -2,7 +2,6 @@ use serenity::{
     all::{Context, CreateAttachment, CreateMessage, Message},
     async_trait,
 };
-use tracing::warn;
 
 use crate::{
     commands::{

@@ -2,7 +2,6 @@ use serenity::{
     all::{Context, CreateAllowedMentions, CreateMessage, Message, Permissions},
     async_trait,
 };
-use tracing::warn;
 
 use crate::{
     commands::{

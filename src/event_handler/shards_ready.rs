@@ -8,7 +8,7 @@ use sqlx::query;
 use tracing::{error, info};
 
 use crate::{
-    BOT_CONFIG, GUILD_SETTINGS, SQL, config::Environment, event_handler::Handler,
+    BOT_CONFIG, GUILD_SETTINGS, SQL, event_handler::Handler,
     utils::cache::permission_cache::CommandPermissionRequest,
 };
 

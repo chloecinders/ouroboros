@@ -14,7 +14,6 @@ use serenity::{
     async_trait, json,
 };
 use sqlx::query;
-use tracing::warn;
 
 use crate::{
     GUILD_SETTINGS, SQL,
