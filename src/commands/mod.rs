@@ -278,3 +278,4 @@ pub use moderation::Warn;
 mod utilities;
 pub use utilities::Cache;
 pub use utilities::ExtractId;
+pub use utilities::ResetToken;
