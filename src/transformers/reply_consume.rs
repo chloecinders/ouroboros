@@ -1,15 +1,12 @@
 use std::{iter::Peekable, vec::IntoIter};
 
 use serenity::all::{Context, Message};
-use sqlx::Row;
 
 use crate::{
-    ENCRYPTION_KEYS,
     commands::{CommandArgument, TransformerError, TransformerReturn},
     event_handler::MissingArgumentError,
     lexer::{InferType, Token},
     transformers::Transformers,
-    utils::encryption::decrypt,
 };
 
 impl Transformers {
@@ -22,52 +19,28 @@ impl Transformers {
             if args.peek().is_some() {
                 return Transformers::consume(ctx, msg, args).await;
             } else if let Some(reply) = msg.referenced_message.clone() {
-                if let Ok(Some(row)) = sqlx::query(
-                    "SELECT guild_id, content FROM log_messages_context WHERE message_id = $1",
-                )
-                .bind(reply.id.get() as i64)
-                .fetch_optional(&*crate::SQL)
-                .await
+                let mut is_log_message = false;
+                if let Ok(Some(_)) =
+                    sqlx::query("SELECT 1 FROM log_messages_context WHERE message_id = $1")
+                        .bind(reply.id.get() as i64)
+                        .fetch_optional(&*crate::SQL)
+                        .await
                 {
-                    let guild_id: i64 = row.try_get("guild_id").unwrap_or(0);
-                    let content_bytes: Option<Vec<u8>> = row.try_get("content").unwrap_or(None);
-
-                    let decrypted_content = if let Some(bytes) = content_bytes {
-                        let lock = ENCRYPTION_KEYS.lock().await;
-                        if let Some(key) = lock.get(&(guild_id as u64)) {
-                            decrypt(key, &bytes).or_else(|| String::from_utf8(bytes.clone()).ok())
-                        } else {
-                            String::from_utf8(bytes).ok()
-                        }
-                    } else {
-                        None
-                    };
-
-                    if let Some(content) = decrypted_content {
-                        return Ok(Token {
-                            contents: Some(CommandArgument::String(content)),
-                            raw: String::new(),
-                            position: 0,
-                            length: 0,
-                            iteration: 0,
-                            quoted: false,
-                            inferred: Some(InferType::Bot),
-                        });
-                    }
+                    is_log_message = true;
                 }
 
                 let is_bot_reply = reply.author.id == ctx.cache.current_user().id;
                 let (content, infer_type) = if let Some(embed) = reply.embeds.first() {
                     let desc = embed.clone().description.unwrap_or_default();
 
-                    if is_bot_reply {
+                    if is_bot_reply || is_log_message {
                         (String::new(), InferType::Bot)
                     } else if embed.clone().kind.unwrap_or_default() == "auto_moderation_message" {
                         (desc, InferType::SystemMessage)
                     } else {
                         (String::new(), InferType::Message)
                     }
-                } else if is_bot_reply {
+                } else if is_bot_reply || is_log_message {
                     (String::new(), InferType::Bot)
                 } else {
                     (String::new(), InferType::Message)

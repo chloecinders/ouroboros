@@ -2,6 +2,7 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 use serenity::all::{ChannelId, Context, Mentionable, Message, MessageId, UserId};
+use sqlx::Row;
 use tracing::warn;
 
 pub static DISCORD_MSG_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -55,40 +56,47 @@ impl RefData {
     }
 }
 
-async fn extract_message_content(msg: &Message, guild_id: u64) -> Option<String> {
+async fn extract_message_info(msg: &Message, guild_id: u64) -> (Option<String>, Option<u64>) {
+    if let Ok(Some(row)) = sqlx::query(
+        "SELECT target_id, content FROM log_messages_context WHERE message_id = $1",
+    )
+    .bind(msg.id.get() as i64)
+    .fetch_optional(&*SQL)
+    .await
+    {
+        let target_id_i64: i64 = sqlx::Row::try_get(&row, "target_id").unwrap_or(0);
+        let author_id = if target_id_i64 > 0 {
+            Some(target_id_i64 as u64)
+        } else {
+            Some(msg.author.id.get())
+        };
+
+        let content_bytes: Option<Vec<u8>> =
+            sqlx::Row::try_get(&row, "content").unwrap_or(None);
+        if let Some(bytes) = content_bytes {
+            let lock = ENCRYPTION_KEYS.lock().await;
+            if let Some(key) = lock.get(&guild_id) {
+                if let Some(decrypted) = decrypt(key, &bytes) {
+                    return (Some(decrypted), author_id);
+                }
+            }
+            if let Ok(decrypted) = String::from_utf8(bytes) {
+                return (Some(decrypted), author_id);
+            }
+        }
+        return (None, author_id);
+    }
+
     if !msg.content.is_empty() {
-        return Some(msg.content.clone());
+        return (Some(msg.content.clone()), Some(msg.author.id.get()));
     }
     if let Some(embed) = msg.embeds.first() {
         let desc = embed.description.clone().unwrap_or_default();
         if embed.kind.clone().unwrap_or_default() == "auto_moderation_message" {
-            return Some(desc);
-        }
-        if desc.starts_with("**MESSAGE DELETED**") || desc.starts_with("**MESSAGE EDITED**") {
-            if let Ok(Some(row)) =
-                sqlx::query("SELECT content FROM log_messages_context WHERE message_id = $1")
-                    .bind(msg.id.get() as i64)
-                    .fetch_optional(&*SQL)
-                    .await
-            {
-                let content_bytes: Option<Vec<u8>> =
-                    sqlx::Row::try_get(&row, "content").unwrap_or(None);
-                if let Some(bytes) = content_bytes {
-                    let lock = ENCRYPTION_KEYS.lock().await;
-                    if let Some(key) = lock.get(&guild_id) {
-                        if let Some(decrypted) = decrypt(key, &bytes) {
-                            return Some(decrypted);
-                        }
-                    }
-                    if let Ok(decrypted) = String::from_utf8(bytes) {
-                        return Some(decrypted);
-                    }
-                }
-            }
-            return None;
+            return (Some(desc), Some(msg.author.id.get()));
         }
     }
-    None
+    (None, Some(msg.author.id.get()))
 }
 
 pub fn discord_url_from_reason(reason: &str) -> Option<String> {
@@ -111,13 +119,13 @@ pub async fn try_resolve_discord_message_url(
         .await
         .ok()?;
 
-    let content = extract_message_content(&fetched, guild_id).await;
+    let (content, author_id) = extract_message_info(&fetched, guild_id).await;
     let image_url = upload_attachments(guild_id, &fetched.attachments).await;
     Some(RefData {
         message_id: Some(fetched.id.get()),
         channel_id: Some(fetched.channel_id.get()),
         guild_id: Some(guild_id),
-        author_id: Some(fetched.author.id.get()),
+        author_id,
         content,
         image_url,
     })
@@ -147,14 +155,14 @@ pub async fn resolve_ref(
                 return RefData::default();
             }
 
-            let content = extract_message_content(target_msg, guild_id).await;
+            let (content, author_id) = extract_message_info(target_msg, guild_id).await;
             let image_url = upload_attachments(guild_id, &target_msg.attachments).await;
 
             return RefData {
                 message_id: Some(target_msg.id.get()),
                 channel_id: Some(target_msg.channel_id.get()),
                 guild_id: Some(guild_id),
-                author_id: Some(target_msg.author.id.get()),
+                author_id,
                 content,
                 image_url,
             };
@@ -167,13 +175,13 @@ pub async fn resolve_ref(
                 .message(ctx, MessageId::new(message_id))
                 .await
             {
-                let content = extract_message_content(&fetched, guild_id).await;
+                let (content, author_id) = extract_message_info(&fetched, guild_id).await;
                 let image_url = upload_attachments(guild_id, &fetched.attachments).await;
                 return RefData {
                     message_id: Some(fetched.id.get()),
                     channel_id: Some(fetched.channel_id.get()),
                     guild_id: Some(guild_id),
-                    author_id: Some(fetched.author.id.get()),
+                    author_id,
                     content,
                     image_url,
                 };
