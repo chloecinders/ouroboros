@@ -43,6 +43,7 @@ pub use webhook::send_error;
 pub mod ocr;
 pub mod rule_cache;
 pub mod sticky_cache;
+pub mod token;
 
 mod other;
 pub use other::clamp_chars;

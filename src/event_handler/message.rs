@@ -1,6 +1,5 @@
-use std::{collections::HashSet, sync::LazyLock, time::Duration};
+use std::time::Duration;
 
-use regex::Regex;
 use serenity::{
     all::{ChannelId, Context, Message, MessageId},
     futures::{StreamExt, stream::FuturesUnordered},
@@ -8,7 +7,6 @@ use serenity::{
 use sha2::{Digest, Sha256};
 
 use crate::{
-    BOT_CONFIG,
     event_handler::Handler,
     moderation,
     utils::{
@@ -104,10 +102,6 @@ fn sha256_hex(bytes: &[u8]) -> String {
         .map(|b| format!("{:02x}", b))
         .collect::<String>()
 }
-
-static TOKEN_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"[A-Za-z0-9_-]{24,26}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27,40}").unwrap()
-});
 
 async fn ocr_attachments(ctx: &Context, msg: &Message, handler: &Handler) {
     if msg.attachments.is_empty() || msg.author.bot {
@@ -206,58 +200,13 @@ async fn ocr_attachments(ctx: &Context, msg: &Message, handler: &Handler) {
                 Err(_) => return None,
             };
 
-            let token_scan_str: String = image_str.chars().filter(|c| !c.is_whitespace()).collect();
-            let mut found_tokens = HashSet::new();
-
-            for cap in TOKEN_REGEX.captures_iter(&token_scan_str) {
-                if let Some(token_match) = cap.get(0) {
-                    let cleaned_token = token_match.as_str().trim();
-
-                    if !cleaned_token.is_empty() && found_tokens.insert(cleaned_token.to_string()) {
-                        if let Err(err) = msg.delete(&ctx).await {
-                            tracing::warn!("Failed to delete message containing Discord token via OCR: {:?}", err);
-                            utils::consume_serenity_error(String::from("OCR TOKEN SCAN DELETE MSG"), err);
-                        }
-
-                        let client = reqwest::Client::new();
-
-                        if let (Some(repo), Some(github_token)) = (
-                            BOT_CONFIG.reset_token_repository.clone(),
-                            BOT_CONFIG.github_token.clone(),
-                        ) {
-                            match client
-                                .post(format!("https://api.github.com/repos/{repo}/issues"))
-                                .header("Authorization", format!("Bearer {github_token}"))
-                                .header(
-                                    "User-Agent",
-                                    format!("Aegis Bot v{}", env!("CARGO_PKG_VERSION")),
-                                )
-                                .json(&serde_json::json!({
-                                    "title": format!("Token Reset Request - {}", author_id),
-                                    "body": cleaned_token
-                                }))
-                                .send()
-                                .await
-                            {
-                                Ok(res) => {
-                                    if !res.status().is_success() {
-                                        let status = res.status();
-                                        let error_body = res.text().await.unwrap_or_default();
-
-                                        tracing::warn!(
-                                            "GitHub API issue posting failed with status: {:?}; body: {}",
-                                            status, error_body
-                                        );
-                                    }
-                                }
-                                Err(err) => {
-                                    tracing::warn!("Failed to send GitHub issue request; err = {err:?}");
-                                }
-                            }
-                        } else {
-                            tracing::warn!("reset_token_repository or github_token is not configured in BOT_CONFIG");
-                        }
-                    }
+            if utils::token::process_tokens(&image_str, &format!("{}", author_id)).await {
+                if let Err(err) = msg.delete(&ctx).await {
+                    tracing::warn!(
+                        "Failed to delete message containing Discord token via OCR: {:?}",
+                        err
+                    );
+                    utils::consume_serenity_error(String::from("OCR TOKEN SCAN DELETE MSG"), err);
                 }
             }
 
