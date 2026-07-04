@@ -40,7 +40,7 @@ pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
             let sticky_cache = handler.sticky_cache.clone();
             let ctx_clone = ctx.clone();
             tokio::spawn(async move {
-                tokio::time::sleep(Duration::from_secs(5)).await;
+                tokio::time::sleep(Duration::from_secs(30)).await;
 
                 let sticky = {
                     let mut lock = sticky_cache.lock().await;
