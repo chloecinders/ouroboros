@@ -115,13 +115,9 @@ impl Command for Unmute {
         }
 
         let db_id = tinyid().await;
-        let ref_url = params.get("ref").and_then(|(active, arg)| {
-            if *active {
-                if let CommandArgument::String(s) = arg {
-                    Some(s.clone())
-                } else {
-                    None
-                }
+        let ref_url = params.get("ref").and_then(|(_, arg)| {
+            if let CommandArgument::String(s) = arg {
+                Some(s.clone())
             } else {
                 None
             }

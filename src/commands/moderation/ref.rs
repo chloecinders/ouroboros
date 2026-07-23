@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use aegis_macros::command;
 use serenity::{
-    all::{Context, CreateAllowedMentions, CreateEmbed, CreateMessage, Message, Permissions},
+    all::{
+        Context, CreateActionRow, CreateAllowedMentions, CreateButton, CreateEmbed, CreateMessage,
+        Message, Permissions,
+    },
     async_trait,
 };
 use tracing::warn;
@@ -132,10 +135,18 @@ impl Command for Ref {
             embed = embed.description(format!("**No reference data for `{action_id}`**"));
         }
 
-        let reply = CreateMessage::new()
+        let mut reply = CreateMessage::new()
             .add_embed(embed)
             .reference_message(&msg)
             .allowed_mentions(CreateAllowedMentions::new().replied_user(false));
+
+        if let Some(jump_url) = ref_data.jump_url() {
+            let action_row = CreateActionRow::Buttons(vec![
+                CreateButton::new_link(jump_url)
+                    .label("Jump to Message"),
+            ]);
+            reply = reply.components(vec![action_row]);
+        }
 
         if let Err(err) = msg.channel_id.send_message(&ctx, reply).await {
             warn!("ref: could not send message; err = {err:?}");

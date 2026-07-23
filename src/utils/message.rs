@@ -245,11 +245,23 @@ pub async fn extract_command_parameters<'a>(
 
     while let Some(token) = lex.next() {
         let Some((positive, arg_name)) = ({
-            token
-                .raw
-                .strip_prefix("-")
-                .map(|a| (false, a))
-                .or(token.raw.strip_prefix("+").map(|a| (true, a)))
+            if let Some(stripped) = token.raw.strip_prefix('-') {
+                let name = stripped.trim_start_matches('-');
+                if !name.is_empty() {
+                    Some((false, name))
+                } else {
+                    None
+                }
+            } else if let Some(stripped) = token.raw.strip_prefix('+') {
+                let name = stripped.trim_start_matches('+');
+                if !name.is_empty() {
+                    Some((true, name))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
         }) else {
             continue;
         };

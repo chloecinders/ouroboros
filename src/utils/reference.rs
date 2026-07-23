@@ -34,15 +34,24 @@ impl RefData {
     }
 
     pub fn jump_url(&self) -> Option<String> {
-        let channel_id = self.channel_id?;
-        let message_id = self.message_id?;
-        let guild_part = self
-            .guild_id
-            .map(|g| g.to_string())
-            .unwrap_or_else(|| String::from("@me"));
-        Some(format!(
-            "https://discord.com/channels/{guild_part}/{channel_id}/{message_id}"
-        ))
+        if let (Some(channel_id), Some(message_id)) = (self.channel_id, self.message_id) {
+            let guild_part = self
+                .guild_id
+                .map(|g| g.to_string())
+                .unwrap_or_else(|| String::from("@me"));
+            return Some(format!(
+                "https://discord.com/channels/{guild_part}/{channel_id}/{message_id}"
+            ));
+        }
+        if let Some(content) = &self.content {
+            if let Some(m) = DISCORD_MSG_URL_REGEX.find(content) {
+                return Some(m.as_str().to_string());
+            }
+            if content.starts_with("http://") || content.starts_with("https://") {
+                return Some(content.clone());
+            }
+        }
+        None
     }
 
     pub fn header(&self) -> Option<String> {
@@ -114,10 +123,15 @@ pub async fn try_resolve_discord_message_url(
     let channel_id = caps[2].parse::<u64>().ok()?;
     let message_id = caps[3].parse::<u64>().ok()?;
 
-    let fetched = ChannelId::new(channel_id)
+    let Ok(fetched) = ChannelId::new(channel_id)
         .message(ctx, MessageId::new(message_id))
         .await
-        .ok()?;
+    else {
+        return Some(RefData {
+            content: Some(url.to_string()),
+            ..Default::default()
+        });
+    };
 
     let (content, author_id) = extract_message_info(&fetched, guild_id).await;
     let image_url = upload_attachments(guild_id, &fetched.attachments).await;
@@ -187,6 +201,10 @@ pub async fn resolve_ref(
                 };
             } else {
                 warn!("reference: could not fetch Discord message {channel_id}/{message_id}");
+                return RefData {
+                    content: Some(url.to_string()),
+                    ..Default::default()
+                };
             }
         }
     }
@@ -411,11 +429,18 @@ pub fn apply_ref_button(
     ref_data: &RefData,
 ) -> serenity::all::CreateMessage {
     if !ref_data.is_empty() {
-        let action_row = serenity::all::CreateActionRow::Buttons(vec![
+        let mut buttons = vec![
             serenity::all::CreateButton::new(format!("view_ref:{}", db_id))
                 .label("View Reference")
                 .style(serenity::all::ButtonStyle::Secondary),
-        ]);
+        ];
+        if let Some(jump_url) = ref_data.jump_url() {
+            buttons.push(
+                serenity::all::CreateButton::new_link(jump_url)
+                    .label("Jump to Message"),
+            );
+        }
+        let action_row = serenity::all::CreateActionRow::Buttons(buttons);
         msg.components(vec![action_row])
     } else {
         msg

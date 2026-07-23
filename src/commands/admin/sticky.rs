@@ -124,31 +124,23 @@ impl Command for Sticky {
 
         let content = message.unwrap();
 
-        let title = params.get("title").and_then(|(active, arg)| {
-            if *active {
-                if let CommandArgument::String(s) = arg {
-                    let trimmed = s.trim().to_string();
-                    if trimmed.is_empty() {
-                        None
-                    } else {
-                        Some(trimmed.to_uppercase())
-                    }
-                } else {
+        let title = params.get("title").and_then(|(_, arg)| {
+            if let CommandArgument::String(s) = arg {
+                let trimmed = s.trim().to_string();
+                if trimmed.is_empty() {
                     None
+                } else {
+                    Some(trimmed.to_uppercase())
                 }
             } else {
                 None
             }
         });
 
-        let color = params.get("color").and_then(|(active, arg)| {
-            if *active {
-                if let CommandArgument::String(s) = arg {
-                    let s = s.trim().strip_prefix('#').unwrap_or(s.trim());
-                    u32::from_str_radix(s, 16).ok().map(Color::new)
-                } else {
-                    None
-                }
+        let color = params.get("color").and_then(|(_, arg)| {
+            if let CommandArgument::String(s) = arg {
+                let s = s.trim().strip_prefix('#').unwrap_or(s.trim());
+                u32::from_str_radix(s, 16).ok().map(Color::new)
             } else {
                 None
             }

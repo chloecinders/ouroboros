@@ -148,33 +148,25 @@ impl Command for Softban {
         }
 
         let db_id = tinyid().await;
-        let note = params.get("note").and_then(|(active, arg)| {
-            if *active {
-                if let CommandArgument::String(s) = arg {
-                    let mut trimmed = s.trim().to_string();
-                    if trimmed.is_empty() {
-                        None
-                    } else {
-                        if trimmed.len() > 128 {
-                            trimmed.truncate(125);
-                            trimmed.push_str("...");
-                        }
-                        Some(trimmed)
-                    }
-                } else {
+        let note = params.get("note").and_then(|(_, arg)| {
+            if let CommandArgument::String(s) = arg {
+                let mut trimmed = s.trim().to_string();
+                if trimmed.is_empty() {
                     None
+                } else {
+                    if trimmed.len() > 128 {
+                        trimmed.truncate(125);
+                        trimmed.push_str("...");
+                    }
+                    Some(trimmed)
                 }
             } else {
                 None
             }
         });
-        let ref_url = params.get("ref").and_then(|(active, arg)| {
-            if *active {
-                if let CommandArgument::String(s) = arg {
-                    Some(s.clone())
-                } else {
-                    None
-                }
+        let ref_url = params.get("ref").and_then(|(_, arg)| {
+            if let CommandArgument::String(s) = arg {
+                Some(s.clone())
             } else {
                 None
             }

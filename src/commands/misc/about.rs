@@ -95,6 +95,10 @@ impl Command for About {
 Hey, I'm {}!
 A moderation bot made for one purpose and one purpose only: Moderation.
 I'm currently in private beta but my source code is available at <https://github.com/chloecinders/aegis>.
+
+Terms of Service: https://aegis.chloecinders.com/terms
+Privacy Policy: https://aegis.chloecinders.com/privacy
+
 Join our Discord server: <https://discord.gg/SdUf7TrbDq>
 Type `+help` to see a list of all commands!
 

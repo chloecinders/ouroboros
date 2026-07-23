@@ -14,7 +14,9 @@ use crate::{
         command_processing::process,
         ocr::extract_text_from_bytes,
         reference::RefData,
-        rule_cache::{OcrDebugEntry, Punishment, db_check_image_hash, db_record_image_hash},
+        rule_cache::{
+            OcrDebugEntry, Punishment, db_check_image_evaluations, db_record_image_evaluations,
+        },
         tinyid,
     },
 };
@@ -39,6 +41,7 @@ pub async fn message(handler: &Handler, ctx: Context, msg: Message) {
         if should_spawn {
             let sticky_cache = handler.sticky_cache.clone();
             let ctx_clone = ctx.clone();
+
             tokio::spawn(async move {
                 tokio::time::sleep(Duration::from_secs(30)).await;
 
@@ -122,8 +125,13 @@ async fn ocr_attachments(ctx: &Context, msg: &Message, handler: &Handler) {
         }
     }
 
-    let mut handles = vec![];
     let guild_id_u64 = guild_id.get();
+
+    if !handler.rule_cache.lock().await.has_ocr_rules(guild_id_u64) {
+        return;
+    }
+
+    let mut handles = vec![];
     let msg_id = msg.id.get();
     let author_id = msg.author.id.get();
 
@@ -143,47 +151,19 @@ async fn ocr_attachments(ctx: &Context, msg: &Message, handler: &Handler) {
 
             let image_hash = sha256_hex(&bytes);
 
-            {
+            let active_rules = {
                 let cache = rule_cache.lock().await;
-                if let Some(cached) = cache.image_hash_cache.get(guild_id_u64, &image_hash) {
-                    let rule = match cached {
-                        Some(rule_id) => cache.get_by_id(rule_id).cloned(),
-                        None => None,
-                    };
-                    {
-                        let debug_entry = OcrDebugEntry {
-                            text: String::from("*(matched via image hash cache)*"),
-                            matched: rule
-                                .as_ref()
-                                .map(|r| (r.name.clone(), r.id.clone(), r.pattern.clone())),
-                        };
+                cache.get_active_rules(guild_id_u64)
+            };
 
-                        let mut ocr_cache = ocr_result_cache.lock().await;
-                        let existing = ocr_cache.get(msg_id).cloned().unwrap_or_default();
-                        let mut updated = existing;
-                        updated.push(debug_entry);
-                        ocr_cache.insert(msg_id, updated);
-                    }
-                    return rule;
-                }
-            }
+            let evaluations = db_check_image_evaluations(&image_hash).await;
 
-            if let Some(rule_id) = db_check_image_hash(guild_id_u64, &image_hash).await {
-                let rule = {
-                    let mut cache = rule_cache.lock().await;
-                    cache.image_hash_cache.insert(
-                        guild_id_u64,
-                        image_hash.clone(),
-                        Some(rule_id.clone()),
-                    );
-                    cache.get_by_id(&rule_id).cloned()
-                };
-                {
+            for rule in &active_rules {
+                let r_hash = rule.rule_hash();
+                if let Some(&true) = evaluations.get(&r_hash) {
                     let debug_entry = OcrDebugEntry {
-                        text: String::from("*(matched via database image hash)*"),
-                        matched: rule
-                            .as_ref()
-                            .map(|r| (r.name.clone(), r.id.clone(), r.pattern.clone())),
+                        text: String::from("*(matched via cross-server rule hash cache)*"),
+                        matched: Some((rule.name.clone(), rule.id.clone(), rule.pattern.clone())),
                     };
 
                     let mut ocr_cache = ocr_result_cache.lock().await;
@@ -191,8 +171,26 @@ async fn ocr_attachments(ctx: &Context, msg: &Message, handler: &Handler) {
                     let mut updated = existing;
                     updated.push(debug_entry);
                     ocr_cache.insert(msg_id, updated);
+                    return Some(rule.clone());
                 }
-                return rule;
+            }
+
+            let all_evaluated_negative = active_rules
+                .iter()
+                .all(|r| evaluations.get(&r.rule_hash()) == Some(&false));
+
+            if all_evaluated_negative {
+                let debug_entry = OcrDebugEntry {
+                    text: String::from("*(skipped via cross-server rule hash cache)*"),
+                    matched: None,
+                };
+
+                let mut ocr_cache = ocr_result_cache.lock().await;
+                let existing = ocr_cache.get(msg_id).cloned().unwrap_or_default();
+                let mut updated = existing;
+                updated.push(debug_entry);
+                ocr_cache.insert(msg_id, updated);
+                return None;
             }
 
             let image_str = match extract_text_from_bytes(&bytes).await {
@@ -230,18 +228,16 @@ async fn ocr_attachments(ctx: &Context, msg: &Message, handler: &Handler) {
                 ocr_cache.insert(msg_id, updated);
             }
 
-            {
-                let mut cache = rule_cache.lock().await;
-                cache.image_hash_cache.insert(
-                    guild_id_u64,
-                    image_hash.clone(),
-                    result.as_ref().map(|rule| rule.id.clone()),
-                );
+            let mut db_evals = Vec::new();
+            if let Some(ref matched_rule) = result {
+                db_evals.push((image_hash, matched_rule.rule_hash(), true));
+            } else {
+                for rule in active_rules {
+                    db_evals.push((image_hash.clone(), rule.rule_hash(), false));
+                }
             }
 
-            if let Some(ref rule) = result {
-                db_record_image_hash(guild_id_u64, &image_hash, &rule.id).await;
-            }
+            db_record_image_evaluations(&db_evals).await;
 
             result
         }));

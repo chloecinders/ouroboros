@@ -2,10 +2,10 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use serenity::{
     all::{
-        AuditLogEntry, ChannelId, Context, CreateAllowedMentions, CreateEmbed,
-        CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, EventHandler,
-        Guild, GuildId, GuildMemberUpdateEvent, Member, Message, MessageId, MessageUpdateEvent,
-        PartialGuild, Role, RoleId, User, VoiceState,
+        AuditLogEntry, ChannelId, Context, CreateActionRow, CreateAllowedMentions, CreateButton,
+        CreateEmbed, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage,
+        EventHandler, Guild, GuildId, GuildMemberUpdateEvent, Member, Message, MessageId,
+        MessageUpdateEvent, PartialGuild, Role, RoleId, User, VoiceState,
     },
     async_trait,
 };
@@ -490,6 +490,14 @@ impl EventHandler for Handler {
 
                         if !attachments.is_empty() {
                             msg = msg.add_files(attachments.into_iter());
+                        }
+
+                        if let Some(jump_url) = ref_data.jump_url() {
+                            let action_row = CreateActionRow::Buttons(vec![
+                                CreateButton::new_link(jump_url)
+                                    .label("Jump to Message"),
+                            ]);
+                            msg = msg.components(vec![action_row]);
                         }
 
                         let builder = CreateInteractionResponse::Message(msg);
