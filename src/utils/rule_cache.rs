@@ -48,8 +48,6 @@ impl OcrResultCache {
     }
 }
 
-
-
 pub struct RuleCache {
     ocr: Vec<Rule>,
     recent_triggers: HashMap<(String, u64), Instant>,
@@ -93,7 +91,11 @@ impl RuleCache {
     }
 
     pub fn get_active_rules(&self, guild_id: u64) -> Vec<Rule> {
-        self.ocr.iter().filter(|r| r.guild_id == guild_id).cloned().collect()
+        self.ocr
+            .iter()
+            .filter(|r| r.guild_id == guild_id)
+            .cloned()
+            .collect()
     }
 
     pub fn has_ocr_rules(&self, guild_id: u64) -> bool {
@@ -200,8 +202,7 @@ impl RuleCache {
                 .iter()
                 .map(|r| r.byte_footprint() - std::mem::size_of::<Rule>())
                 .sum::<usize>()
-            + self.recent_triggers.capacity()
-                * std::mem::size_of::<((String, u64), Instant)>()
+            + self.recent_triggers.capacity() * std::mem::size_of::<((String, u64), Instant)>()
     }
 }
 
@@ -310,7 +311,18 @@ impl Rule {
                 .map(|re| re.is_match(input))
                 .unwrap_or(false)
         } else {
-            fuzzy_substring_match(&self.pattern, input, 0.95)
+            if fuzzy_substring_match(&self.pattern, input, 0.95) {
+                return true;
+            }
+
+            let pattern_stripped: String = self
+                .pattern
+                .chars()
+                .filter(|c| !c.is_whitespace())
+                .collect();
+            let input_stripped: String = input.chars().filter(|c| !c.is_whitespace()).collect();
+
+            fuzzy_substring_match(&pattern_stripped, &input_stripped, 0.95)
         }
     }
 
