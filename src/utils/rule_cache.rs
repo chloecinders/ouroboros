@@ -8,16 +8,12 @@ use crate::{SQL, database::ActionType, utils::consume_pgsql_error};
 
 const OCR_RESULT_CACHE_MAX: usize = 1000;
 
-/// Stores the OCR output for a single message attachment, plus whether it matched a rule.
 #[derive(Clone, Debug)]
 pub struct OcrDebugEntry {
-    /// The raw OCR text extracted from the image.
     pub text: String,
-    /// If the text matched a rule: (rule name, rule id, matched pattern).
     pub matched: Option<(String, String, String)>,
 }
 
-/// A small bounded FIFO cache that maps message_id → Vec of per-attachment debug entries.
 pub struct OcrResultCache {
     entries: std::collections::HashMap<u64, Vec<OcrDebugEntry>>,
     order: std::collections::VecDeque<u64>,
