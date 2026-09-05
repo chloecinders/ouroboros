@@ -41,6 +41,13 @@ impl Subject {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Reply {
+    Kept,
+    Swept,
+    None,
+}
+
 pub fn authority(verb: PunishmentType) -> Permissions {
     match verb {
         PunishmentType::Ban | PunishmentType::Softban | PunishmentType::Unban => {
@@ -57,7 +64,7 @@ pub async fn apply(
     cx: &mut Cx,
     mut punishment: Punishment,
     subject: Subject,
-    inferred: bool,
+    reply: Reply,
     reference: Option<Reference>,
 ) -> Result<Response> {
     if let Some(member) = subject.member() {
@@ -97,7 +104,7 @@ pub async fn apply(
     let mut delivery = Delivery::new(subject.id(), punishment.verb.dm_timing())
         .notice(ui::notice(&punishment, &guild_name))
         .silent(punishment.silent)
-        .auto_delete(inferred)
+        .auto_delete(reply == Reply::Swept)
         .witness(Arc::new(move |notice: &Message| {
             app.notices.remember_notice(invocation, notice.into());
         }));
@@ -186,6 +193,10 @@ pub async fn apply(
     }
 
     cx.trace("write_log_entry");
+
+    if reply == Reply::None {
+        return Ok(Response::None);
+    }
 
     let evidence = |mut marks: Marks| {
         marks.has_reference = captured.as_ref().is_some_and(Captured::has_content);

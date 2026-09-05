@@ -11,7 +11,7 @@ use crate::features::automod::eval::Hit;
 use crate::features::automod::rule::{Notify, Rule};
 use crate::features::automod::{eval, origin, ui};
 use crate::features::guildlog::{self, Posted};
-use crate::features::punishments::executor::{self, Subject};
+use crate::features::punishments::executor::{self, Reply, Subject};
 use crate::platform::discord::dispatch::MessageCx;
 use crate::platform::discord::fetch;
 use crate::platform::ui::reply;
@@ -65,7 +65,7 @@ pub async fn enforce(cx: &MessageCx, enabled: &[Rule], hits: &[Hit], enforced: &
         let mut invocation = Cx::new(Arc::clone(&cx.app), cx.ctx.clone(), Arc::clone(&cx.msg));
 
         if let Err(failure) =
-            executor::apply(&mut invocation, punishment, subject, true, None).await
+            executor::apply(&mut invocation, punishment, subject, Reply::None, None).await
         {
             cx.app.reporter.note(
                 "automod could not punish",

@@ -4,7 +4,7 @@ use crate::command::error::Result;
 use crate::command::{Command, Meta, Response};
 use crate::domain::punishment::{Punishment, PunishmentType};
 use crate::domain::reason::{Note, Reason};
-use crate::features::punishments::executor::{self, Subject};
+use crate::features::punishments::executor::{self, Reply, Subject};
 use crate::features::references::Reference;
 use aegis_macros::{command, meta};
 use serenity::all::Member;
@@ -39,7 +39,10 @@ impl Command for Warn {
     };
 
     async fn run(self, cx: &mut Cx) -> Result<Response> {
-        let inferred = self.target.was_inferred();
+        let reply = match self.target.was_inferred() {
+            true => Reply::Swept,
+            false => Reply::Kept,
+        };
         let member = self.target.into_value();
         let punishment = Punishment::new(
             PunishmentType::Warn,
@@ -55,7 +58,7 @@ impl Command for Warn {
             cx,
             punishment,
             Subject::Present(Box::new(member)),
-            inferred,
+            reply,
             self.reference,
         )
         .await

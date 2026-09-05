@@ -7,7 +7,7 @@ use crate::command::error::Result;
 use crate::command::{Command, Meta, Response};
 use crate::domain::punishment::{Punishment, PunishmentType};
 use crate::domain::reason::{Note, Reason};
-use crate::features::punishments::executor::{self, Subject};
+use crate::features::punishments::executor::{self, Reply, Subject};
 use crate::features::references::Reference;
 use aegis_macros::{command, meta};
 
@@ -51,7 +51,10 @@ impl Command for Ban {
     };
 
     async fn run(self, cx: &mut Cx) -> Result<Response> {
-        let inferred = self.target.was_inferred();
+        let reply = match self.target.was_inferred() {
+            true => Reply::Swept,
+            false => Reply::Kept,
+        };
         let user = self.target.into_value();
         let punishment = Punishment::new(
             PunishmentType::Ban,
@@ -70,6 +73,6 @@ impl Command for Ban {
             Err(_) => Subject::Absent(Box::new(user)),
         };
 
-        executor::apply(cx, punishment, subject, inferred, self.reference).await
+        executor::apply(cx, punishment, subject, reply, self.reference).await
     }
 }
