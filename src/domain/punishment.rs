@@ -199,7 +199,10 @@ impl Punishment {
     }
 
     pub fn clear_days(mut self, days: u8) -> Self {
-        self.clear_days = days.min(7);
+        self.clear_days = match self.verb {
+            PunishmentType::Softban => days.clamp(1, 7),
+            _ => days.min(7),
+        };
         self
     }
 

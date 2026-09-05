@@ -285,7 +285,7 @@ async fn perform(cx: &Cx, punishment: &Punishment, subject: &Subject) -> Result<
             .ctx("ban member"),
         PunishmentType::Softban => {
             guild
-                .ban_with_reason(http, target, punishment.clear_days.max(1), &audit)
+                .ban_with_reason(http, target, punishment.clear_days, &audit)
                 .await
                 .ctx("softban member")?;
 
