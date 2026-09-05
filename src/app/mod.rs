@@ -13,6 +13,7 @@ use sqlx::PgPool;
 use crate::app::config::Environment;
 use crate::command::registry::Registry;
 use crate::domain::Snowflake;
+use crate::domain::ids::RuleId;
 use crate::features::archive::Storable;
 use crate::features::archive::cache::Recent;
 use crate::features::archive::secrets::Keys;
@@ -27,6 +28,7 @@ use crate::features::permissions::cache::Permits;
 use crate::features::punishments::notices::Notices;
 use crate::features::settings::cache::Settings;
 use crate::features::sticky::cache::Stickies;
+use crate::platform::cache::Debounce;
 use crate::platform::db::writer::Batched;
 use crate::platform::discord::interact::Router;
 use crate::platform::discord::pending::Pending;
@@ -50,6 +52,7 @@ pub struct App {
     pub awaiting: Awaiting,
     pub rules: Arc<Rules>,
     pub strikes: Strikes,
+    pub punished: Debounce<(RuleId, Snowflake, Snowflake)>,
     pub readings: Readings,
     pub notices: Notices,
     pub recent: Recent,
@@ -89,6 +92,7 @@ impl App {
             awaiting: Awaiting::new(),
             rules: Arc::new(Rules::new()),
             strikes: Strikes::new(8192),
+            punished: Debounce::new(4096, Duration::from_secs(15)),
             readings: Readings::new(),
             notices: Notices::new(window),
             recent: Recent::new(),

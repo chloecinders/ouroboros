@@ -51,48 +51,53 @@ pub async fn enforce(cx: &MessageCx, enabled: &[Rule], hits: &[Hit], enforced: &
         return;
     }
 
-    if let Some(punishment) = eval::punishment(&rule.body.outcome, guild, bot, target) {
-        let member = match cx.msg.guild_id {
-            Some(id) => fetch::member(&cx.ctx, id, cx.msg.author.id).await.ok(),
-            None => None,
-        };
+    let repeat = !cx.app.punished.ready((rule.id.clone(), rule.guild, target));
+    let mut announced = None;
 
-        let subject = match member {
-            Some(member) => Subject::Present(Box::new(member)),
-            None => Subject::Absent(Box::new(cx.msg.author.clone())),
-        };
+    if !repeat {
+        if let Some(punishment) = eval::punishment(&rule.body.outcome, guild, bot, target) {
+            let member = match cx.msg.guild_id {
+                Some(id) => fetch::member(&cx.ctx, id, cx.msg.author.id).await.ok(),
+                None => None,
+            };
 
-        let mut invocation = Cx::new(Arc::clone(&cx.app), cx.ctx.clone(), Arc::clone(&cx.msg));
+            let subject = match member {
+                Some(member) => Subject::Present(Box::new(member)),
+                None => Subject::Absent(Box::new(cx.msg.author.clone())),
+            };
 
-        if let Err(failure) =
-            executor::apply(&mut invocation, punishment, subject, Reply::None, None).await
-        {
-            cx.app.reporter.note(
-                "automod could not punish",
-                format!(
-                    "{}: {}; {}",
-                    rule.name,
-                    failure.headline(),
-                    origin(cx).describe()
-                ),
-            );
+            let mut invocation = Cx::new(Arc::clone(&cx.app), cx.ctx.clone(), Arc::clone(&cx.msg));
 
-            return;
-        }
-    }
+            if let Err(failure) =
+                executor::apply(&mut invocation, punishment, subject, Reply::None, None).await
+            {
+                cx.app.reporter.note(
+                    "automod could not punish",
+                    format!(
+                        "{}: {}; {}",
+                        rule.name,
+                        failure.headline(),
+                        origin(cx).describe()
+                    ),
+                );
 
-    let entry = ui::triggered(hit, target);
-
-    let announced = match enforced.acted.as_ref().and_then(|acted| acted.announced) {
-        Some(written) => {
-            if let Err(failure) = guildlog::rewrite(&cx.ctx, written, &entry).await {
-                cx.app.reporter.record(&failure, origin(cx));
+                return;
             }
-
-            Some(written)
         }
-        None => announce(cx, guild, bot, target, &entry, rule.body.outcome.notify).await,
-    };
+
+        let entry = ui::triggered(hit, target);
+
+        announced = match enforced.acted.as_ref().and_then(|acted| acted.announced) {
+            Some(written) => {
+                if let Err(failure) = guildlog::rewrite(&cx.ctx, written, &entry).await {
+                    cx.app.reporter.record(&failure, origin(cx));
+                }
+
+                Some(written)
+            }
+            None => announce(cx, guild, bot, target, &entry, rule.body.outcome.notify).await,
+        };
+    }
 
     if rule.body.outcome.delete && !enforced.deleted {
         enforced.deleted = true;
