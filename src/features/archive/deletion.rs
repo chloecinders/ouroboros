@@ -39,18 +39,19 @@ pub fn entry(
     actor: Attribution,
     bot: Snowflake,
 ) -> Embed {
-    Embed::new("MESSAGE DELETED")
+    let embed = Embed::new("MESSAGE DELETED")
         .subtitle(format!("ID: `{}`", message.id))
         .subtitle(format!("Author: {}", mention(message.author.id)))
         .subtitle(format!("Channel: <#{}>", message.channel_id))
         .maybe_subtitle(actor.line(bot))
         .maybe_lead(reply_line(message))
         .maybe_footnote(parent.map(|parent| parent_line(parent, true)))
-        .quote(match message.content.is_empty() {
-            true => String::from("no text"),
-            false => message.content.clone(),
-        })
-        .tone(Tone::Danger)
+        .tone(Tone::Danger);
+
+    match message.content.is_empty() {
+        true => embed,
+        false => embed.quote(message.content.clone()),
+    }
 }
 
 pub fn bulk_entry(
@@ -80,6 +81,10 @@ pub async fn record(
     };
 
     if app.pending.claim_silence(channel.get(), message.get()) {
+        return Ok(());
+    }
+
+    if cached.content.is_empty() && cached.attachments.is_empty() {
         return Ok(());
     }
 
