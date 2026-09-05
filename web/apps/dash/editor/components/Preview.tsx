@@ -41,7 +41,7 @@ function Trace() {
     const trace = () => editing.result().trace;
     const hit = () => trace().filter((t) => t.state === "hit").length;
 
-    const mark = (state: Step["state"]) => (state === "hit" ? "✓" : state === "stop" ? "×" : "–");
+    const mark = (state: Step["state"]) => (state === "hit" ? "✓" : state === "stop" ? "x" : "–");
 
     return (
         <>

@@ -63,7 +63,7 @@ export function highlight(source: string, diags: Diag[]): string {
                     '<span class="code__lens' +
                     (d.level === "warn" ? " code__lens--warn" : "") +
                     '">' +
-                    (d.level === "warn" ? "!" : "×") +
+                    (d.level === "warn" ? "!" : "x") +
                     " " +
                     esc(d.msg) +
                     "</span>";

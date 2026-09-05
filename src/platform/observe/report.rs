@@ -18,7 +18,7 @@ impl Summary {
     pub fn line(&self) -> String {
         let head = match self.count {
             1 => self.label.clone(),
-            many => format!("{} ×{many}", self.label),
+            many => format!("{} x{many}", self.label),
         };
 
         match &self.sample {

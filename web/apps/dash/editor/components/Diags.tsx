@@ -32,7 +32,7 @@ export function Diags() {
                                 onClick={() => session.surface.source?.focus()}
                             >
                                 <span class="diags__line">rule</span>
-                                <span class="diags__mark">{d.level === "error" ? "×" : "!"}</span>
+                                <span class="diags__mark">{d.level === "error" ? "x" : "!"}</span>
                                 <span>{d.msg}</span>
                             </button>
                         )}

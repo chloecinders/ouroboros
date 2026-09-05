@@ -291,7 +291,7 @@ export function Clauses() {
                                     const level = () => marks()[n()];
                                     const mark = () =>
                                         level() === "error"
-                                            ? "×"
+                                            ? "x"
                                             : level() === "warn"
                                               ? "!"
                                               : text.trim() === ""
