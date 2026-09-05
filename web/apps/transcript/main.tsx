@@ -180,6 +180,7 @@ function Transcript() {
         for (const message of page.messages) {
             const grouped =
                 anchor !== null &&
+                !message.system &&
                 anchor.author === message.author &&
                 anchor.channel === message.channel &&
                 new Date(message.at).getTime() - new Date(anchor.at).getTime() < 300000;

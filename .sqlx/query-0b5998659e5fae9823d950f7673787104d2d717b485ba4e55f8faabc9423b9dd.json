@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT m.message_id, m.channel_id, m.author_id, m.author_name,\n            m.author_display_name, m.author_avatar_url, m.referenced_message_id,\n            m.content, m.attachment_urls, m.created_at,\n            d.source::text AS \"removed_by?\", d.rule AS \"removed_rule?\"\n        FROM transcript_messages t\n        JOIN messages m ON m.message_id = t.message_id AND m.created_at = t.created_at\n        LEFT JOIN message_deletions d ON d.message_id = m.message_id\n        WHERE t.transcript_id = $1 AND m.channel_id = ANY ($4)\n            AND ($2::bigint IS NULL OR m.message_id > $2)\n        ORDER BY m.message_id LIMIT $3",
+  "query": "SELECT m.message_id, m.channel_id, m.author_id, m.author_name,\n            m.author_display_name, m.author_avatar_url, m.referenced_message_id,\n            m.content, m.attachment_urls, m.created_at, m.system,\n            (d.message_id IS NOT NULL) AS \"removed!\"\n        FROM transcript_messages t\n        JOIN messages m ON m.message_id = t.message_id AND m.created_at = t.created_at\n        LEFT JOIN message_deletions d ON d.message_id = m.message_id\n        WHERE t.transcript_id = $1 AND m.channel_id = ANY ($4)\n            AND ($2::bigint IS NULL OR m.message_id > $2)\n        ORDER BY m.message_id LIMIT $3",
   "describe": {
     "columns": [
       {
@@ -55,13 +55,13 @@
       },
       {
         "ordinal": 10,
-        "name": "removed_by?",
-        "type_info": "Text"
+        "name": "system",
+        "type_info": "Bool"
       },
       {
         "ordinal": 11,
-        "name": "removed_rule?",
-        "type_info": "Text"
+        "name": "removed!",
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -83,9 +83,9 @@
       true,
       true,
       false,
-      null,
-      true
+      false,
+      null
     ]
   },
-  "hash": "84fc8bb0804d7eacb3374adc0ed1842d8bdb3d3a47aef8ec468550f7be85d204"
+  "hash": "0b5998659e5fae9823d950f7673787104d2d717b485ba4e55f8faabc9423b9dd"
 }

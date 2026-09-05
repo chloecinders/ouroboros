@@ -49,13 +49,15 @@ pub async fn keep(pool: &PgPool, batch: &[Storable]) -> Result<()> {
         .iter()
         .map(|storable| storable.message.created_at)
         .collect();
+    let systems: Vec<bool> = batch.iter().map(|storable| storable.system).collect();
 
     sqlx::query!(
         "INSERT INTO messages (message_id, channel_id, guild_id, author_id, author_name,
             author_display_name, author_avatar_url, referenced_message_id, content,
-            attachment_urls, created_at)
+            attachment_urls, created_at, system)
         SELECT * FROM UNNEST($1::bigint[], $2::bigint[], $3::bigint[], $4::bigint[], $5::text[],
-            $6::text[], $7::text[], $8::bigint[], $9::bytea[], $10::jsonb[], $11::timestamptz[])
+            $6::text[], $7::text[], $8::bigint[], $9::bytea[], $10::jsonb[], $11::timestamptz[],
+            $12::bool[])
         ON CONFLICT DO NOTHING",
         &ids,
         &channels,
@@ -67,7 +69,8 @@ pub async fn keep(pool: &PgPool, batch: &[Storable]) -> Result<()> {
         &parents as &[Option<i64>],
         &bodies as &[Option<Vec<u8>>],
         &attachments,
-        &stamps
+        &stamps,
+        &systems
     )
     .execute(pool)
     .await

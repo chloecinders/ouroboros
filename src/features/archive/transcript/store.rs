@@ -128,8 +128,8 @@ pub struct Stored {
     pub content: Option<Vec<u8>>,
     pub attachments: Option<serde_json::Value>,
     pub created_at: DateTime<Utc>,
-    pub removed_by: Option<String>,
-    pub removed_rule: Option<String>,
+    pub removed: bool,
+    pub system: bool,
 }
 
 pub async fn channels(pool: &PgPool, guild: Snowflake, id: &str) -> Result<Vec<Snowflake>> {
@@ -166,8 +166,8 @@ pub async fn page(
     let rows = sqlx::query!(
         "SELECT m.message_id, m.channel_id, m.author_id, m.author_name,
             m.author_display_name, m.author_avatar_url, m.referenced_message_id,
-            m.content, m.attachment_urls, m.created_at,
-            d.source::text AS \"removed_by?\", d.rule AS \"removed_rule?\"
+            m.content, m.attachment_urls, m.created_at, m.system,
+            (d.message_id IS NOT NULL) AS \"removed!\"
         FROM transcript_messages t
         JOIN messages m ON m.message_id = t.message_id AND m.created_at = t.created_at
         LEFT JOIN message_deletions d ON d.message_id = m.message_id
@@ -196,8 +196,8 @@ pub async fn page(
             content: row.content,
             attachments: row.attachment_urls,
             created_at: row.created_at,
-            removed_by: row.removed_by,
-            removed_rule: row.removed_rule,
+            removed: row.removed,
+            system: row.system,
         })
         .collect();
 

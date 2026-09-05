@@ -13,11 +13,6 @@ export interface Viewer {
     avatar: string | null;
 }
 
-export interface Removed {
-    by: string;
-    rule?: string;
-}
-
 export interface Rendered {
     id: string;
     channel: string;
@@ -29,7 +24,8 @@ export interface Rendered {
     content: string;
     files?: string[];
     at: string;
-    removed?: Removed;
+    removed?: boolean;
+    system?: boolean;
 }
 
 export type Scope = "channel" | "user" | "cleared" | "selection";

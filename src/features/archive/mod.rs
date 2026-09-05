@@ -1,3 +1,4 @@
+pub mod automod;
 pub mod cache;
 pub mod commands;
 pub mod deletion;
@@ -10,6 +11,7 @@ pub mod transcript;
 
 use std::sync::Arc;
 
+use serenity::all::MessageType;
 use serenity::async_trait;
 
 use crate::command;
@@ -23,6 +25,7 @@ use crate::platform::ui::embed;
 pub struct Storable {
     pub message: cache::Cached,
     pub body: Option<Vec<u8>>,
+    pub system: bool,
 }
 
 pub fn reply_line(message: &PartialMessage) -> Option<String> {
@@ -109,7 +112,20 @@ impl Observer for Archive {
             return;
         };
 
-        let message = Arc::new(PartialMessage::from(cx.msg.as_ref()));
+        if cx.msg.kind == MessageType::AutoModAction {
+            automod::record(cx, guild.get()).await;
+
+            return;
+        }
+
+        let system = cx.msg.kind == MessageType::MemberJoin;
+        let mut message = PartialMessage::from(cx.msg.as_ref());
+
+        if system {
+            message.content = format!("Joined: {}", message.author.name);
+        }
+
+        let message = Arc::new(message);
 
         cx.app.recent.remember(Arc::clone(&message));
 
@@ -120,7 +136,11 @@ impl Observer for Archive {
             .await;
 
         match kept {
-            Ok(body) => cx.app.messages.send(Storable { message, body }),
+            Ok(body) => cx.app.messages.send(Storable {
+                message,
+                body,
+                system,
+            }),
             Err(failure) => cx
                 .app
                 .reporter

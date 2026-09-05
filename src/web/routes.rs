@@ -111,15 +111,10 @@ pub struct Rendered {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub files: Vec<String>,
     pub at: DateTime<Utc>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub removed: Option<Removed>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct Removed {
-    pub by: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rule: Option<String>,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub removed: bool,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub system: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -217,10 +212,8 @@ pub async fn messages(
             content: open(key.as_ref(), stored.content.as_deref()),
             files: stored.attachments.map(links).unwrap_or_default(),
             at: stored.created_at,
-            removed: stored.removed_by.map(|by| Removed {
-                by,
-                rule: stored.removed_rule,
-            }),
+            removed: stored.removed,
+            system: stored.system,
         })
         .collect();
 

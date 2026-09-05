@@ -77,11 +77,8 @@ export function Message(props: { message: Rendered; grouped?: boolean; jumpable?
                         <span class="message__author">{message().display || message().name}</span>
                         <span class="message__time">{new Date(message().at).toLocaleString()}</span>
 
-                        <Show when={gone()?.by === "automod"}>
-                            <span class="message__tag">
-                                automod
-                                <Show when={gone()?.rule}>{(rule) => <> · {rule()}</>}</Show>
-                            </span>
+                        <Show when={message().system}>
+                            <span class="message__tag">system</span>
                         </Show>
                     </div>
                 </Show>
