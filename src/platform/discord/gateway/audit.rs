@@ -86,8 +86,14 @@ pub async fn record(app: &Arc<App>, ctx: &Context, entry: AuditLogEntry, guild: 
             let actor = entry.user_id.get();
             let changes = entry.changes.as_deref().unwrap_or_default();
             let parts = parts(changes);
+            let reason = entry
+                .reason
+                .as_deref()
+                .map(str::trim)
+                .filter(|given| !given.is_empty());
 
-            guildlog::amend::attribute_update(app, ctx, guild, target, &parts, actor, bot).await;
+            guildlog::amend::attribute_update(app, ctx, guild, target, &parts, actor, reason, bot)
+                .await;
 
             let (before, after) = changes
                 .iter()
@@ -110,7 +116,7 @@ pub async fn record(app: &Arc<App>, ctx: &Context, entry: AuditLogEntry, guild: 
                 },
                 before,
                 after,
-                entry.reason.as_deref(),
+                reason,
             )
             .await;
 

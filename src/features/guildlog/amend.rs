@@ -27,11 +27,23 @@ struct Update {
     parts: Vec<Part>,
 }
 
+#[derive(Clone, Debug)]
+struct Witness {
+    actor: Snowflake,
+    reason: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Claimed {
+    pub actor: Attribution,
+    pub reason: Option<String>,
+}
+
 pub struct Awaiting {
     waiting: Cache<Key, Waiting>,
     bulk: Cache<Bulk, Waiting>,
     updates: Cache<Trace, Update>,
-    witnessed: Cache<Trace, Snowflake>,
+    witnessed: Cache<Trace, Witness>,
     witnessed_bulk: Cache<Bulk, Snowflake>,
 }
 
@@ -116,12 +128,18 @@ impl Awaiting {
         }
     }
 
-    pub fn claim(&self, guild: Snowflake, target: Snowflake, parts: &[Part]) -> Attribution {
-        let mut found = Attribution::Unknown;
+    pub fn claim(&self, guild: Snowflake, target: Snowflake, parts: &[Part]) -> Claimed {
+        let mut found = Claimed {
+            actor: Attribution::Unknown,
+            reason: None,
+        };
 
         for part in parts {
-            if let Some(actor) = self.witnessed.remove(&(guild, target, *part)) {
-                found = Attribution::Gateway(actor);
+            if let Some(witness) = self.witnessed.remove(&(guild, target, *part)) {
+                found = Claimed {
+                    actor: Attribution::Gateway(witness.actor),
+                    reason: witness.reason,
+                };
             }
         }
 
@@ -196,6 +214,7 @@ pub async fn attribute_update(
     target: Snowflake,
     parts: &[Part],
     actor: Snowflake,
+    reason: Option<&str>,
     bot: Snowflake,
 ) {
     let mut attributed: Vec<Part> = Vec::new();
@@ -207,7 +226,13 @@ pub async fn attribute_update(
         }
 
         let Some(update) = app.awaiting.updates.remove(&(guild, target, *part)) else {
-            app.awaiting.witnessed.insert((guild, target, *part), actor);
+            app.awaiting.witnessed.insert(
+                (guild, target, *part),
+                Witness {
+                    actor,
+                    reason: reason.map(str::to_owned),
+                },
+            );
             continue;
         };
 
@@ -222,7 +247,11 @@ pub async fn attribute_update(
     let resolved = Attribution::Gateway(actor);
 
     for update in amending {
-        let amended = attach(&update.embed, &resolved, bot);
+        let mut amended = attach(&update.embed, &resolved, bot);
+
+        if let Some(given) = reason {
+            amended = amended.quote(given);
+        }
 
         if let Err(failure) =
             super::store::attribute(&app.pool, update.at.message.get(), Some(actor)).await

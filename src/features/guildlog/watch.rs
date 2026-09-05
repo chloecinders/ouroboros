@@ -43,11 +43,13 @@ async fn record(cx: &MemberCx) -> Result<()> {
 
     let parts = changed.parts();
 
+    let witnessed = cx.app.awaiting.claim(guild, target, &parts);
+
     let known = match cx.app.pending.claim_timeout(guild, target) {
         true => Attribution::Bot(bot),
         false => Attribution::Unknown,
     }
-    .or(cx.app.awaiting.claim(guild, target, &parts));
+    .or(witnessed.actor);
 
     if matches!(known, Attribution::Bot(_))
         && changed.timeout.is_some()
@@ -58,7 +60,7 @@ async fn record(cx: &MemberCx) -> Result<()> {
         return Ok(());
     }
 
-    let entry = member::entry(target, &changed, known, bot);
+    let entry = member::entry(target, &changed, known, witnessed.reason.as_deref(), bot);
     let Some(at) = guildlog::post(
         &cx.app,
         &cx.ctx,

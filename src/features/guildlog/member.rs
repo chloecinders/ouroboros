@@ -89,12 +89,23 @@ impl Changed {
     }
 }
 
-pub fn entry(target: Snowflake, changed: &Changed, actor: Attribution, bot: Snowflake) -> Embed {
-    Embed::new("MEMBER UPDATE")
+pub fn entry(
+    target: Snowflake,
+    changed: &Changed,
+    actor: Attribution,
+    reason: Option<&str>,
+    bot: Snowflake,
+) -> Embed {
+    let entry = Embed::new("MEMBER UPDATE")
         .subtitle(format!("Target: {}", mention(target)))
         .maybe_subtitle(actor.line(bot))
-        .body(lines(changed).join("\n"))
-        .tone(Tone::Info)
+        .lead(lines(changed).join("\n"))
+        .tone(Tone::Info);
+
+    match reason {
+        Some(given) => entry.quote(given),
+        None => entry,
+    }
 }
 
 pub fn joined(target: Snowflake, created: DateTime<Utc>, history: i64) -> Embed {
