@@ -32,6 +32,18 @@ pub async fn remember(pool: &PgPool, entry: &Entry) -> Result<()> {
     Ok(())
 }
 
+pub async fn forget(pool: &PgPool, message: Snowflake) -> Result<()> {
+    sqlx::query!(
+        "DELETE FROM log_messages WHERE message_id = $1",
+        message as i64
+    )
+    .execute(pool)
+    .await
+    .ctx("forget log message")?;
+
+    Ok(())
+}
+
 pub async fn attribute(pool: &PgPool, message: Snowflake, actor: Option<Snowflake>) -> Result<()> {
     sqlx::query!(
         "UPDATE log_messages SET moderator_id = $1 WHERE message_id = $2",

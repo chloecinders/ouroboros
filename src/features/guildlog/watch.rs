@@ -60,6 +60,12 @@ async fn record(cx: &MemberCx) -> Result<()> {
         return Ok(());
     }
 
+    let roles_only = changed.nick.is_none() && changed.timeout.is_none();
+
+    if roles_only && known.actor() == Some(target) {
+        return Ok(());
+    }
+
     let entry = member::entry(target, &changed, known, witnessed.reason.as_deref(), bot);
     let Some(at) = guildlog::post(
         &cx.app,
@@ -78,9 +84,34 @@ async fn record(cx: &MemberCx) -> Result<()> {
         return Ok(());
     };
 
-    cx.app
-        .awaiting
-        .track(guild, target, &parts, at, &entry, known);
+    let late = cx.app.awaiting.claim(guild, target, &parts);
+    let arrived = late.actor.is_resolved() || late.reason.is_some();
+    let known = known.or(late.actor);
+
+    if roles_only && known.actor() == Some(target) {
+        return guildlog::retract(&cx.app, &cx.ctx, at).await;
+    }
+
+    let reason = witnessed.reason.or(late.reason);
+
+    let entry = match arrived {
+        true => member::entry(target, &changed, known, reason.as_deref(), bot),
+        false => entry,
+    };
+
+    if arrived {
+        guildlog::store::attribute(&cx.app.pool, at.message.get(), known.actor()).await?;
+        guildlog::rewrite(&cx.ctx, at, &entry).await?;
+    }
+
+    cx.app.awaiting.track(
+        guild,
+        target,
+        &parts,
+        at,
+        &entry,
+        known.is_resolved() && reason.is_some(),
+    );
 
     Ok(())
 }

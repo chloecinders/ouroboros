@@ -110,9 +110,9 @@ impl Awaiting {
         parts: &[Part],
         at: Posted,
         embed: &Embed,
-        known: Attribution,
+        complete: bool,
     ) {
-        if known.is_resolved() {
+        if complete {
             return;
         }
 
@@ -135,12 +135,18 @@ impl Awaiting {
         };
 
         for part in parts {
-            if let Some(witness) = self.witnessed.remove(&(guild, target, *part)) {
-                found = Claimed {
-                    actor: Attribution::Gateway(witness.actor),
-                    reason: witness.reason,
-                };
+            let Some(witness) = self.witnessed.remove(&(guild, target, *part)) else {
+                continue;
+            };
+
+            if found.reason.is_some() && witness.reason.is_none() {
+                continue;
             }
+
+            found = Claimed {
+                actor: Attribution::Gateway(witness.actor),
+                reason: witness.reason,
+            };
         }
 
         found
@@ -247,6 +253,19 @@ pub async fn attribute_update(
     let resolved = Attribution::Gateway(actor);
 
     for update in amending {
+        if actor == target
+            && update
+                .parts
+                .iter()
+                .all(|part| matches!(part, Part::Gained(_) | Part::Lost(_)))
+        {
+            if let Err(failure) = super::retract(app, &http, update.at).await {
+                app.reporter.record(&failure, Default::default());
+            }
+
+            continue;
+        }
+
         let mut amended = attach(&update.embed, &resolved, bot);
 
         if let Some(given) = reason {
@@ -261,6 +280,21 @@ pub async fn attribute_update(
 
         if let Err(failure) = super::rewrite(&http, update.at, &amended).await {
             app.reporter.record(&failure, Default::default());
+        }
+
+        if reason.is_some() {
+            continue;
+        }
+
+        for sibling in update.parts.iter().filter(|part| !parts.contains(part)) {
+            app.awaiting.updates.insert(
+                (guild, target, *sibling),
+                Update {
+                    at: update.at,
+                    embed: amended.clone(),
+                    parts: update.parts.clone(),
+                },
+            );
         }
     }
 }

@@ -129,6 +129,15 @@ pub async fn rewrite(http: impl CacheHttp, at: Posted, embed: &Embed) -> Result<
     Ok(())
 }
 
+pub async fn retract(app: &App, http: impl CacheHttp, at: Posted) -> Result<()> {
+    at.channel
+        .delete_message(http.http(), at.message)
+        .await
+        .ctx("retract log entry")?;
+
+    store::forget(&app.pool, at.message.get()).await
+}
+
 pub async fn resolve(
     app: &App,
     http: impl CacheHttp,
