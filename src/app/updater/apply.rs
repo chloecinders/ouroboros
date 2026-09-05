@@ -2,8 +2,6 @@ use std::io;
 use std::path::Path;
 use std::time::Duration;
 
-use crate::app::updater::Handoff;
-
 #[derive(Debug, thiserror::Error)]
 pub enum Failure {
     #[error("the artifact is not a readable zip")]
@@ -72,24 +70,20 @@ fn replace(from: &Path, to: &Path) -> io::Result<()> {
     Ok(())
 }
 
-pub fn launch(binary: &Path, argument: &str) -> io::Result<()> {
-    std::process::Command::new(binary).arg(argument).spawn()?;
+pub fn launch(binary: &Path, arguments: &[&str]) -> io::Result<()> {
+    std::process::Command::new(binary).args(arguments).spawn()?;
 
     Ok(())
 }
 
-pub fn commit(staged: &Path, handoff: &Handoff) -> io::Result<()> {
+pub fn commit(staged: &Path) -> io::Result<()> {
     match cfg!(windows) {
-        true => launch(staged, &handoff.flag("--update")),
-        false => {
-            std::fs::write("update.txt", handoff.encode())?;
-
-            install(staged, Path::new(&super::binary_name()))
-        }
+        true => launch(staged, &["--update"]),
+        false => install(staged, Path::new(&super::binary_name())),
     }
 }
 
-pub fn relay(handoff: &Handoff) -> io::Result<()> {
+pub fn relay() -> io::Result<()> {
     let staged = std::env::current_exe()?;
     let target = staged
         .parent()
@@ -100,5 +94,5 @@ pub fn relay(handoff: &Handoff) -> io::Result<()> {
 
     tracing::info!("installed {}, handing back", target.display());
 
-    launch(&target, &handoff.flag("--id"))
+    launch(&target, &[])
 }

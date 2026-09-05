@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use serenity::all::{CreateAllowedMentions, CreateMessage, EditMessage};
 
-use crate::app::updater::{self, Handoff, apply, download};
+use crate::app::updater::{self, apply, download};
 use crate::command::cx::Cx;
 use crate::command::error::{Ctx as _, Error, Result};
 use crate::command::{Command, Meta, Response};
@@ -215,9 +215,7 @@ impl Command for Update {
             )
             .await;
 
-        let handoff = Handoff::new(cx.channel_id().get(), cx.msg.id.get(), sha);
-
-        if let Err(failure) = apply::commit(&staged, &handoff) {
+        if let Err(failure) = apply::commit(&staged) {
             let _ = notice
                 .edit(
                     &cx.ctx,

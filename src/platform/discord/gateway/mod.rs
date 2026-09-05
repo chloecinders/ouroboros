@@ -60,9 +60,6 @@ impl EventHandler for Gateway {
 
         tokio::spawn(sync::on_boot(Arc::clone(&self.app), Arc::clone(&ctx.http)));
 
-        #[cfg(feature = "self-update")]
-        tokio::spawn(crate::app::updater::report(Arc::clone(&ctx.http)));
-
         #[cfg(feature = "web")]
         if self.app.config.discord_client_id.is_some() {
             let http = Arc::clone(&ctx.http);
