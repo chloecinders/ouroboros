@@ -30,15 +30,25 @@ jobs:
                   key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
             - name: Fmt
-              run: cargo fmt --all
+              run: cargo fmt --all -- --check
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
 
             - name: Setup Node
               uses: actions/setup-node@v4
               with:
-                  node-version: 20
+                  node-version: 24
+                  cache: pnpm
+
+            - name: Install web dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Typecheck the web sources
+              run: pnpm run typecheck
 
             - name: Generate Wiki
-              run: node website/generate-wiki.js
+              run: pnpm run build:site
 
             - name: Build
               run: cargo build --release --verbose
@@ -50,4 +60,3 @@ jobs:
                   path: |
                       target/**/release/Aegis
                       target/**/release/Aegis.exe
-                      website/dist/**

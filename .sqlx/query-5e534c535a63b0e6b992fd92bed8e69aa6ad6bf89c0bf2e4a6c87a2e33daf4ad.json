@@ -1,0 +1,48 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO guild_permissions\n            (guild_id, scope, subject_id, target, effect, priority)\n        VALUES ($1, $2::permission_scope, $3, $4, $5::permission_effect, $6) RETURNING id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        {
+          "Custom": {
+            "name": "permission_scope",
+            "kind": {
+              "Enum": [
+                "role",
+                "member",
+                "channel"
+              ]
+            }
+          }
+        },
+        "Int8",
+        "Text",
+        {
+          "Custom": {
+            "name": "permission_effect",
+            "kind": {
+              "Enum": [
+                "allow",
+                "deny"
+              ]
+            }
+          }
+        },
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5e534c535a63b0e6b992fd92bed8e69aa6ad6bf89c0bf2e4a6c87a2e33daf4ad"
+}

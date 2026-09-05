@@ -1,0 +1,31 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE actions SET state = 'ended', updated_at = now()\n        WHERE guild_id = $1 AND user_id = $2 AND verb = $3::punishment_verb\n        AND state IN ('active', 'expiring')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        {
+          "Custom": {
+            "name": "punishment_verb",
+            "kind": {
+              "Enum": [
+                "warn",
+                "kick",
+                "ban",
+                "softban",
+                "mute",
+                "unban",
+                "unmute"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6f1816a0ed8c367065378affad211784f11920c768a68fcf46705e10a678bd29"
+}

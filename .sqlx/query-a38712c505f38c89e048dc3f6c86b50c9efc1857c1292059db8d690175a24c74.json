@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE log_messages SET moderator_id = $1 WHERE message_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a38712c505f38c89e048dc3f6c86b50c9efc1857c1292059db8d690175a24c74"
+}

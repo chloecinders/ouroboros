@@ -1,0 +1,63 @@
+.scope__item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    padding: 6px 10px;
+    align-items: baseline;
+    cursor: pointer;
+    font-family: inherit;
+
+    &:hover,
+    &.scope__item--on {
+        background: var(--panel);
+    }
+
+    &.scope__item--on .scope__key {
+        color: var(--teal);
+    }
+}
+
+.scope__key {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.scope__type {
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--teal);
+}
+
+.description {
+    width: 100%;
+    resize: vertical;
+    background: var(--sunk);
+    border: 0;
+    box-shadow: inset 0 0 0 1px var(--rule);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 12.5px;
+    line-height: 1.5;
+    padding: 7px 9px;
+    outline: 0;
+
+    &:focus {
+        box-shadow: inset 0 0 0 1px var(--teal);
+    }
+
+    &::placeholder {
+        color: var(--dim);
+    }
+}

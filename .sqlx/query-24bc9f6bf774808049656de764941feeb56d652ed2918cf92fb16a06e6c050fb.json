@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT mode::text AS \"mode!\", response, compiled\n        FROM managed_rule_guilds WHERE guild_id = $1 AND rule_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "mode!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "response",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "compiled",
+        "type_info": "Jsonb"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      null,
+      false,
+      false
+    ]
+  },
+  "hash": "24bc9f6bf774808049656de764941feeb56d652ed2918cf92fb16a06e6c050fb"
+}

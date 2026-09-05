@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT refs.action_id, refs.ref_content IS NOT NULL AS \"content!\",\n            refs.image_url IS NOT NULL AS \"image!\"\n        FROM action_refs refs\n        JOIN actions owner ON owner.id = refs.action_id\n        WHERE owner.guild_id = $1 AND refs.action_id::text = ANY($2::text[])",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "action_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "content!",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "image!",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "594644df964e0ba0399bc490faa83359dce0564c8b841a4c39807be4ea69caa5"
+}

@@ -1,0 +1,90 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT t.transcript_id, t.guild_id, t.scope::text AS \"scope!\", t.channel_id,\n            t.channel_name, t.subject_id, t.subject_name, t.window_start, t.window_end,\n            t.moderator_name, t.created_at,\n            (SELECT count(*) FROM transcript_messages m\n        JOIN messages g ON g.message_id = m.message_id AND g.created_at = m.created_at\n        WHERE m.transcript_id = t.transcript_id AND g.channel_id = ANY ($3)) AS \"total!\"\n        FROM transcripts t WHERE t.transcript_id = $1 AND t.guild_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "transcript_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "guild_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "scope!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "channel_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "channel_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "subject_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "subject_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "window_start",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 8,
+        "name": "window_end",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "moderator_name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 10,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "total!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Int8Array"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      null,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "96546a263129b34863fe46102eab7c60f1396ba94f7dc26270cc3c8edecc0a4c"
+}

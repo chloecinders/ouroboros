@@ -1,0 +1,29 @@
+.alert {
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-left: 4px solid var(--rule);
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    &.alert--info {
+        border-left-color: var(--teal);
+    }
+
+    &.alert--warning {
+        border-left-color: var(--yellow);
+    }
+
+    &.alert--danger {
+        border-left-color: var(--red);
+    }
+
+    &.alert--success {
+        border-left-color: var(--green);
+    }
+}
+
+.alert__body {
+    margin: 0;
+}

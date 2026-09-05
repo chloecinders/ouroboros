@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO sticky_messages (channel_id, guild_id, content, title, color)\n        VALUES ($1, $2, $3, $4, $5)\n        ON CONFLICT (channel_id) DO UPDATE SET content = EXCLUDED.content,\n            title = EXCLUDED.title, color = EXCLUDED.color, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Text",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "df1692b7f9ec2177878d7eefae1a59541fc23595c03d1aad3b277b773ad68498"
+}

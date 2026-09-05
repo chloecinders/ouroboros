@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT verb::text AS \"verb!\", created_at\n        FROM actions\n        WHERE guild_id = $1 AND user_id = $2 AND state <> 'failed'\n            AND ($3::timestamptz IS NULL OR created_at >= $3)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "verb!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      null,
+      false
+    ]
+  },
+  "hash": "41b89add8f07c0f57e7c1482d40365cccf73695be1efded8a71c1c5789d04629"
+}

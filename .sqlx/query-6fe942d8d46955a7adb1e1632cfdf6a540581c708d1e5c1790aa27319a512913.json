@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM managed_rules WHERE lower(name) = lower($1)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6fe942d8d46955a7adb1e1632cfdf6a540581c708d1e5c1790aa27319a512913"
+}

@@ -1,0 +1,70 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT r.id, r.name, r.description, r.source, r.compiled, r.mode::text AS \"mode!\",\n        g.mode::text AS \"guild_mode!\", g.response, g.compiled AS \"answer\"\n        FROM managed_rule_guilds AS g\n        JOIN managed_rules AS r ON r.id = g.rule_id\n        WHERE g.guild_id = $1 AND g.mode <> 'disabled' AND r.mode <> 'disabled'\n        ORDER BY lower(r.name)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "source",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "compiled",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 5,
+        "name": "mode!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "guild_mode!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "response",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 8,
+        "name": "answer",
+        "type_info": "Jsonb"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      null,
+      null,
+      false,
+      false
+    ]
+  },
+  "hash": "75414971f0c8b2334b04b2f2018b579ba41a809ccd5042a5d8edfbecddc330af"
+}

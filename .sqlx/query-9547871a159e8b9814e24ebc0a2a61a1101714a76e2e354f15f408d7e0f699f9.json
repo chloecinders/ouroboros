@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE actions SET reason = $1, updated_at = now() WHERE guild_id = $2 AND id = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9547871a159e8b9814e24ebc0a2a61a1101714a76e2e354f15f408d7e0f699f9"
+}

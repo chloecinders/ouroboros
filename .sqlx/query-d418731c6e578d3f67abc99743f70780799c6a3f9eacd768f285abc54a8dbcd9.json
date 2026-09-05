@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM managed_rule_guilds WHERE guild_id = $1 AND rule_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d418731c6e578d3f67abc99743f70780799c6a3f9eacd768f285abc54a8dbcd9"
+}

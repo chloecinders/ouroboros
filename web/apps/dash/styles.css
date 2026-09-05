@@ -1,0 +1,22 @@
+@import "../../shared/styles/chrome.css";
+@import "./styles/shell.css";
+
+@import "./styles/editor/chrome.css";
+@import "./styles/editor/head.css";
+@import "./styles/editor/rules.css";
+@import "./styles/editor/scope.css";
+@import "./styles/editor/code.css";
+@import "./styles/editor/tokens.css";
+@import "./styles/editor/diags.css";
+@import "./styles/editor/dialog.css";
+@import "./styles/editor/preview.css";
+@import "./styles/editor/vocab.css";
+@import "./styles/editor/notices.css";
+
+@import "./styles/components/chrome.css";
+@import "./styles/components/servers.css";
+@import "./styles/components/rules.css";
+@import "./styles/components/logs.css";
+@import "./styles/components/errors.css";
+@import "./styles/components/permits.css";
+@import "./styles/components/note.css";

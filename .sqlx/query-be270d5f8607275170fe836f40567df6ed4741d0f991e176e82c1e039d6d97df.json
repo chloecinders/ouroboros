@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, scope::text AS \"scope!\", subject_id, target,\n            effect::text AS \"effect!\", priority\n        FROM guild_permissions WHERE guild_id = $1 ORDER BY id",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "scope!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "subject_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "target",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "effect!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "priority",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      null,
+      false,
+      false,
+      null,
+      false
+    ]
+  },
+  "hash": "be270d5f8607275170fe836f40567df6ed4741d0f991e176e82c1e039d6d97df"
+}

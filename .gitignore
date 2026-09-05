@@ -1,7 +1,8 @@
 target
 Config.toml
-.jj
-tesseract
-dhat-heap.json
-prod-dhat-heap.json
-website/dist
+web/site/dist
+web/site/commands.json
+node_modules
+testing
+.vscode
+aegis.dump

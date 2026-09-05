@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE managed_rules\n        SET name = $2, description = $3, source = $4, compiled = $5, mode = $6::rule_mode,\n            rule_hash = $7, updated_at = now()\n        WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Text",
+        "Text",
+        "Text",
+        "Jsonb",
+        {
+          "Custom": {
+            "name": "rule_mode",
+            "kind": {
+              "Enum": [
+                "disabled",
+                "active"
+              ]
+            }
+          }
+        },
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "020ba7d6b3efcb5b9c23ba2ae2361b50f1b71eae939ea8fa0d5d899d8ecf1f37"
+}

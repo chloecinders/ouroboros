@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO message_deletions (message_id, guild_id, source)\n        SELECT id, $2, 'manual'::message_removal FROM UNNEST($1::bigint[]) AS id\n        ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8Array",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b41a86687f5824b85a5a5316ccb45e59b290c0d540add1b24176ab15c0d216ea"
+}

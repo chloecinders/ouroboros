@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM command_snippets\n        WHERE guild_id IS NOT DISTINCT FROM $1::bigint\n            AND owner_id IS NOT DISTINCT FROM $2::bigint\n            AND lower(name) = lower($3)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "17489f0525e070346dcba4455f2a052547229c4ca2662d318be63db7b0c1536d"
+}

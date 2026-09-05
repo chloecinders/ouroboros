@@ -7,7 +7,5 @@ edition = "2024"
 proc-macro = true
 
 [dependencies]
-async-trait = "0.1.89"
-proc-macro2 = "1.0.101"
 quote = "1.0.40"
 syn = { version = "2.0.106", features = ["full"] }

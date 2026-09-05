@@ -1,0 +1,256 @@
+use std::time::Duration;
+
+use serenity::all::CacheHttp;
+
+use crate::app::App;
+use crate::domain::Snowflake;
+use crate::features::guildlog::Posted;
+use crate::features::guildlog::attribution::Attribution;
+use crate::features::guildlog::member::Part;
+use crate::platform::cache::Cache;
+use crate::platform::ui::embed::Embed;
+
+pub type Key = (Snowflake, Snowflake, Snowflake);
+pub type Trace = (Snowflake, Snowflake, Part);
+pub type Bulk = (Snowflake, Snowflake);
+
+#[derive(Clone, Debug)]
+struct Waiting {
+    at: Posted,
+    embed: Embed,
+}
+
+#[derive(Clone, Debug)]
+struct Update {
+    at: Posted,
+    embed: Embed,
+    parts: Vec<Part>,
+}
+
+pub struct Awaiting {
+    waiting: Cache<Key, Waiting>,
+    bulk: Cache<Bulk, Waiting>,
+    updates: Cache<Trace, Update>,
+    witnessed: Cache<Trace, Snowflake>,
+    witnessed_bulk: Cache<Bulk, Snowflake>,
+}
+
+impl Default for Awaiting {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Awaiting {
+    pub fn new() -> Self {
+        Self {
+            waiting: Cache::new(2048, Some(Duration::from_secs(30))),
+            bulk: Cache::new(2048, Some(Duration::from_secs(30))),
+            updates: Cache::new(2048, Some(Duration::from_secs(30))),
+            witnessed: Cache::new(2048, Some(Duration::from_secs(10))),
+            witnessed_bulk: Cache::new(2048, Some(Duration::from_secs(10))),
+        }
+    }
+
+    pub fn expect(&self, key: Key, at: Posted, embed: &Embed, known: Attribution) {
+        if known.is_resolved() {
+            return;
+        }
+
+        self.waiting.insert(
+            key,
+            Waiting {
+                at,
+                embed: embed.clone(),
+            },
+        );
+    }
+
+    pub fn forget(&self, key: &Key) {
+        self.waiting.remove(key);
+    }
+
+    pub fn expect_bulk(&self, key: Bulk, at: Posted, embed: &Embed, known: Attribution) {
+        if known.is_resolved() {
+            return;
+        }
+
+        self.bulk.insert(
+            key,
+            Waiting {
+                at,
+                embed: embed.clone(),
+            },
+        );
+    }
+
+    pub fn claim_bulk(&self, key: &Bulk) -> Attribution {
+        match self.witnessed_bulk.remove(key) {
+            Some(actor) => Attribution::Gateway(actor),
+            None => Attribution::Unknown,
+        }
+    }
+
+    pub fn track(
+        &self,
+        guild: Snowflake,
+        target: Snowflake,
+        parts: &[Part],
+        at: Posted,
+        embed: &Embed,
+        known: Attribution,
+    ) {
+        if known.is_resolved() {
+            return;
+        }
+
+        for part in parts {
+            self.updates.insert(
+                (guild, target, *part),
+                Update {
+                    at,
+                    embed: embed.clone(),
+                    parts: parts.to_vec(),
+                },
+            );
+        }
+    }
+
+    pub fn claim(&self, guild: Snowflake, target: Snowflake, parts: &[Part]) -> Attribution {
+        let mut found = Attribution::Unknown;
+
+        for part in parts {
+            if let Some(actor) = self.witnessed.remove(&(guild, target, *part)) {
+                found = Attribution::Gateway(actor);
+            }
+        }
+
+        found
+    }
+
+    pub fn sweep(&self) {
+        self.waiting.sweep();
+        self.bulk.sweep();
+        self.updates.sweep();
+        self.witnessed.sweep();
+        self.witnessed_bulk.sweep();
+    }
+}
+
+pub async fn attribute_deletion(
+    app: &App,
+    http: impl CacheHttp,
+    key: Key,
+    actor: Snowflake,
+    bot: Snowflake,
+) -> bool {
+    let Some(waiting) = app.awaiting.waiting.remove(&key) else {
+        return false;
+    };
+
+    attribute(app, http, waiting, actor, bot).await;
+
+    true
+}
+
+pub async fn attribute_bulk(
+    app: &App,
+    http: impl CacheHttp,
+    key: Bulk,
+    actor: Snowflake,
+    bot: Snowflake,
+) {
+    let Some(waiting) = app.awaiting.bulk.remove(&key) else {
+        app.awaiting.witnessed_bulk.insert(key, actor);
+
+        return;
+    };
+
+    attribute(app, http, waiting, actor, bot).await;
+}
+
+async fn attribute(
+    app: &App,
+    http: impl CacheHttp,
+    waiting: Waiting,
+    actor: Snowflake,
+    bot: Snowflake,
+) {
+    let amended = attach(&waiting.embed, &Attribution::Gateway(actor), bot);
+
+    if let Err(failure) =
+        super::store::attribute(&app.pool, waiting.at.message.get(), Some(actor)).await
+    {
+        app.reporter.record(&failure, Default::default());
+    }
+
+    if let Err(failure) = super::rewrite(http, waiting.at, &amended).await {
+        app.reporter.record(&failure, Default::default());
+    }
+}
+
+pub async fn attribute_update(
+    app: &App,
+    http: impl CacheHttp,
+    guild: Snowflake,
+    target: Snowflake,
+    parts: &[Part],
+    actor: Snowflake,
+    bot: Snowflake,
+) {
+    let mut attributed: Vec<Part> = Vec::new();
+    let mut amending = Vec::new();
+
+    for part in parts {
+        if attributed.contains(part) {
+            continue;
+        }
+
+        let Some(update) = app.awaiting.updates.remove(&(guild, target, *part)) else {
+            app.awaiting.witnessed.insert((guild, target, *part), actor);
+            continue;
+        };
+
+        for sibling in &update.parts {
+            app.awaiting.updates.remove(&(guild, target, *sibling));
+        }
+
+        attributed.extend(update.parts.iter().copied());
+        amending.push(update);
+    }
+
+    let resolved = Attribution::Gateway(actor);
+
+    for update in amending {
+        let amended = attach(&update.embed, &resolved, bot);
+
+        if let Err(failure) =
+            super::store::attribute(&app.pool, update.at.message.get(), Some(actor)).await
+        {
+            app.reporter.record(&failure, Default::default());
+        }
+
+        if let Err(failure) = super::rewrite(&http, update.at, &amended).await {
+            app.reporter.record(&failure, Default::default());
+        }
+    }
+}
+
+pub fn attach(embed: &Embed, actor: &Attribution, bot: Snowflake) -> Embed {
+    let Some(line) = actor.line(bot) else {
+        return embed.clone();
+    };
+
+    let mut amended = embed.clone();
+
+    if amended
+        .subtitles
+        .iter()
+        .any(|part| part.starts_with("Actor:"))
+    {
+        return amended;
+    }
+
+    amended.subtitles.push(line);
+    amended
+}

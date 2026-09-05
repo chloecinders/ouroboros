@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE managed_rule_guilds SET response = $1, compiled = $2\n        WHERE guild_id = $3 AND rule_id = $4",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Jsonb",
+        "Int8",
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "317d628d4527467f89807fb546236e321043092d88c2d3f3792c911661cc7fdb"
+}

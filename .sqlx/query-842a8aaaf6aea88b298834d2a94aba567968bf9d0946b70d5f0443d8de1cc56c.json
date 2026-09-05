@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM dashboard_sessions WHERE expires <= now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "842a8aaaf6aea88b298834d2a94aba567968bf9d0946b70d5f0443d8de1cc56c"
+}

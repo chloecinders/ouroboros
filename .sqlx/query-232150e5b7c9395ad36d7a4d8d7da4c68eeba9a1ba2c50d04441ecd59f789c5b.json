@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT message_id, author_id, command, args, action_id, response_id,\n                  status::text AS \"status!\", created_at\n           FROM invocations WHERE message_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "message_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "author_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "command",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "args",
+        "type_info": "Jsonb"
+      },
+      {
+        "ordinal": 4,
+        "name": "action_id",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "response_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "status!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      null,
+      false
+    ]
+  },
+  "hash": "232150e5b7c9395ad36d7a4d8d7da4c68eeba9a1ba2c50d04441ecd59f789c5b"
+}

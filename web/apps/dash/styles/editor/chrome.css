@@ -1,0 +1,226 @@
+.editor {
+    line-height: 1.45;
+}
+
+.code__gutter,
+.code__paint,
+.code__input,
+.diags,
+.preview__sample,
+.trace,
+.fields__input,
+.fields__select,
+.derived__item,
+.rulelist__name,
+.vocab__key {
+    font-variant-ligatures: none;
+    font-feature-settings:
+        "liga" 0,
+        "clig" 0,
+        "calt" 0,
+        "dlig" 0;
+}
+
+.editor__app {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 0 18px 26px;
+}
+
+.editor__work {
+    display: grid;
+    grid-template-columns: 210px 1fr 258px;
+}
+
+.editor__blank {
+    grid-column: 2 / -1;
+    padding: 0 20px;
+}
+
+.editor__col {
+    border-right: 1px solid var(--rule);
+    min-width: 0;
+
+    &:last-child {
+        border-right: 0;
+    }
+}
+
+.editor__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 2px solid var(--ink);
+    margin-top: 14px;
+    padding-top: 10px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    color: var(--dim);
+}
+
+.editor__footer-button {
+    background: none;
+    border: 0;
+    color: var(--dim);
+    font-family: inherit;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    cursor: pointer;
+
+    &:hover {
+        color: var(--red);
+    }
+}
+
+.editor__loading {
+    padding: 40px 0;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--dim);
+}
+
+.editor__button {
+    display: inline-block;
+    padding: 9px 15px;
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    background: var(--teal);
+    color: var(--sunk);
+    border: 0;
+    cursor: pointer;
+    font-family: inherit;
+
+    &:hover {
+        background: var(--red);
+    }
+
+    &.editor__button--inv {
+        background: var(--ink);
+
+        &:hover {
+            background: var(--teal);
+        }
+    }
+
+    &.editor__button--line {
+        background: none;
+        color: var(--ink);
+        box-shadow: inset 0 0 0 2px var(--rule);
+
+        &:hover {
+            background: var(--rule);
+        }
+    }
+
+    &.editor__button--danger {
+        background: none;
+        color: var(--red);
+        box-shadow: inset 0 0 0 2px var(--red);
+
+        &:hover {
+            background: var(--red);
+            color: var(--sunk);
+        }
+    }
+
+    &:disabled {
+        background: var(--rule);
+        color: #4a4a4a;
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+}
+
+.colhead {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--ink);
+    color: var(--sunk);
+    padding: 5px 10px;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+
+    &.colhead--teal {
+        background: var(--teal);
+    }
+
+    &.colhead--red {
+        background: var(--red);
+    }
+
+    &.colhead--grey {
+        background: var(--rule);
+        color: var(--mid);
+    }
+}
+
+.pad {
+    padding: 10px;
+}
+
+.pad__select {
+    width: 100%;
+    background: var(--sunk);
+    border: 0;
+    box-shadow: inset 0 0 0 1px var(--rule);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 6px 8px;
+    outline: 0;
+
+    &:focus {
+        box-shadow: inset 0 0 0 1px var(--teal);
+    }
+}
+
+.hint {
+    padding: 10px;
+    font-size: 11.5px;
+    color: var(--mid);
+    font-weight: 500;
+    line-height: 1.5;
+    border-bottom: 1px solid var(--rule);
+
+    &.hint--warn {
+        background: var(--panel);
+        border-left: 3px solid var(--yellow);
+    }
+}
+
+.hint__strong {
+    color: var(--ink);
+    font-weight: 800;
+}
+
+.hint__code {
+    font-family: var(--mono);
+    color: var(--teal);
+    font-weight: 700;
+}
+
+@media (max-width: 1220px) {
+    .editor__work {
+        grid-template-columns: 1fr;
+    }
+
+    .editor__blank {
+        grid-column: auto;
+    }
+
+    .editor__col {
+        border-right: 0;
+        border-bottom: 1px solid var(--rule);
+    }
+}

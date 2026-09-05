@@ -1,0 +1,88 @@
+.document-page,
+.wiki-content {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    padding: 26px 30px 30px;
+
+    p,
+    li {
+        color: var(--read);
+    }
+}
+
+main {
+    h1,
+    h2,
+    h3 {
+        font-weight: 900;
+        letter-spacing: -0.6px;
+        text-transform: uppercase;
+        margin: 0 0 10px;
+    }
+
+    h1 {
+        font-size: 34px;
+        line-height: 0.95;
+        letter-spacing: -1.6px;
+    }
+
+    h2 {
+        font-size: 19px;
+        margin-top: 28px;
+        padding-bottom: 5px;
+        border-bottom: 2px solid var(--ink);
+    }
+
+    h3 {
+        font-size: 15px;
+        margin-top: 20px;
+        color: var(--teal);
+    }
+
+    p,
+    li {
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.5;
+        color: var(--mid);
+    }
+
+    strong {
+        color: var(--ink);
+        font-weight: 800;
+    }
+
+    a:not(.btn):not(.rows__link):not(.cta__link) {
+        color: var(--teal);
+        border-bottom: 1px solid var(--rule);
+
+        &:hover {
+            color: var(--red);
+            border-color: var(--red);
+        }
+    }
+
+    code {
+        background: var(--sunk);
+        border: 1px solid var(--rule);
+        padding: 1px 5px;
+        font-size: 12px;
+        color: var(--ink);
+    }
+}
+
+.btn {
+    display: inline-block;
+    background: var(--teal);
+    color: #101010;
+    padding: 10px 18px;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+
+    &:hover {
+        background: var(--red);
+        color: var(--ink);
+    }
+}

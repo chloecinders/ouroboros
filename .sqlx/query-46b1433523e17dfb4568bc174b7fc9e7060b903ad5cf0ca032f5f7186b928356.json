@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO guild_log_channels (guild_id, log_type, channel_id)\n        SELECT $1, kind, $3 FROM UNNEST($2::text[]) AS kind\n        ON CONFLICT (guild_id, log_type) DO UPDATE SET channel_id = EXCLUDED.channel_id",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "TextArray",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "46b1433523e17dfb4568bc174b7fc9e7060b903ad5cf0ca032f5f7186b928356"
+}

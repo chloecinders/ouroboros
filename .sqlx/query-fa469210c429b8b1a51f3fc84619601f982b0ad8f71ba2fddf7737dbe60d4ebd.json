@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO actions\n        (id, guild_id, user_id, moderator_id, verb, state, reason, note, clear_days, expires_at)\n        VALUES ($1, $2, $3, $4, $5::punishment_verb, $6::punishment_state, $7, $8, $9, $10)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Int8",
+        "Int8",
+        "Int8",
+        {
+          "Custom": {
+            "name": "punishment_verb",
+            "kind": {
+              "Enum": [
+                "warn",
+                "kick",
+                "ban",
+                "softban",
+                "mute",
+                "unban",
+                "unmute"
+              ]
+            }
+          }
+        },
+        {
+          "Custom": {
+            "name": "punishment_state",
+            "kind": {
+              "Enum": [
+                "pending",
+                "active",
+                "expiring",
+                "ended",
+                "revoked",
+                "lapsed",
+                "failed"
+              ]
+            }
+          }
+        },
+        "Text",
+        "Text",
+        "Int2",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "fa469210c429b8b1a51f3fc84619601f982b0ad8f71ba2fddf7737dbe60d4ebd"
+}

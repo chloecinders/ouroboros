@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO transcript_messages (transcript_id, message_id, created_at)\n        SELECT $1, message_id, created_at FROM messages\n        WHERE guild_id = $2\n            AND ($3::bigint IS NULL OR channel_id = $3)\n            AND ($4::bigint IS NULL OR author_id = $4)\n            AND ($5::timestamptz IS NULL OR created_at >= $5)\n            AND ($6::timestamptz IS NULL OR created_at <= $6)\n            AND ($7::bigint[] IS NULL OR message_id = ANY ($7))\n            AND (NOT $8::bool OR EXISTS (SELECT 1 FROM message_deletions d\n                WHERE d.message_id = messages.message_id))\n        ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Int8",
+        "Int8",
+        "Timestamptz",
+        "Timestamptz",
+        "Int8Array",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "27e4ecc69dcf505d2500fd6ba40fb3d31ce5967d66cfbeb3d4e83cb371c20c32"
+}

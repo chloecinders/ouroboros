@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM ocr_image_evaluations WHERE last_seen_at < $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "a6f73107b42ce1ee460681c43f59aeaf7bfb4213f749f251272b5fc18484d660"
+}

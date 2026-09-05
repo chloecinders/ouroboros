@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO guild_encryption (guild_id, enabled, key_channel_id, key_message_id)\n        VALUES ($1, true, $2, $3)\n        ON CONFLICT (guild_id) DO UPDATE SET enabled = true,\n            key_channel_id = EXCLUDED.key_channel_id, key_message_id = EXCLUDED.key_message_id",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c9f65fca0a8ae6e14737319bd5e7818efcd1739cb9e966182150e942031753c2"
+}

@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO ocr_image_evaluations (image_hash, rule_hash, is_match) VALUES ($1, $2, $3)\n        ON CONFLICT (image_hash, rule_hash) DO UPDATE SET last_seen_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Bpchar",
+        "Bool"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6fa44b3437fe32e0dc895d4894bc7cb3361d014331d6c53d4a9ac78842572b5d"
+}

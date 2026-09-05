@@ -1,0 +1,65 @@
+use crate::command::args::Arg;
+use crate::command::cx::Cx;
+use crate::command::error::Result;
+use crate::command::{Command, Meta, Response};
+use crate::domain::punishment::{Punishment, PunishmentType};
+use crate::domain::reason::{Note, Reason};
+use crate::features::punishments::executor::{self, Subject};
+use crate::features::references::Reference;
+use aegis_macros::{command, meta};
+use serenity::all::Member;
+
+#[command]
+pub struct Unmute {
+    #[arg(reply)]
+    target: Arg<Member>,
+    #[arg(rest, amend = Reason)]
+    reason: Reason,
+    #[flag(short = 's', desc = "Skips DMing the target the reason")]
+    silent: bool,
+    #[flag(short = 'n', amend = Note, desc = "Attaches a note, which is not displayed in DMs")]
+    note: Option<Note>,
+    #[flag(
+        name = "ref",
+        short = 'r',
+        desc = "Saves a message link or image as evidence"
+    )]
+    reference: Option<Reference>,
+}
+
+impl Command for Unmute {
+    const META: Meta = meta! {
+        name: "unmute",
+        aliases: ["untimeout"],
+        short: "Lifts a member's mute",
+        full: "Ends a members timeout immediately and records the reversal. \
+        Attaching an images saves the image as a reference.",
+        category: Moderation,
+        user: [MODERATE_MEMBERS],
+        bot: [MODERATE_MEMBERS],
+        edit: Amendable,
+    };
+
+    async fn run(self, cx: &mut Cx) -> Result<Response> {
+        let inferred = self.target.was_inferred();
+        let member = self.target.into_value();
+        let punishment = Punishment::new(
+            PunishmentType::Unmute,
+            cx.guild_snowflake()?,
+            cx.author_id().get(),
+            member.user.id.get(),
+        )
+        .reason(self.reason)
+        .note(self.note)
+        .silent(self.silent);
+
+        executor::apply(
+            cx,
+            punishment,
+            Subject::Present(Box::new(member)),
+            inferred,
+            self.reference,
+        )
+        .await
+    }
+}

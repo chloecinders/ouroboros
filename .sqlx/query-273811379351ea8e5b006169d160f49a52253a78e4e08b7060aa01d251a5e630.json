@@ -1,0 +1,53 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT refs.origin::text AS \"origin!\", refs.ref_message_id, refs.ref_channel_id,\n            refs.ref_author_id, refs.ref_content, refs.image_url\n        FROM action_refs refs\n        JOIN actions owner ON owner.id = refs.action_id\n        WHERE refs.action_id = $1 AND owner.guild_id = $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "origin!",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "ref_message_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "ref_channel_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "ref_author_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "ref_content",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 5,
+        "name": "image_url",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "273811379351ea8e5b006169d160f49a52253a78e4e08b7060aa01d251a5e630"
+}

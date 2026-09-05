@@ -1,0 +1,73 @@
+.vocab__item {
+    display: grid;
+    grid-template-columns: 68px 1fr;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    padding: 6px 10px;
+    align-items: baseline;
+    cursor: pointer;
+
+    &:hover,
+    &.vocab__item--on {
+        background: var(--panel);
+    }
+
+    &:hover .vocab__takes {
+        color: var(--mid);
+    }
+
+    .vocab--values & {
+        grid-template-columns: 84px 1fr;
+    }
+}
+
+.vocab__key {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--teal);
+
+    .vocab--values & {
+        color: var(--ink);
+        font-size: 11.5px;
+    }
+}
+
+.vocab__takes {
+    font-size: 11px;
+    color: var(--dim);
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.back {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    color: var(--dim);
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    padding: 7px 10px;
+    cursor: pointer;
+
+    &:before {
+        content: "<";
+        margin-right: 7px;
+        color: var(--teal);
+    }
+
+    &:hover {
+        color: var(--ink);
+        background: var(--panel);
+    }
+}

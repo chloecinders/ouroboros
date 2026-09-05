@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT m.channel_id, min(m.message_id) AS \"first!\"\n        FROM transcript_messages t\n        JOIN transcripts s ON s.transcript_id = t.transcript_id\n        JOIN messages m ON m.message_id = t.message_id AND m.created_at = t.created_at\n        WHERE t.transcript_id = $1 AND s.guild_id = $2\n        GROUP BY m.channel_id\n        ORDER BY \"first!\"",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "channel_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "first!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "74200863dc09d96df647e2cfbb22373e7b6df31f7617ff03938aa80b8a0b5b95"
+}

@@ -1,0 +1,27 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO message_deletions (message_id, guild_id, source, rule)\n        VALUES ($1, $2, $3::message_removal, $4) ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        {
+          "Custom": {
+            "name": "message_removal",
+            "kind": {
+              "Enum": [
+                "manual",
+                "automod"
+              ]
+            }
+          }
+        },
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e16fce60231da996eb31f4ecac316f3e4aa16c5b7f37c6b00549733a15d83644"
+}

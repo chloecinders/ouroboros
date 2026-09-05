@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO command_snippets (owner_id, name, body) VALUES ($1, $2, $3)\n                ON CONFLICT (owner_id, lower(name)) WHERE owner_id IS NOT NULL DO UPDATE\n                SET name = EXCLUDED.name, body = EXCLUDED.body, updated_at = now()",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8476cc682d72d0eb553036ed97d6d1bd430df23d3d2086cf5a7bcfb681fed691"
+}

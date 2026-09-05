@@ -1,0 +1,30 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE actions SET state = $1::punishment_state, updated_at = now() WHERE id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        {
+          "Custom": {
+            "name": "punishment_state",
+            "kind": {
+              "Enum": [
+                "pending",
+                "active",
+                "expiring",
+                "ended",
+                "revoked",
+                "lapsed",
+                "failed"
+              ]
+            }
+          }
+        },
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "89847ae54ee3b12649322dad4d54ae50a761c819028d0db13949646e55c0c80e"
+}

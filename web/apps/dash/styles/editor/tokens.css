@@ -1,0 +1,61 @@
+.code__kw {
+    color: var(--teal);
+    font-weight: 700;
+
+    &.code__kw--bad {
+        color: var(--red);
+        text-decoration: underline wavy var(--red);
+        text-underline-offset: 3px;
+    }
+}
+
+.code__str {
+    color: var(--ink);
+}
+
+.code__rgx {
+    color: var(--yellow);
+}
+
+.code__bin {
+    color: var(--red);
+    font-weight: 700;
+}
+
+.code__num {
+    color: var(--green);
+}
+
+.code__arg {
+    color: var(--mid);
+}
+
+.code__errbg {
+    background: #e35c681a;
+}
+
+.code__warnbg {
+    background: #fff3b012;
+}
+
+.code__lens {
+    color: var(--red);
+    font-weight: 700;
+    padding-left: 24px;
+    opacity: 0.85;
+
+    &.code__lens--warn {
+        color: var(--yellow);
+    }
+}
+
+.code__help {
+    color: var(--dim);
+    font-weight: 700;
+    padding-left: 16px;
+}
+
+.code__fill {
+    color: var(--teal);
+    padding-left: 8px;
+}

@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO transcripts\n            (transcript_id, guild_id, scope, channel_id, channel_name, subject_id,\n            subject_name, window_start, window_end, moderator_name)\n        VALUES ($1, $2, $3::transcript_scope, $4, $5, $6, $7, $8, $9, $10)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        {
+          "Custom": {
+            "name": "transcript_scope",
+            "kind": {
+              "Enum": [
+                "channel",
+                "user",
+                "cleared",
+                "selection"
+              ]
+            }
+          }
+        },
+        "Int8",
+        "Text",
+        "Int8",
+        "Text",
+        "Timestamptz",
+        "Timestamptz",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4b519fe804a2297f36247268714bf1cbfec6ebc4facf4b47813dabc4dc4ddc1c"
+}

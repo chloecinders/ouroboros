@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE ocr_image_evaluations SET last_seen_at = now()\n        WHERE image_hash = $1 AND rule_hash = $2 RETURNING is_match",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "is_match",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Bpchar"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6549b22492eea5ed117584d02a156fc24d5427402dd4df0b9ee6f32818a1e35e"
+}

@@ -1,0 +1,47 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT id, headline, detail, delivered, occurred_at\n        FROM guild_errors WHERE guild_id = $1\n        ORDER BY occurred_at DESC, id DESC LIMIT $2",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "headline",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "detail",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "delivered",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "occurred_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "13d852572878ddaceaaeb7d0f8f8e9b6dad85adbac2b804ef24ca916f52d2e71"
+}

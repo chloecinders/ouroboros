@@ -3,35 +3,46 @@ name = "Aegis"
 version = "0.1.0-pre"
 edition = "2024"
 
+[features]
+default = ["self-update", "web", "ocr", "s3"]
+self-update = ["dep:zip"]
+web = ["dep:axum"]
+ocr = ["dep:kreuzberg"]
+s3 = ["dep:rust-s3"]
+
 [dependencies]
-serde = "1.0.219"
+aegis_macros = { path = "./aegis_macros" }
+aes-gcm = "0.10"
+base64 = "0.22"
+chrono = "0.4.41"
+futures = { version = "0.3.31", default-features = false, features = ["std", "async-await"] }
+image = { version = "0.25.6", default-features = false, features = ["png", "jpeg", "gif", "bmp", "webp"] }
+rand = { version = "0.9", default-features = false, features = ["std", "std_rng", "thread_rng"] }
+regex = "1.12.2"
+reqwest = { version = "0.12.23", features = ["json"] }
+serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.149"
 serenity = { version = "0.12.5", features = ["chrono", "collector"] }
+sha2 = "0.11.0"
+sqlx = { version = "0.8.6", features = ["chrono", "json", "macros", "migrate", "postgres", "runtime-tokio", "tls-native-tls"] }
 sysinfo = { version = "0.37.0", default-features = false, features = ["system"] }
-tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread", "signal"] }
+thiserror = "2.0.17"
+tokio = { version = "1.47.1", features = ["fs", "macros", "process", "rt-multi-thread", "signal", "sync", "time"] }
 toml = "0.9.5"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-aegis_macros = { path = "./aegis_macros" }
-sqlx = { version = "0.8.6", features = ["chrono", "json", "macros", "migrate", "postgres", "runtime-tokio", "tls-native-tls"] }
-chrono = "0.4.41"
-reqwest = { version = "0.12.23", features = ["json"] }
-zip = "2.4.2"
-image = "0.25.6"
-thiserror = "2.0.17"
-regex = "1.12.2"
-rust-s3 = "0.37.1"
-rand = "0.9"
-aes-gcm = "0.10"
-base64 = "0.22"
-sha2 = "0.11.0"
-kreuzberg = { version = "4.9.7", features = ["paddle-ocr"] }
-axum = "0.7"
-tower-http = { version = "0.5", features = ["fs"] }
-uuid = { version = "1", features = ["v4"] }
+
+axum = { version = "0.7", optional = true }
+kreuzberg = { version = "4.9.7", features = ["paddle-ocr"], optional = true }
+rust-s3 = { version = "0.37.1", optional = true }
+zip = { version = "2.4.2", optional = true }
+
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
-tikv-jemallocator = { version = "0.6.0", features = ["profiling"] }
-tikv-jemalloc-ctl = { version = "0.6.0", features = ["stats", "profiling"] }
+tikv-jemallocator = { version = "0.6.0" }
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
 
 [workspace]
 members = ["aegis_macros"]

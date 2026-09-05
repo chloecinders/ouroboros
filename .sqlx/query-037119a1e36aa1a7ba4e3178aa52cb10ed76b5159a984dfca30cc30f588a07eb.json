@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE automod_rules\n        SET name = $2, source = $3, compiled = $4, mode = $5::rule_mode,\n            rule_hash = $6, updated_at = now()\n        WHERE id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Text",
+        "Text",
+        "Jsonb",
+        {
+          "Custom": {
+            "name": "rule_mode",
+            "kind": {
+              "Enum": [
+                "disabled",
+                "active"
+              ]
+            }
+          }
+        },
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "037119a1e36aa1a7ba4e3178aa52cb10ed76b5159a984dfca30cc30f588a07eb"
+}

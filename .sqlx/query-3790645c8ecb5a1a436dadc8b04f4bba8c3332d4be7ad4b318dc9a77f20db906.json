@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT count(*) AS \"stored!\" FROM command_snippets\n        WHERE guild_id IS NOT DISTINCT FROM $1::bigint\n            AND owner_id IS NOT DISTINCT FROM $2::bigint",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "stored!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "3790645c8ecb5a1a436dadc8b04f4bba8c3332d4be7ad4b318dc9a77f20db906"
+}

@@ -1,0 +1,69 @@
+use std::time::Duration;
+
+use reqwest::Client;
+
+#[derive(Clone, Debug)]
+pub struct Http {
+    client: Client,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum Failure {
+    #[error("transport: {0}")]
+    Transport(#[from] reqwest::Error),
+    #[error("{url} is {size} bytes, over the {limit} byte ceiling")]
+    TooLarge {
+        url: String,
+        size: usize,
+        limit: usize,
+    },
+}
+
+impl Default for Http {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Http {
+    pub fn new() -> Self {
+        let client = Client::builder()
+            .user_agent(concat!("Aegis/", env!("CARGO_PKG_VERSION")))
+            .timeout(Duration::from_secs(20))
+            .pool_idle_timeout(Duration::from_secs(90))
+            .build()
+            .unwrap_or_default();
+
+        Self { client }
+    }
+
+    pub fn client(&self) -> &Client {
+        &self.client
+    }
+
+    pub async fn bytes(&self, url: &str, limit: usize) -> Result<Vec<u8>, Failure> {
+        let response = self.client.get(url).send().await?.error_for_status()?;
+
+        if let Some(declared) = response.content_length()
+            && declared as usize > limit
+        {
+            return Err(Failure::TooLarge {
+                url: url.to_string(),
+                size: declared as usize,
+                limit,
+            });
+        }
+
+        let body = response.bytes().await?;
+
+        if body.len() > limit {
+            return Err(Failure::TooLarge {
+                url: url.to_string(),
+                size: body.len(),
+                limit,
+            });
+        }
+
+        Ok(body.to_vec())
+    }
+}

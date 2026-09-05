@@ -1,0 +1,145 @@
+.hero {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 26px;
+    align-items: center;
+    padding: 14px 0 12px;
+    border-bottom: 2px solid var(--ink);
+}
+
+.hero__title {
+    margin: 0;
+    font-size: 88px;
+    line-height: 0.74;
+    letter-spacing: -5px;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: var(--red);
+}
+
+.hero__blurb {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.3px;
+    max-width: 34ch;
+    color: var(--ink);
+    border-left: 2px solid var(--rule);
+    padding-left: 22px;
+}
+
+.cta {
+    display: flex;
+}
+
+.cta__link {
+    padding: 11px 18px;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    background: var(--teal);
+    color: #101010;
+    white-space: nowrap;
+
+    & + .cta__link {
+        background: var(--ink);
+    }
+
+    &:hover {
+        background: var(--red);
+        color: var(--ink);
+    }
+}
+
+.rows {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-left: 1px solid var(--rule);
+}
+
+.rows__item {
+    padding: 14px 18px 16px;
+    border-right: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+}
+
+.rows__num {
+    font-size: 34px;
+    line-height: 0.8;
+    font-weight: 900;
+    color: var(--red);
+    letter-spacing: -2px;
+    margin-bottom: 8px;
+}
+
+.rows__title {
+    margin: 0 0 8px;
+    align-self: flex-start;
+    background: var(--teal);
+    color: #101010;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    padding: 3px 9px 4px;
+}
+
+.rows__body {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--mid);
+}
+
+.rows__link {
+    align-self: flex-start;
+    margin-top: 10px;
+    border-bottom: 3px solid var(--teal);
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    padding-bottom: 1px;
+
+    &:hover {
+        border-color: var(--red);
+        color: var(--red);
+    }
+}
+
+@media (max-width: 1000px) {
+    .hero {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .hero__title {
+        font-size: 64px;
+        letter-spacing: -3px;
+    }
+
+    .hero__blurb {
+        border-left: 0;
+        padding-left: 0;
+    }
+
+    .cta__link {
+        flex: 1;
+        text-align: center;
+    }
+
+    .rows {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .rows {
+        grid-template-columns: 1fr;
+    }
+}

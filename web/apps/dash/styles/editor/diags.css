@@ -1,0 +1,54 @@
+.diags {
+    border-top: 1px solid var(--rule);
+    max-height: 108px;
+    overflow: auto;
+}
+
+.diags__item {
+    display: grid;
+    grid-template-columns: 46px 14px 1fr;
+    gap: 6px;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    padding: 5px 10px 6px 0;
+    color: var(--mid);
+
+    &:hover {
+        background: var(--panel);
+    }
+
+    &.diags__item--error .diags__mark {
+        color: var(--red);
+    }
+
+    &.diags__item--warn .diags__mark {
+        color: var(--yellow);
+    }
+}
+
+.diags__line {
+    text-align: right;
+    color: var(--dim);
+}
+
+.diags__mark {
+    text-align: center;
+    font-weight: 700;
+}
+
+.diags__strong {
+    color: var(--ink);
+}
+
+.diags__clean {
+    padding: 7px 10px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--dim);
+}

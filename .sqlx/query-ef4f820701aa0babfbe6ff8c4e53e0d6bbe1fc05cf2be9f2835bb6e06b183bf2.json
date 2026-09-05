@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM automod_rules WHERE guild_id = $1 AND lower(name) = lower($2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ef4f820701aa0babfbe6ff8c4e53e0d6bbe1fc05cf2be9f2835bb6e06b183bf2"
+}

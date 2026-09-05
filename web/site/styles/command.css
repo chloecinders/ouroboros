@@ -1,0 +1,140 @@
+.command-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 14px 0 22px;
+    padding: 12px 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    font-size: 12px;
+    color: var(--mid);
+}
+
+.command-meta__row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.command-meta__label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    color: var(--dim);
+}
+
+.badge {
+    padding: 2px 7px 3px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+
+    &.badge--category {
+        background: var(--teal);
+        color: #101010;
+    }
+
+    &.badge--permission {
+        background: var(--red);
+        color: #101010;
+    }
+}
+
+.code-box {
+    background: var(--sunk);
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--teal);
+    padding: 12px 14px;
+    margin: 14px 0;
+    font-family: var(--mono);
+    font-size: 13px;
+    overflow-x: auto;
+
+    &.code-box--examples {
+        border-left-color: var(--yellow);
+    }
+}
+
+.code-box__code {
+    background: none;
+    border: 0;
+    padding: 0;
+    font-size: inherit;
+    color: var(--read);
+}
+
+.token--cmd {
+    color: var(--ink);
+    font-weight: 700;
+}
+
+.token--punct {
+    color: var(--dim);
+}
+
+.token--param {
+    color: var(--ink);
+}
+
+.token--type,
+.token--mention,
+.token--url {
+    color: var(--teal);
+}
+
+.token--op,
+.token--id,
+.token--flag {
+    color: var(--red);
+}
+
+.token--keyword,
+.token--num,
+.token--duration {
+    color: var(--yellow);
+}
+
+.token--str {
+    color: var(--green);
+}
+
+.params-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 14px;
+    font-size: 13px;
+}
+
+.params-table__head,
+.params-table__cell {
+    text-align: left;
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--rule);
+    color: var(--read);
+}
+
+.params-table__head {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    color: var(--ink);
+    border-bottom: 2px solid var(--ink);
+}
+
+.params-table__cell:first-child {
+    color: var(--ink);
+    font-weight: 700;
+}
+
+.last-updated {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    color: var(--red);
+    margin-bottom: 22px;
+}

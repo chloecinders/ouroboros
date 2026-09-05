@@ -1,0 +1,155 @@
+@font-face {
+    font-family: Archivo;
+    font-style: normal;
+    font-weight: 100 900;
+    font-stretch: 100%;
+    font-display: swap;
+    src: url(/fonts/archivo.woff2) format("woff2");
+}
+
+@font-face {
+    font-family: JetBrains Mono;
+    font-style: normal;
+    font-weight: 100 800;
+    font-display: swap;
+    src: url(/fonts/jetbrains-mono.woff2) format("woff2");
+}
+
+:root {
+    --bg: #171717;
+    --panel: #1f1f1f;
+    --sunk: #101010;
+    --ink: #ffffff;
+    --read: #dedede;
+    --mid: #a9a9a9;
+    --dim: #757575;
+    --teal: #04d9b2;
+    --red: #e35c68;
+    --yellow: #fff3b0;
+    --green: #4ade80;
+    --rule: #2e2e2e;
+    --mono: "JetBrains Mono", Consolas, monospace;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Archivo, Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.42;
+    -webkit-font-smoothing: antialiased;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+code,
+pre {
+    font-family: var(--mono);
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.slab {
+    height: 6px;
+    background: var(--teal);
+    flex-shrink: 0;
+}
+
+.page {
+    max-width: 1180px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 22px 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 9px 0;
+    border-bottom: 2px solid var(--ink);
+}
+
+.top__mark {
+    font-weight: 900;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--red);
+}
+
+.top__nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+}
+
+.top__link {
+    &:hover,
+    &.top__link--active {
+        color: var(--teal);
+    }
+}
+
+.account {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--mid);
+}
+
+.account__avatar {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+.account__signout {
+    color: var(--dim);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+
+    &:hover {
+        color: var(--red);
+    }
+}
+
+main {
+    flex: 1;
+}
+
+footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 18px;
+    padding-top: 11px;
+    margin-top: 22px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    color: var(--mid);
+}

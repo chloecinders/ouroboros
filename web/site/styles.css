@@ -1,0 +1,10 @@
+@import "../shared/styles/chrome.css";
+
+@import "./styles/home.css";
+@import "./styles/content.css";
+@import "./styles/wiki.css";
+@import "./styles/command.css";
+@import "./styles/alert.css";
+
+@import "./styles/discord.css";
+@import "./styles/discord-embed.css";

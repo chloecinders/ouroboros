@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE action_refs SET origin = 'archived'::reference_origin WHERE action_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "916391c6274a04c7eadf5fad54bea391697a5c36f7823c06b468addb43f7fc95"
+}

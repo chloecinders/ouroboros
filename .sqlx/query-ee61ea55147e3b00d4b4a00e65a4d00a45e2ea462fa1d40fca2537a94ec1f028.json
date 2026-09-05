@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE scheduled_work SET due_at = now() + make_interval(secs => $1::double precision), locked_until = to_timestamp(0), last_error = $2 WHERE id = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Float8",
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ee61ea55147e3b00d4b4a00e65a4d00a45e2ea462fa1d40fca2537a94ec1f028"
+}

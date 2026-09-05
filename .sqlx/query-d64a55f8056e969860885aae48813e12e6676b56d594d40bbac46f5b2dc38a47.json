@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE actions SET target_present = $1, updated_at = now()\n        WHERE guild_id = $2 AND user_id = $3 AND state IN ('active', 'expiring')",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bool",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d64a55f8056e969860885aae48813e12e6676b56d594d40bbac46f5b2dc38a47"
+}

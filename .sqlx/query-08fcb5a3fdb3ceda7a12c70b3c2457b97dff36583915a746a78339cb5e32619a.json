@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE scheduled_work SET state = 'done' WHERE action_id = $1 AND kind = $2::work_kind AND state = 'pending'",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        {
+          "Custom": {
+            "name": "work_kind",
+            "kind": {
+              "Enum": [
+                "lift_ban",
+                "lift_mute",
+                "refresh_timeout"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "08fcb5a3fdb3ceda7a12c70b3c2457b97dff36583915a746a78339cb5e32619a"
+}

@@ -1,0 +1,48 @@
+.note {
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--teal);
+    background: var(--panel);
+    padding: 16px 18px;
+    margin-top: 18px;
+    max-width: 70ch;
+
+    &.note--bad {
+        border-left-color: var(--red);
+    }
+}
+
+.note__title {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 900;
+    letter-spacing: -0.3px;
+    text-transform: uppercase;
+}
+
+.note__body {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--mid);
+
+    &:last-child {
+        margin-bottom: 0;
+    }
+}
+
+.note__code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--sunk);
+    border: 1px solid var(--rule);
+    padding: 1px 5px;
+    color: var(--ink);
+}
+
+.signin {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 40px 0 0;
+}

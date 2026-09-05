@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO scheduled_work (kind, action_id, guild_id, user_id, due_at) VALUES ($1::work_kind, $2, $3, $4, $5) ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        {
+          "Custom": {
+            "name": "work_kind",
+            "kind": {
+              "Enum": [
+                "lift_ban",
+                "lift_mute",
+                "refresh_timeout"
+              ]
+            }
+          }
+        },
+        "Bpchar",
+        "Int8",
+        "Int8",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "46330a54dc935c2cddc4514fd73031913b977b0c61bd75e271a089515b6737b5"
+}

@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE invocations SET action_id = $1, response_id = $2, args = COALESCE($3::jsonb, args), status = (CASE WHEN $4 THEN 'failed' ELSE 'complete' END)::invocation_status WHERE message_id = $5",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bpchar",
+        "Int8",
+        "Jsonb",
+        "Bool",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5c2e91a535c0cca559a96ec6224136908cfb18ac0b9c45df0fed872832c045ee"
+}

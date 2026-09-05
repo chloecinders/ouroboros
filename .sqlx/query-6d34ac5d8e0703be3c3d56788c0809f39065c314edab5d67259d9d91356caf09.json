@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO command_traces (message_id, command_name, total_duration_nanos, success, failure, points)\n        SELECT * FROM UNNEST($1::bigint[], $2::text[], $3::bigint[], $4::bool[], $5::text[], $6::jsonb[])",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8Array",
+        "TextArray",
+        "Int8Array",
+        "BoolArray",
+        "TextArray",
+        "JsonbArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6d34ac5d8e0703be3c3d56788c0809f39065c314edab5d67259d9d91356caf09"
+}

@@ -1,7 +1,36 @@
 {
-    "name": "aegis-wiki",
-    "version": "1.0.0",
+    "name": "aegis-web",
+    "private": true,
+    "type": "module",
+    "engines": {
+        "node": ">=22.18"
+    },
     "scripts": {
-        "generate-wiki": "node website/generate-wiki.js"
+        "build": "node --disable-warning=ExperimentalWarning web/build/all.ts",
+        "build:debug": "node --disable-warning=ExperimentalWarning web/build/all.ts --debug",
+        "build:assets": "node --disable-warning=ExperimentalWarning web/build/assets.ts",
+        "build:site": "node --disable-warning=ExperimentalWarning web/build/site.ts && node --disable-warning=ExperimentalWarning web/build/minify.ts",
+        "typecheck": "tsc --noEmit"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.29.7",
+        "@babel/preset-typescript": "^7.29.0",
+        "@discord/embedded-app-sdk": "^2.5.0",
+        "@solidjs/router": "^1.0.0",
+        "@types/babel__core": "^7.20.5",
+        "@types/html-minifier-terser": "^7.0.2",
+        "@types/node": "^22.10.0",
+        "babel-preset-solid": "^1.9.12",
+        "esbuild": "^0.25.0",
+        "html-minifier-terser": "^7.2.0",
+        "marked": "^18.0.9",
+        "solid-js": "^1.9.14",
+        "typescript": "^5.9.0"
+    },
+    "packageManager": "pnpm@10.13.1",
+    "pnpm": {
+        "onlyBuiltDependencies": [
+            "esbuild"
+        ]
     }
 }
