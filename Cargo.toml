@@ -1,6 +1,6 @@
 [package]
 name = "Aegis"
-version = "0.1.0-pre"
+version = "0.2.0-rewrite"
 edition = "2024"
 
 [features]
