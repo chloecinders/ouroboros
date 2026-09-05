@@ -33,7 +33,7 @@ pub fn entry(before: &PartialMessage, after: &str, guild: Snowflake) -> Logged {
 
     match attach {
         true => Logged {
-            embed: embed.body("Too long to show; the whole edit is attached."),
+            embed,
             diff: Some(diff::create(&was, &now)),
         },
         false => Logged {
