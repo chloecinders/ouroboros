@@ -5,7 +5,7 @@ use crate::command::error::Result;
 use crate::domain::logtype::LogType;
 use crate::features::guildlog::attribution::Attribution;
 use crate::features::guildlog::member::{self, Snapshot};
-use crate::features::guildlog::{self, Subject, voice};
+use crate::features::guildlog::{self, Subject, attribution, voice};
 use crate::features::punishments::store as punishments;
 use crate::platform::discord::dispatch::{MemberCx, Observer, VoiceCx};
 
@@ -66,7 +66,17 @@ async fn record(cx: &MemberCx) -> Result<()> {
         return Ok(());
     }
 
-    let entry = member::entry(target, &changed, known, witnessed.reason.as_deref(), bot);
+    let actor_name = attribution::username(&cx.ctx, known, bot).await;
+
+    let entry = member::entry(
+        target,
+        Some(&cx.user.name),
+        &changed,
+        known,
+        actor_name.as_deref(),
+        witnessed.reason.as_deref(),
+        bot,
+    );
     let Some(at) = guildlog::post(
         &cx.app,
         &cx.ctx,
@@ -95,7 +105,19 @@ async fn record(cx: &MemberCx) -> Result<()> {
     let reason = witnessed.reason.or(late.reason);
 
     let entry = match arrived {
-        true => member::entry(target, &changed, known, reason.as_deref(), bot),
+        true => {
+            let actor_name = attribution::username(&cx.ctx, known, bot).await;
+
+            member::entry(
+                target,
+                Some(&cx.user.name),
+                &changed,
+                known,
+                actor_name.as_deref(),
+                reason.as_deref(),
+                bot,
+            )
+        }
         false => entry,
     };
 
@@ -127,7 +149,7 @@ async fn arrived(cx: &MemberCx) -> Result<()> {
         &cx.ctx,
         guild,
         LogType::MemberJoinLeave,
-        &member::joined(target, *cx.user.created_at(), history),
+        &member::joined(target, Some(&cx.user.name), *cx.user.created_at(), history),
         Subject {
             target,
             moderator: None,
@@ -147,7 +169,7 @@ async fn departed(cx: &MemberCx) -> Result<()> {
         &cx.ctx,
         guild,
         LogType::MemberJoinLeave,
-        &member::left(target),
+        &member::left(target, Some(&cx.user.name)),
         Subject {
             target,
             moderator: None,
@@ -168,7 +190,13 @@ async fn spoke(cx: &VoiceCx) -> Result<()> {
     let guild = cx.guild.get();
     let target = cx.user.get();
 
-    for entry in voice::entries(target, &changed) {
+    let name = cx
+        .current
+        .member
+        .as_ref()
+        .map(|member| member.user.name.as_str());
+
+    for entry in voice::entries(target, name, &changed) {
         guildlog::post(
             &cx.app,
             &cx.ctx,

@@ -1,7 +1,10 @@
 use std::fmt::{self, Display};
 
+use serenity::all::{CacheHttp, UserId};
+
 use crate::domain::Snowflake;
-use crate::platform::ui::embed::mention;
+use crate::platform::discord::fetch;
+use crate::platform::ui::embed::{code, mention};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Attribution {
@@ -45,11 +48,11 @@ impl Attribution {
         }
     }
 
-    pub fn line(&self, bot: Snowflake) -> Option<String> {
+    pub fn line(&self, bot: Snowflake, name: Option<&str>) -> Option<String> {
         let actor = self.actor()?;
         let display = match actor == bot {
-            true => String::from("Aegis"),
-            false => mention(actor),
+            true => code("Aegis"),
+            false => mention(actor, name),
         };
 
         Some(format!("Actor: {display}"))
@@ -65,4 +68,13 @@ impl Display for Attribution {
             Attribution::Unknown => "unknown",
         })
     }
+}
+
+pub async fn username(http: impl CacheHttp, actor: Attribution, bot: Snowflake) -> Option<String> {
+    let actor = actor.actor().filter(|id| *id != bot)?;
+
+    fetch::user(http, UserId::new(actor))
+        .await
+        .ok()
+        .map(|found| found.name)
 }

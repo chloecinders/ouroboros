@@ -8,18 +8,21 @@ use crate::features::archive::{reply_line, store};
 
 #[cfg(feature = "web")]
 use crate::features::archive::transcript::{self, Request};
-use crate::features::guildlog::{self, attribution::Attribution};
+use crate::features::guildlog::{self, attribution, attribution::Attribution};
 use crate::platform::discord::dispatch::BulkDeletionCx;
 #[cfg(feature = "web")]
 use crate::platform::discord::fetch;
 use crate::platform::discord::partial::PartialMessage;
 use crate::platform::text::truncate;
-use crate::platform::ui::embed::{Embed, channel_mention, mention};
+use crate::platform::ui::embed::{Embed, channel_mention, code, mention};
 use crate::platform::ui::tone::Tone;
 
 pub fn parent_line(parent: &PartialMessage, jumpable: bool) -> String {
     let preview = truncate::clamp(&parent.content, 100);
-    let body = format!("Replying to {}: {preview}", mention(parent.author.id));
+    let body = format!(
+        "Replying to {}: {preview}",
+        mention(parent.author.id, Some(&parent.author.name))
+    );
 
     if !jumpable {
         return body;
@@ -37,13 +40,17 @@ pub fn entry(
     message: &PartialMessage,
     parent: Option<&PartialMessage>,
     actor: Attribution,
+    actor_name: Option<&str>,
     bot: Snowflake,
 ) -> Embed {
     let embed = Embed::new("MESSAGE DELETED")
         .subtitle(format!("ID: `{}`", message.id))
-        .subtitle(format!("Author: {}", mention(message.author.id)))
+        .subtitle(format!(
+            "Author: {}",
+            mention(message.author.id, Some(&message.author.name))
+        ))
         .subtitle(format!("Channel: <#{}>", message.channel_id))
-        .maybe_subtitle(actor.line(bot))
+        .maybe_subtitle(actor.line(bot, actor_name))
         .maybe_lead(reply_line(message))
         .maybe_footnote(parent.map(|parent| parent_line(parent, true)))
         .tone(Tone::Danger);
@@ -58,13 +65,14 @@ pub fn bulk_entry(
     channel: Snowflake,
     removed: usize,
     actor: Attribution,
+    actor_name: Option<&str>,
     bot: Snowflake,
     transcript: Option<&str>,
 ) -> Embed {
     Embed::new("MESSAGES DELETED")
         .subtitle(format!("Channel: {}", channel_mention(channel)))
-        .subtitle(format!("Removed: {removed}"))
-        .maybe_subtitle(actor.line(bot))
+        .subtitle(format!("Removed: {}", code(&removed.to_string())))
+        .maybe_subtitle(actor.line(bot, actor_name))
         .maybe_footnote(transcript.map(|link| format!("[View transcript]({link})")))
         .tone(Tone::Danger)
 }
@@ -99,12 +107,14 @@ pub async fn record(
         false => Attribution::Unknown,
     };
 
+    let actor = attribution::username(ctx, known, bot).await;
+
     let Some(at) = guildlog::post(
         app,
         ctx,
         guild,
         LogType::MessageUpdate,
-        &entry(&cached, parent.as_deref(), known, bot),
+        &entry(&cached, parent.as_deref(), known, actor.as_deref(), bot),
         guildlog::Subject {
             target: cached.author.id,
             moderator: known.actor(),
@@ -123,16 +133,23 @@ pub async fn record(
         app.awaiting.expect(
             key,
             at,
-            &entry(&cached, parent.as_deref(), known, bot),
+            &entry(&cached, parent.as_deref(), known, actor.as_deref(), bot),
             known,
         );
 
         return Ok(());
     }
 
+    let actor = attribution::username(ctx, resolved, bot).await;
+
     app.awaiting.forget(&key);
     guildlog::store::attribute(&app.pool, at.message.get(), resolved.actor()).await?;
-    guildlog::rewrite(ctx, at, &entry(&cached, parent.as_deref(), resolved, bot)).await
+    guildlog::rewrite(
+        ctx,
+        at,
+        &entry(&cached, parent.as_deref(), resolved, actor.as_deref(), bot),
+    )
+    .await
 }
 
 pub async fn bulk(cx: &BulkDeletionCx, guild: GuildId) -> Result<()> {
@@ -155,9 +172,17 @@ pub async fn bulk(cx: &BulkDeletionCx, guild: GuildId) -> Result<()> {
 
     let bot = cx.ctx.cache.current_user().id.get();
     let known = cx.app.awaiting.claim_bulk(&(guild, channel));
+    let actor = attribution::username(&cx.ctx, known, bot).await;
     let removed = ids.len();
     let link = preserve_messages(cx, guild, ids).await;
-    let entry = bulk_entry(channel, removed, known, bot, link.as_deref());
+    let entry = bulk_entry(
+        channel,
+        removed,
+        known,
+        actor.as_deref(),
+        bot,
+        link.as_deref(),
+    );
 
     let Some(at) = guildlog::post(
         &cx.app,
@@ -194,11 +219,14 @@ pub async fn channel(
 ) {
     let guild = guild.get() as Snowflake;
     let link = preserve(app, guild, channel, name.clone()).await;
+    let known = Attribution::Gateway(actor);
+    let actor_name = attribution::username(ctx, known, bot).await;
 
     let entry = guildlog::render::channel_deleted(
         channel,
         name.as_deref(),
-        Attribution::Gateway(actor),
+        known,
+        actor_name.as_deref(),
         bot,
         link.as_deref(),
     );
@@ -258,8 +286,8 @@ async fn preserve_messages(
     guild: Snowflake,
     ids: Vec<Snowflake>,
 ) -> Option<String> {
-    let by = fetch::guild_name(&cx.ctx, GuildId::new(guild)).await;
-    let asked = Request::selection(guild, ids, by);
+    let moderator_name = fetch::guild_name(&cx.ctx, GuildId::new(guild)).await;
+    let asked = Request::selection(guild, ids, moderator_name);
 
     match transcript::store::build(&cx.app.pool, &asked).await {
         Ok(built) => {

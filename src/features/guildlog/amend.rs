@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use serenity::all::CacheHttp;
+use serenity::all::{CacheHttp, UserId};
 
 use crate::app::App;
 use crate::domain::Snowflake;
@@ -8,6 +8,7 @@ use crate::features::guildlog::Posted;
 use crate::features::guildlog::attribution::Attribution;
 use crate::features::guildlog::member::Part;
 use crate::platform::cache::Cache;
+use crate::platform::discord::fetch;
 use crate::platform::ui::embed::Embed;
 
 pub type Key = (Snowflake, Snowflake, Snowflake);
@@ -200,7 +201,16 @@ async fn attribute(
     actor: Snowflake,
     bot: Snowflake,
 ) {
-    let amended = attach(&waiting.embed, &Attribution::Gateway(actor), bot);
+    let name = fetch::user(&http, UserId::new(actor))
+        .await
+        .ok()
+        .map(|found| found.name);
+    let amended = attach(
+        &waiting.embed,
+        &Attribution::Gateway(actor),
+        name.as_deref(),
+        bot,
+    );
 
     if let Err(failure) =
         super::store::attribute(&app.pool, waiting.at.message.get(), Some(actor)).await
@@ -251,6 +261,10 @@ pub async fn attribute_update(
     }
 
     let resolved = Attribution::Gateway(actor);
+    let name = fetch::user(&http, UserId::new(actor))
+        .await
+        .ok()
+        .map(|found| found.name);
 
     for update in amending {
         if actor == target
@@ -266,7 +280,7 @@ pub async fn attribute_update(
             continue;
         }
 
-        let mut amended = attach(&update.embed, &resolved, bot);
+        let mut amended = attach(&update.embed, &resolved, name.as_deref(), bot);
 
         if let Some(given) = reason {
             amended = amended.quote(given);
@@ -299,8 +313,8 @@ pub async fn attribute_update(
     }
 }
 
-pub fn attach(embed: &Embed, actor: &Attribution, bot: Snowflake) -> Embed {
-    let Some(line) = actor.line(bot) else {
+pub fn attach(embed: &Embed, actor: &Attribution, name: Option<&str>, bot: Snowflake) -> Embed {
+    let Some(line) = actor.line(bot, name) else {
         return embed.clone();
     };
 

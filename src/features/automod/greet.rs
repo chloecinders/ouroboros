@@ -50,7 +50,7 @@ pub async fn greet(cx: &MemberCx) -> Result<()> {
             &cx.ctx,
             guild,
             LogType::MemberJoinLeave,
-            &ui::triggered(&hit, target),
+            &ui::triggered(&hit, target, Some(&cx.user.name)),
             guildlog::Subject {
                 target,
                 moderator: None,

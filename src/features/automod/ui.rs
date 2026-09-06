@@ -94,7 +94,7 @@ pub fn action(outcome: &Outcome) -> String {
     }
 }
 
-pub fn triggered(hit: &Hit, target: u64) -> Embed {
+pub fn triggered(hit: &Hit, target: u64, name: Option<&str>) -> Embed {
     let body = match hit.excerpt.trim().is_empty() {
         true => String::from("(matched on conditions alone)"),
         false => hit.excerpt.clone(),
@@ -102,7 +102,7 @@ pub fn triggered(hit: &Hit, target: u64) -> Embed {
 
     Embed::new("AUTOMOD TRIGGERED")
         .subtitle(format!("Rule ID: `{}`", hit.rule))
-        .subtitle(format!("Target: {}", embed::mention(target)))
+        .subtitle(format!("Target: {}", embed::mention(target, name)))
         .quote(body)
         .tone(Tone::Danger)
 }

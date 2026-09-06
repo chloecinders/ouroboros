@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use serenity::all::CacheHttp;
+use serenity::all::{CacheHttp, UserId};
 
 use crate::app::App;
 use crate::command::error::Result;
@@ -10,6 +10,7 @@ use crate::domain::reason::Reason;
 use crate::features::guildlog;
 use crate::features::punishments::store;
 use crate::features::records::store as records;
+use crate::platform::discord::fetch;
 use crate::platform::ui::punishment as ui;
 
 #[derive(Clone, Copy, Debug)]
@@ -106,12 +107,21 @@ pub async fn observe(
         store::mark_state(&app.pool, &muted.id, PunishmentState::Revoked).await?;
     }
 
+    let actor_name = fetch::user(&http, UserId::new(actor))
+        .await
+        .ok()
+        .map(|found| found.name);
+    let target_name = fetch::user(&http, UserId::new(target))
+        .await
+        .ok()
+        .map(|found| found.name);
+
     guildlog::post(
         app,
         http,
         guild,
         LogType::MemberModeration,
-        &ui::log_entry(&recorded),
+        &ui::log_entry(&recorded, actor_name.as_deref(), target_name.as_deref()),
         guildlog::Subject {
             target,
             moderator: Some(actor),
@@ -145,12 +155,21 @@ pub async fn removed(
     store::supersede(&app.pool, &recorded).await?;
     store::insert(&app.pool, &mut recorded).await?;
 
+    let actor_name = fetch::user(&http, UserId::new(actor))
+        .await
+        .ok()
+        .map(|found| found.name);
+    let target_name = fetch::user(&http, UserId::new(target))
+        .await
+        .ok()
+        .map(|found| found.name);
+
     guildlog::post(
         app,
         http,
         guild,
         LogType::MemberModeration,
-        &ui::log_entry(&recorded),
+        &ui::log_entry(&recorded, actor_name.as_deref(), target_name.as_deref()),
         guildlog::Subject {
             target,
             moderator: Some(actor),

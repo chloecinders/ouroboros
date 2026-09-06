@@ -16,7 +16,7 @@ fn entry(at: usize, action: &Action, attached: Attached) -> String {
         at,
         action.verb.as_str().to_uppercase(),
         action.id,
-        mention(action.actor),
+        mention(action.actor, None),
         (format!("<t:{0}:d> <t:{0}:T>", action.created_at.timestamp()))
     );
 
@@ -76,7 +76,7 @@ pub fn history(
     };
 
     Embed::new("MEMBER LOG")
-        .subtitle(format!("Target: {}", mention(target)))
+        .subtitle(format!("Target: {}", mention(target, None)))
         .subtitle(format!("Total: {total}"))
         .subtitle(format!("Page: {page} of {pages}"))
         .body(body)
@@ -86,8 +86,8 @@ pub fn history(
 pub fn record(action: &Action, reference: Option<&Captured>) -> Embed {
     let mut embed = Embed::new(action.verb.shout())
         .subtitle(format!("Log ID: `{}`", action.id))
-        .subtitle(format!("Target: {}", mention(action.target)))
-        .subtitle(format!("Mod: {}", mention(action.actor)))
+        .subtitle(format!("Target: {}", mention(action.target, None)))
+        .subtitle(format!("Mod: {}", mention(action.actor, None)))
         .subtitle(format!(
             "At: {}",
             (format!("<t:{0}:d> <t:{0}:T>", action.created_at.timestamp()))
@@ -135,7 +135,7 @@ pub fn note(action: &ActionId, note: &Note) -> Embed {
 pub fn amended(action: &Action, field: &str, after: &str) -> Embed {
     Embed::new(format!("{} UPDATED", field.to_uppercase()))
         .subtitle(format!("Log ID: `{}`", action.id))
-        .subtitle(format!("Target: {}", mention(action.target)))
+        .subtitle(format!("Target: {}", mention(action.target, None)))
         .quote(after)
         .tone(Tone::Info)
 }
@@ -143,13 +143,13 @@ pub fn amended(action: &Action, field: &str, after: &str) -> Embed {
 pub fn deleted(action: &Action) -> Embed {
     Embed::new("LOG DELETED")
         .subtitle(format!("Log ID: `{}`", action.id))
-        .subtitle(format!("Target: {}", mention(action.target)))
+        .subtitle(format!("Target: {}", mention(action.target, None)))
         .tone(Tone::Danger)
 }
 
 pub fn cleared(action: &Action, field: &str) -> Embed {
     Embed::new(format!("{} CLEARED", field.to_uppercase()))
         .subtitle(format!("Log ID: `{}`", action.id))
-        .subtitle(format!("Target: {}", mention(action.target)))
+        .subtitle(format!("Target: {}", mention(action.target, None)))
         .tone(Tone::Info)
 }

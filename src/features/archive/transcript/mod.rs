@@ -88,7 +88,12 @@ pub struct Request {
 }
 
 impl Request {
-    pub fn channel(guild: Snowflake, channel: Snowflake, name: Option<String>, by: String) -> Self {
+    pub fn channel(
+        guild: Snowflake,
+        channel: Snowflake,
+        name: Option<String>,
+        moderator_name: String,
+    ) -> Self {
         Self {
             guild,
             scope: Scope::Channel,
@@ -98,7 +103,7 @@ impl Request {
             subject_name: None,
             window_start: None,
             window_end: None,
-            moderator_name: by,
+            moderator_name,
             selected: Vec::new(),
         }
     }
@@ -108,7 +113,7 @@ impl Request {
         subject: Snowflake,
         name: String,
         since: DateTime<Utc>,
-        by: String,
+        moderator_name: String,
     ) -> Self {
         Self {
             guild,
@@ -119,12 +124,17 @@ impl Request {
             subject_name: Some(name),
             window_start: Some(since),
             window_end: Some(Utc::now()),
-            moderator_name: by,
+            moderator_name,
             selected: Vec::new(),
         }
     }
 
-    pub fn history(guild: Snowflake, subject: Snowflake, name: String, by: String) -> Self {
+    pub fn history(
+        guild: Snowflake,
+        subject: Snowflake,
+        name: String,
+        moderator_name: String,
+    ) -> Self {
         Self {
             guild,
             scope: Scope::User,
@@ -134,12 +144,12 @@ impl Request {
             subject_name: Some(name),
             window_start: None,
             window_end: None,
-            moderator_name: by,
+            moderator_name,
             selected: Vec::new(),
         }
     }
 
-    pub fn selection(guild: Snowflake, chosen: Vec<Snowflake>, by: String) -> Self {
+    pub fn selection(guild: Snowflake, chosen: Vec<Snowflake>, moderator_name: String) -> Self {
         Self {
             guild,
             scope: Scope::Selection,
@@ -149,7 +159,7 @@ impl Request {
             subject_name: None,
             window_start: None,
             window_end: None,
-            moderator_name: by,
+            moderator_name,
             selected: chosen,
         }
     }

@@ -4,13 +4,14 @@ use serenity::all::{ChannelAction, Permissions, RoleAction, StickerAction};
 use crate::domain::Snowflake;
 use crate::domain::logtype::LogType;
 use crate::features::guildlog::attribution::Attribution;
-use crate::platform::ui::embed::{Embed, channel_mention, role_mention};
+use crate::platform::ui::embed::{Embed, channel_mention, code, role_mention};
 use crate::platform::ui::tone::Tone;
 
 pub struct Event<'a> {
     pub action: Action,
     pub target: Option<Snowflake>,
     pub actor: Attribution,
+    pub actor_name: Option<&'a str>,
     pub bot: Snowflake,
     pub changes: &'a [Change],
     pub status: Option<&'a str>,
@@ -45,9 +46,9 @@ fn channel(seen: &Event, what: ChannelAction) -> Option<Logged> {
             Some(id) => format!("Channel: {}", channel_mention(id)),
             None => String::from("Channel: unknown"),
         })
-        .maybe_subtitle(seen.actor.line(seen.bot))
-        .body(paragraph(channel_changes(shape, seen.changes)))
-        .maybe_footnote(reason(seen))
+        .maybe_subtitle(seen.actor.line(seen.bot, seen.actor_name))
+        .lead(paragraph(channel_changes(shape, seen.changes)))
+        .maybe_quote(reason(seen))
         .tone(tone);
 
     Some(Logged {
@@ -66,13 +67,13 @@ fn role(seen: &Event, what: RoleAction) -> Option<Logged> {
 
     let embed = Embed::new(title)
         .subtitle(match (name_of(seen.changes), seen.target) {
-            (Some(name), _) => format!("Role: @{name}"),
+            (Some(name), _) => format!("Role: {}", code(&format!("@{name}"))),
             (None, Some(id)) => format!("Role: {}", role_mention(id)),
             (None, None) => String::from("Role: unknown"),
         })
-        .maybe_subtitle(seen.actor.line(seen.bot))
-        .body(paragraph(role_changes(shape, seen.changes)))
-        .maybe_footnote(reason(seen))
+        .maybe_subtitle(seen.actor.line(seen.bot, seen.actor_name))
+        .lead(paragraph(role_changes(shape, seen.changes)))
+        .maybe_quote(reason(seen))
         .tone(tone);
 
     Some(Logged {
@@ -92,7 +93,7 @@ fn emoji(seen: &Event, what: EmojiAction) -> Option<Logged> {
     let name = name_of(seen.changes);
     let inline = match (&name, seen.target) {
         (Some(name), Some(id)) => Some(format!("Emoji: <:{name}:{id}>")),
-        (Some(name), None) => Some(format!("Emoji: :{name}:")),
+        (Some(name), None) => Some(format!("Emoji: {}", code(&format!(":{name}:")))),
         (None, _) => None,
     };
 
@@ -106,9 +107,9 @@ fn emoji(seen: &Event, what: EmojiAction) -> Option<Logged> {
     let embed = Embed::new(title)
         .maybe_subtitle(inline)
         .maybe_subtitle(seen.target.map(|id| format!("ID: `{id}`")))
-        .maybe_subtitle(seen.actor.line(seen.bot))
-        .body(paragraph(expression_changes(shape, seen.changes)))
-        .maybe_footnote(reason(seen))
+        .maybe_subtitle(seen.actor.line(seen.bot, seen.actor_name))
+        .lead(paragraph(expression_changes(shape, seen.changes)))
+        .maybe_quote(reason(seen))
         .maybe_image(picture)
         .tone(tone);
 
@@ -135,13 +136,13 @@ fn sticker(seen: &Event, what: StickerAction) -> Option<Logged> {
 
     let embed = Embed::new(title)
         .subtitle(match name_of(seen.changes) {
-            Some(name) => format!("Sticker: {name}"),
+            Some(name) => format!("Sticker: {}", code(&name)),
             None => String::from("Sticker: unknown"),
         })
         .maybe_subtitle(seen.target.map(|id| format!("ID: `{id}`")))
-        .maybe_subtitle(seen.actor.line(seen.bot))
-        .body(paragraph(expression_changes(shape, seen.changes)))
-        .maybe_footnote(reason(seen))
+        .maybe_subtitle(seen.actor.line(seen.bot, seen.actor_name))
+        .lead(paragraph(expression_changes(shape, seen.changes)))
+        .maybe_quote(reason(seen))
         .maybe_image(picture)
         .tone(tone);
 
@@ -163,13 +164,19 @@ fn voice(seen: &Event, what: VoiceChannelStatusAction) -> Option<Logged> {
             Some(id) => format!("Channel: {}", channel_mention(id)),
             None => String::from("Channel: unknown"),
         })
-        .maybe_subtitle(seen.actor.line(seen.bot));
+        .maybe_subtitle(seen.actor.line(seen.bot, seen.actor_name));
 
     let embed = match what {
-        VoiceChannelStatusAction::StatusUpdate => stated.quote(seen.status.unwrap_or("(none)")),
-        _ => stated.body("the status was cleared"),
+        VoiceChannelStatusAction::StatusUpdate => stated.lead(format!(
+            "Status: {}",
+            match seen.status {
+                Some(status) => code(status),
+                None => String::from("(none)"),
+            }
+        )),
+        _ => stated.lead("the status was cleared"),
     }
-    .maybe_footnote(reason(seen))
+    .maybe_quote(reason(seen))
     .tone(Tone::Warn);
 
     Some(Logged {
@@ -189,7 +196,7 @@ fn reason(seen: &Event) -> Option<String> {
     seen.reason
         .map(str::trim)
         .filter(|given| !given.is_empty())
-        .map(|given| format!("Reason: {given}"))
+        .map(str::to_owned)
 }
 
 fn paragraph(lines: Vec<String>) -> String {
@@ -207,15 +214,19 @@ pub enum Shape {
 }
 
 fn field(shape: Shape, label: &str, old: Option<String>, new: Option<String>) -> Option<String> {
-    let stated = |value: String| format!("{label}: {value}");
+    let old = old.filter(|value| !value.is_empty());
+    let new = new.filter(|value| !value.is_empty());
+    let stated = |value: String| format!("{label}: {}", code(&value));
 
     match shape {
         Shape::Created => new.or(old).map(stated),
         Shape::Deleted => old.or(new).map(stated),
         Shape::Updated => match (old, new) {
-            (Some(old), Some(new)) if old != new => Some(format!("{label}: {old} -> {new}")),
-            (None, Some(new)) => Some(format!("{label}: (none) -> {new}")),
-            (Some(old), None) => Some(format!("{label}: {old} -> (none)")),
+            (Some(old), Some(new)) if old != new => {
+                Some(format!("{label}: {} -> {}", code(&old), code(&new)))
+            }
+            (None, Some(new)) => Some(format!("{label}: (none) -> {}", code(&new))),
+            (Some(old), None) => Some(format!("{label}: {} -> (none)", code(&old))),
             _ => None,
         },
     }
@@ -293,10 +304,9 @@ fn role_changes(shape: Shape, changes: &[Change]) -> Vec<String> {
 
 fn permissions(shape: Shape, old: Option<Permissions>, new: Option<Permissions>) -> Option<String> {
     let listed = |what: Option<Permissions>| match what {
-        Some(permissions) if !permissions.is_empty() => Some(format!(
-            "Permissions: {}",
-            permissions.get_permission_names().join(", ")
-        )),
+        Some(permissions) if !permissions.is_empty() => {
+            Some(format!("Permissions: {}", permission_names(permissions)))
+        }
         _ => None,
     };
 
@@ -315,18 +325,22 @@ fn permissions(shape: Shape, old: Option<Permissions>, new: Option<Permissions>)
     let lines: Vec<String> = [("granted", new & !old), ("revoked", old & !new)]
         .into_iter()
         .filter(|(_, moved)| !moved.is_empty())
-        .map(|(label, moved)| {
-            format!(
-                "Permissions {label}: {}",
-                moved.get_permission_names().join(", ")
-            )
-        })
+        .map(|(label, moved)| format!("Permissions {label}: {}", permission_names(moved)))
         .collect();
 
     match lines.is_empty() {
         true => None,
         false => Some(lines.join("\n")),
     }
+}
+
+fn permission_names(permissions: Permissions) -> String {
+    permissions
+        .get_permission_names()
+        .into_iter()
+        .map(code)
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn expression_changes(shape: Shape, changes: &[Change]) -> Vec<String> {

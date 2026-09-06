@@ -16,6 +16,7 @@ use crate::features::punishments::scheduled::{self, Kind};
 use crate::features::punishments::store;
 use crate::features::records;
 use crate::features::references::{self, Captured, Reference};
+use crate::platform::discord::fetch;
 use crate::platform::ui::delivery::Delivery;
 use crate::platform::ui::marks::Marks;
 use crate::platform::ui::punishment as ui;
@@ -30,6 +31,13 @@ impl Subject {
         match self {
             Subject::Present(member) => member.user.id,
             Subject::Absent(user) => user.id,
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        match self {
+            Subject::Present(member) => &member.user.name,
+            Subject::Absent(user) => &user.name,
         }
     }
 
@@ -164,7 +172,12 @@ pub async fn apply(
 
     cx.trace("preserve_evidence");
 
-    let entry = ui::log_entry(&punishment)
+    let actor = fetch::user(&cx.ctx, UserId::new(punishment.actor))
+        .await
+        .ok()
+        .map(|found| found.name);
+
+    let entry = ui::log_entry(&punishment, actor.as_deref(), Some(subject.name()))
         .maybe_footnote(evidence.map(|link| format!("[View deleted messages]({link})")));
 
     let subject_of_log = guildlog::Subject {

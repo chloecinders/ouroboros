@@ -23,6 +23,10 @@ pub fn codeblock(text: &str) -> String {
     format!("```\n{}\n```", text.replace("```", "\\`\\`\\`"))
 }
 
+pub fn code(value: &str) -> String {
+    format!("`{}`", value.replace('`', "'"))
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct Embed {
     pub title: String,
@@ -73,6 +77,14 @@ impl Embed {
 
     pub fn quote(mut self, body: impl Into<String>) -> Self {
         self.body = Some(Body::Quote(body.into()));
+        self
+    }
+
+    pub fn maybe_quote(mut self, body: Option<String>) -> Self {
+        if let Some(body) = body {
+            self.body = Some(Body::Quote(body));
+        }
+
         self
     }
 
@@ -143,8 +155,11 @@ impl Embed {
     }
 }
 
-pub fn mention(user: u64) -> String {
-    format!("<@{user}>")
+pub fn mention(user: u64, name: Option<&str>) -> String {
+    match name {
+        Some(name) => format!("<@{user}> ({name})"),
+        None => format!("<@{user}>"),
+    }
 }
 
 pub fn channel_mention(channel: u64) -> String {

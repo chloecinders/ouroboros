@@ -54,21 +54,21 @@ impl Changed {
     }
 }
 
-pub fn entries(target: Snowflake, changed: &Changed) -> Vec<Embed> {
+pub fn entries(target: Snowflake, name: Option<&str>, changed: &Changed) -> Vec<Embed> {
     let mut written = Vec::new();
 
-    if let Some(embed) = movement(target, changed.place) {
+    if let Some(embed) = movement(target, name, changed.place) {
         written.push(embed);
     }
 
-    if let Some(embed) = imposed(target, changed) {
+    if let Some(embed) = imposed(target, name, changed) {
         written.push(embed);
     }
 
     written
 }
 
-fn movement(target: Snowflake, place: Where) -> Option<Embed> {
+fn movement(target: Snowflake, name: Option<&str>, place: Where) -> Option<Embed> {
     let (title, subtitle, tone) = match place {
         Where::Joined(channel) => (
             "VOICE JOINED",
@@ -94,13 +94,13 @@ fn movement(target: Snowflake, place: Where) -> Option<Embed> {
 
     Some(
         Embed::new(title)
-            .subtitle(format!("Target: {}", mention(target)))
+            .subtitle(format!("Target: {}", mention(target, name)))
             .subtitle(subtitle)
             .tone(tone),
     )
 }
 
-fn imposed(target: Snowflake, changed: &Changed) -> Option<Embed> {
+fn imposed(target: Snowflake, name: Option<&str>, changed: &Changed) -> Option<Embed> {
     let mut lines = Vec::new();
 
     if let Some(muted) = changed.mute {
@@ -131,7 +131,7 @@ fn imposed(target: Snowflake, changed: &Changed) -> Option<Embed> {
 
     Some(
         Embed::new(title)
-            .subtitle(format!("Target: {}", mention(target)))
+            .subtitle(format!("Target: {}", mention(target, name)))
             .body(lines.join("\n"))
             .tone(Tone::Info),
     )

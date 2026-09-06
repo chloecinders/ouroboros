@@ -26,7 +26,10 @@ pub fn entry(before: &PartialMessage, after: &str, guild: Snowflake) -> Logged {
             before.id,
             embed::jump(guild, before.channel_id, before.id)
         ))
-        .subtitle(format!("Author: {}", mention(before.author.id)))
+        .subtitle(format!(
+            "Author: {}",
+            mention(before.author.id, Some(&before.author.name))
+        ))
         .subtitle(format!("Channel: <#{}>", before.channel_id))
         .maybe_lead(reply_line(before))
         .tone(Tone::Warn);

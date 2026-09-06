@@ -85,7 +85,7 @@ pub async fn enforce(cx: &MessageCx, enabled: &[Rule], hits: &[Hit], enforced: &
             }
         }
 
-        let entry = ui::triggered(hit, target);
+        let entry = ui::triggered(hit, target, Some(&cx.msg.author.name));
 
         announced = match enforced.acted.as_ref().and_then(|acted| acted.announced) {
             Some(written) => {

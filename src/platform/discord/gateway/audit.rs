@@ -10,6 +10,7 @@ use crate::features::guildlog;
 use crate::features::guildlog::attribution::Attribution;
 use crate::features::guildlog::member::Part;
 use crate::features::punishments::external;
+use crate::platform::discord::fetch;
 
 pub async fn record(app: &Arc<App>, ctx: &Context, entry: AuditLogEntry, guild: GuildId) {
     let bot = ctx.cache.current_user().id.get();
@@ -153,10 +154,15 @@ pub async fn record(app: &Arc<App>, ctx: &Context, entry: AuditLogEntry, guild: 
             }
         }
         other => {
+            let actor = fetch::user(ctx, entry.user_id)
+                .await
+                .ok()
+                .map(|found| found.name);
             let seen = guildlog::audit::Event {
                 action: other,
                 target: entry.target_id.map(|target| target.get()),
                 actor: Attribution::Gateway(entry.user_id.get()),
+                actor_name: actor.as_deref(),
                 bot,
                 changes: entry.changes.as_deref().unwrap_or_default(),
                 status: entry

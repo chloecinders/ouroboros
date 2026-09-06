@@ -11,7 +11,7 @@ use crate::features::archive::store;
 use crate::features::archive::transcript;
 use crate::features::guildlog;
 use crate::platform::text::truncate;
-use crate::platform::ui::embed::{Embed, channel_mention, mention};
+use crate::platform::ui::embed::{Embed, channel_mention, code, mention};
 use crate::platform::ui::tone::Tone;
 use aegis_macros::{command, meta};
 
@@ -102,15 +102,22 @@ impl Command for Purge {
 
         let entry = Embed::new("MESSAGES PURGED")
             .subtitle(format!("Channel: {}", channel_mention(channel.get())))
-            .subtitle(format!("Removed: {}", doomed.len()))
-            .subtitle(format!("Actor: {}", mention(actor)))
-            .maybe_subtitle(subject.map(|id| format!("From: {}", mention(id.get()))))
-            .maybe_subtitle(self.contains.as_deref().map(|text| {
+            .subtitle(format!("Removed: {}", code(&doomed.len().to_string())))
+            .subtitle(format!(
+                "Actor: {}",
+                mention(actor, Some(&cx.msg.author.name))
+            ))
+            .maybe_subtitle(self.user.as_ref().map(|member| {
                 format!(
-                    "Containing: `{}`",
-                    truncate::clamp(text, 60).replace('`', "'")
+                    "From: {}",
+                    mention(member.user.id.get(), Some(&member.user.name))
                 )
             }))
+            .maybe_subtitle(
+                self.contains
+                    .as_deref()
+                    .map(|text| format!("Containing: {}", code(&truncate::clamp(text, 60)))),
+            )
             .maybe_footnote(link.map(|link| format!("[View transcript]({link})")))
             .tone(Tone::Success);
 

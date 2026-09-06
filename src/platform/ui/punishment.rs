@@ -1,6 +1,6 @@
 use crate::domain::punishment::Punishment;
 use crate::platform::text::duration;
-use crate::platform::ui::embed::{Embed, mention};
+use crate::platform::ui::embed::{Embed, code, mention};
 use crate::platform::ui::marks::Marks;
 use crate::platform::ui::tone::Tone;
 
@@ -10,25 +10,25 @@ fn qualifiers(punishment: &Punishment) -> Vec<String> {
     if punishment.verb.has_duration() {
         parts.push(format!(
             "Duration: {}",
-            duration::phrase(punishment.duration)
+            code(&duration::phrase(punishment.duration))
         ));
     }
 
     if punishment.clear_days != 0 {
         parts.push(format!(
             "Cleared: {} days of messages",
-            punishment.clear_days
+            code(&punishment.clear_days.to_string())
         ));
     }
 
     parts
 }
 
-pub fn log_entry(punishment: &Punishment) -> Embed {
+pub fn log_entry(punishment: &Punishment, actor: Option<&str>, target: Option<&str>) -> Embed {
     let mut embed = Embed::new(punishment.verb.headline())
         .subtitle(format!("Log ID: `{}`", punishment.id))
-        .subtitle(format!("Actor: {}", mention(punishment.actor)))
-        .subtitle(format!("Target: {}", mention(punishment.target)));
+        .subtitle(format!("Actor: {}", mention(punishment.actor, actor)))
+        .subtitle(format!("Target: {}", mention(punishment.target, target)));
 
     for qualifier in qualifiers(punishment) {
         embed = embed.subtitle(qualifier);
@@ -40,7 +40,7 @@ pub fn log_entry(punishment: &Punishment) -> Embed {
 pub fn reply(punishment: &Punishment, marks: Marks) -> Embed {
     let mut embed = Embed::new(format!(
         "{} {}",
-        mention(punishment.target),
+        mention(punishment.target, None),
         punishment.verb.shout()
     ))
     .subtitle(format!("Log ID: `{}`", punishment.id));

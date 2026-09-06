@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 
 use crate::domain::Snowflake;
 use crate::features::guildlog::attribution::Attribution;
-use crate::platform::ui::embed::{Embed, mention, role_mention};
+use crate::platform::ui::embed::{Embed, code, mention, role_mention};
 use crate::platform::ui::tone::Tone;
 
 pub type Moved<T> = Option<(Option<T>, Option<T>)>;
@@ -91,14 +91,16 @@ impl Changed {
 
 pub fn entry(
     target: Snowflake,
+    name: Option<&str>,
     changed: &Changed,
     actor: Attribution,
+    actor_name: Option<&str>,
     reason: Option<&str>,
     bot: Snowflake,
 ) -> Embed {
     let entry = Embed::new("MEMBER UPDATE")
-        .subtitle(format!("Target: {}", mention(target)))
-        .maybe_subtitle(actor.line(bot))
+        .subtitle(format!("Target: {}", mention(target, name)))
+        .maybe_subtitle(actor.line(bot, actor_name))
         .lead(lines(changed).join("\n"))
         .tone(Tone::Info);
 
@@ -108,9 +110,14 @@ pub fn entry(
     }
 }
 
-pub fn joined(target: Snowflake, created: DateTime<Utc>, history: i64) -> Embed {
+pub fn joined(
+    target: Snowflake,
+    name: Option<&str>,
+    created: DateTime<Utc>,
+    history: i64,
+) -> Embed {
     let mut entry = Embed::new("MEMBER JOINED")
-        .subtitle(format!("Target: {}", mention(target)))
+        .subtitle(format!("Target: {}", mention(target, name)))
         .subtitle(format!("ID: `{target}`"))
         .body(format!(
             "account created <t:{0}:R> (<t:{0}:f>)",
@@ -125,9 +132,9 @@ pub fn joined(target: Snowflake, created: DateTime<Utc>, history: i64) -> Embed 
     entry
 }
 
-pub fn left(target: Snowflake) -> Embed {
+pub fn left(target: Snowflake, name: Option<&str>) -> Embed {
     Embed::new("MEMBER LEFT")
-        .subtitle(format!("Target: {}", mention(target)))
+        .subtitle(format!("Target: {}", mention(target, name)))
         .subtitle(format!("ID: `{target}`"))
         .tone(Tone::Danger)
 }
@@ -138,8 +145,8 @@ fn lines(changed: &Changed) -> Vec<String> {
     if let Some((before, after)) = &changed.nick {
         written.push(format!(
             "Nickname: {} -> {}",
-            before.as_deref().unwrap_or("(none)"),
-            after.as_deref().unwrap_or("(none)")
+            nickname(before.as_deref()),
+            nickname(after.as_deref())
         ));
     }
 
@@ -158,6 +165,13 @@ fn lines(changed: &Changed) -> Vec<String> {
     match written.is_empty() {
         true => vec![String::from("no recorded changes")],
         false => written,
+    }
+}
+
+fn nickname(nick: Option<&str>) -> String {
+    match nick {
+        Some(nick) => code(nick),
+        None => String::from("(none)"),
     }
 }
 

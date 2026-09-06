@@ -13,7 +13,7 @@ pub fn viewed(guild: u64, captured: &Captured) -> Embed {
 
     Embed::new("REFERENCE")
         .subtitle(format!("Message ID: `{}` {link}", captured.message))
-        .subtitle(format!("Author: {}", mention(captured.author)))
+        .subtitle(format!("Author: {}", mention(captured.author, None)))
         .quote(
             captured
                 .content
