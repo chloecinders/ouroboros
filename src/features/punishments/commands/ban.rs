@@ -65,7 +65,7 @@ impl Command for Ban {
         .reason(self.reason)
         .note(self.note)
         .duration(self.duration.unwrap_or_else(Duration::zero))
-        .clear_days(self.clear_days.unwrap_or_default())
+        .clear_days(self.clear_days.unwrap_or(1))
         .silent(self.silent);
 
         let subject = match cx.member(user.id).await {
